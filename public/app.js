@@ -201,7 +201,7 @@ function drawCameraList() {
     const action = isOpen ? 'Fechar' : 'Abrir';
     button.setAttribute('aria-label', `Câmera ${camera.name}; ${description}${statusLabel ? `; ${statusDetail || statusLabel}` : ''}`);
     button.title = `${action} câmera ${camera.name} · ${description}${statusLabel ? ` · ${statusDetail || statusLabel}` : ''}`;
-    button.innerHTML = '<span class="camera-icon" aria-hidden="true"><span class="camera-health-mark" hidden>!</span></span><span class="camera-meta"><span class="camera-name"></span><span class="camera-description"></span><span class="camera-status-detail" hidden></span></span><span class="camera-add" aria-hidden="true"></span>';
+    button.innerHTML = '<span class="camera-icon" aria-hidden="true"><svg class="camera-symbol" viewBox="0 0 28 22" aria-hidden="true" focusable="false"><rect x="2.5" y="4.5" width="15.5" height="13" rx="2.3"></rect><path d="m18 8.3 5.3-2.6a1.1 1.1 0 0 1 1.6 1v8.6a1.1 1.1 0 0 1-1.6 1L18 13.7z"></path><path d="M6 8.2h3.8"></path></svg><span class="camera-health-mark" hidden>!</span></span><span class="camera-meta"><span class="camera-name"></span><span class="camera-description"></span><span class="camera-status-detail" hidden></span></span><span class="camera-add" aria-hidden="true"></span>';
     button.querySelector('.camera-name').textContent = camera.name;
     button.querySelector('.camera-description').textContent = description;
     const statusDetailNode = button.querySelector('.camera-status-detail');
@@ -356,6 +356,7 @@ async function openCamera(cameraName, initialProfile = 'Visualization') {
 async function closeCamera(cameraName) {
   const player = state.tiles.get(cameraName);
   if (!player) return;
+  const oldAudioSource = state.audioSource;
   player.stop();
   state.tiles.delete(cameraName);
   elements.viewerGrid.classList.toggle('has-many', state.tiles.size >= 3);
@@ -370,6 +371,7 @@ async function closeCamera(cameraName) {
   updateAudioSources();
   drawCameraList();
   updateViewHeader();
+  if (state.audioEnabled && oldAudioSource !== state.audioSource) void audioSourceChanged(oldAudioSource, state.audioSource);
 }
 
 async function closeAllTiles() {
@@ -395,13 +397,13 @@ function focusCamera(cameraName) {
     player.tile.classList.toggle('is-focused', name === cameraName);
     player.tile.querySelector('.tile-focus-button').classList.toggle('is-audio', name === state.audioSource && state.audioEnabled);
   }
-  updateAudioSources();
+  updateAudioSources(cameraName);
   updateViewHeader();
-  if (state.audioEnabled && oldSource !== state.audioSource) audioSourceChanged(oldSource, state.audioSource);
+  if (state.audioEnabled && oldSource !== state.audioSource) void audioSourceChanged(oldSource, state.audioSource);
 }
 
-function updateAudioSources() {
-  const previous = elements.audioSource.value;
+function updateAudioSources(preferredSource = '') {
+  const previous = preferredSource || elements.audioSource.value;
   elements.audioSource.replaceChildren();
   if (!state.tiles.size) {
     elements.audioSource.add(new Option('Nenhuma câmera aberta', ''));
@@ -431,10 +433,10 @@ function updateViewHeader() {
   elements.stopAll.setAttribute('aria-label', stopAction);
   elements.stopAll.setAttribute('aria-pressed', String(state.allStopped));
   elements.stopAll.dataset.state = state.allStopped ? 'stopped' : 'active';
-  elements.viewTitle.textContent = state.mode === 'live' ? 'Monitoramento ao vivo' : 'Revisão de gravações';
+  elements.viewTitle.textContent = state.mode === 'live' ? 'Monitoramento ao vivo' : 'Gravado';
   elements.viewSubtitle.textContent = state.focused ? `${state.focused}${state.mode === 'live' ? ' · transmissão instantânea' : ' · horário sincronizado'}` : 'Escolha uma câmera para começar.';
   elements.focusedLabel.textContent = state.focused ? `Foco · ${state.focused}` : 'Nenhuma câmera em foco';
-  elements.modeStatus.textContent = state.mode === 'live' ? 'Ao vivo' : 'Revisão gravada';
+  elements.modeStatus.textContent = state.mode === 'live' ? 'Ao vivo' : 'Gravado';
   elements.statusLiveDot.classList.toggle('review', state.mode === 'playback');
 }
 
@@ -461,7 +463,7 @@ function setMode(mode) {
       player.tile.querySelector('.tile-state').classList.add('review');
     }
   } else {
-    elements.timelineStatus.textContent = 'Timeline disponível durante a revisão gravada.';
+    elements.timelineStatus.textContent = 'Timeline disponível durante as gravações.';
     for (const player of state.tiles.values()) {
       player.profile = player.lastLiveProfile || 'Visualization';
       const select = player.tile.querySelector('.tile-profile');
@@ -483,7 +485,7 @@ function setDefaultReviewTimes() {
 }
 
 function startReview() {
-  if (!state.tiles.size) return toast('Abra pelo menos uma câmera antes de iniciar a revisão.', 'error');
+  if (!state.tiles.size) return toast('Abra pelo menos uma câmera antes de carregar gravações.', 'error');
   if (!elements.startDateTime.value) return toast('Informe data e hora de início.', 'error');
   try {
     state.reviewStart = inputToEpoch(elements.startDateTime.value, state.server.timeZone);
@@ -592,6 +594,8 @@ class CameraPlayer {
     this.g726 = null;
     this.g726Config = null;
     this.g726DecodeChain = Promise.resolve();
+    this.audioAbortController = null;
+    this.audioStreamToken = 0;
     this.requestToken = 0;
     this.videoEpoch = null;
     this.audioEpoch = null;
@@ -604,11 +608,10 @@ class CameraPlayer {
     this.stopped = false;
     const token = ++this.requestToken;
     this.abortController = new AbortController();
-    const audio = state.audioEnabled && state.audioSource === this.name;
     const params = {
       server: state.serverId, camera: this.name, mode: state.mode,
       profile: state.mode === 'live' ? this.profile : undefined,
-      audio: audio ? '1' : '0'
+      audio: '0'
     };
     if (state.mode === 'playback') {
       if (!state.reviewStart) {
@@ -619,7 +622,7 @@ class CameraPlayer {
       const end = state.reviewEnd ? epochToApi(state.reviewEnd, state.server.timeZone) : null;
       Object.assign(params, { startDate: start.date, startTime: start.time, endDate: end?.date, endTime: end?.time });
     }
-    this.setState(state.mode === 'live' ? 'Ao vivo' : 'Revisão');
+    this.setState(state.mode === 'live' ? 'Ao vivo' : 'Gravado');
     this.setMessage('Conectando ao stream…');
     try {
       const response = await fetch(`/api/stream?${query(params)}`, { signal: this.abortController.signal, cache: 'no-store' });
@@ -641,6 +644,7 @@ class CameraPlayer {
         this.setState('Erro');
         toast(`${this.name}: ${error.message || 'erro de stream.'}`, 'error');
       });
+      if (state.audioEnabled && state.audioSource === this.name) void this.startAudioStream();
     } catch (error) {
       if (error.name === 'AbortError' || this.stopped || token !== this.requestToken) return;
       this.setMessage(error.message || 'Erro ao receber stream.');
@@ -655,9 +659,56 @@ class CameraPlayer {
     await this.start();
   }
 
+  async startAudioStream() {
+    this.stopAudioStream();
+    if (this.stopped || state.allStopped || !state.audioEnabled || state.audioSource !== this.name) return;
+    if (state.mode === 'playback' && !state.reviewStart) return;
+    const token = ++this.audioStreamToken;
+    const controller = new AbortController();
+    this.audioAbortController = controller;
+    const params = { server: state.serverId, camera: this.name, mode: state.mode, audioOnly: '1' };
+    if (state.mode === 'live') params.profile = this.profile;
+    else if (state.mode === 'playback') {
+      const start = epochToApi(state.reviewEpoch ?? state.reviewStart, state.server.timeZone);
+      const end = state.reviewEnd ? epochToApi(state.reviewEnd, state.server.timeZone) : null;
+      Object.assign(params, { startDate: start.date, startTime: start.time, endDate: end?.date, endTime: end?.time });
+    }
+    try {
+      const response = await fetch(`/api/audio-stream?${query(params)}`, { signal: controller.signal, cache: 'no-store' });
+      if (token !== this.audioStreamToken || !state.audioEnabled || state.audioSource !== this.name) return;
+      if (!response.ok || !response.body || !(response.headers.get('content-type') || '').toLowerCase().includes('multipart/')) {
+        let message = 'Não foi possível abrir o áudio desta câmera.';
+        try { message = (await response.json()).error || message; } catch {}
+        throw new Error(message);
+      }
+      void consumeMultipart(response, part => {
+        if (token === this.audioStreamToken && state.audioEnabled && state.audioSource === this.name) this.consumePart(part, true);
+      }).catch(error => {
+        if (error.name === 'AbortError' || token !== this.audioStreamToken || !state.audioEnabled || state.audioSource !== this.name) return;
+        this.setMessage(error.message || 'Erro ao receber áudio.');
+      });
+    } catch (error) {
+      if (error.name === 'AbortError' || token !== this.audioStreamToken || !state.audioEnabled || state.audioSource !== this.name) return;
+      this.setMessage(error.message || 'Não foi possível abrir o áudio desta câmera.');
+    }
+  }
+
+  stopAudioStream() {
+    this.audioStreamToken += 1;
+    this.audioAbortController?.abort();
+    this.audioAbortController = null;
+    try { this.audioDecoder?.close(); } catch {}
+    this.audioDecoder = null;
+    try { this.g726?.free(); } catch {}
+    this.g726 = null;
+    this.g726Config = null;
+    this.g726DecodeChain = Promise.resolve();
+  }
+
   stop(clear = true) {
     this.stopped = true;
     this.requestToken += 1;
+    this.stopAudioStream();
     this.abortController?.abort();
     this.abortController = null;
     this.clearVideoDecoder();
@@ -682,8 +733,9 @@ class CameraPlayer {
     node.hidden = !message;
   }
 
-  consumePart(part) {
+  consumePart(part, audioOnly = false) {
     const type = `${part.headers['dgf-frametype'] || ''} ${part.headers['content-type'] || ''}`.toLowerCase();
+    if (audioOnly && !/audio|g\.?726|alaw|mulaw|ulaw/i.test(type)) return;
     const epoch = parseFrameEpoch(part.headers);
     if (state.mode === 'playback' && this.name === state.timelineCamera && epoch !== null) updateTimelinePlayhead(epoch);
     if (epoch) this.tile.querySelector('.tile-timecode').textContent = new Intl.DateTimeFormat('pt-BR', { timeZone: state.server.timeZone, hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(epoch);
@@ -691,7 +743,7 @@ class CameraPlayer {
       this.drawJpeg(part.data);
       this.frameCount += 1;
       this.setMessage('');
-      this.setState(state.mode === 'live' ? 'Ao vivo' : 'Revisão');
+      this.setState(state.mode === 'live' ? 'Ao vivo' : 'Gravado');
       return;
     }
     if (type.includes('h.264') || type.includes('h264') || part.headers['content-type']?.toLowerCase().includes('video/h264')) {
@@ -891,7 +943,7 @@ class CameraPlayer {
         frame.close();
         this.frameCount += 1;
         this.setMessage('');
-        this.setState(state.mode === 'live' ? 'Ao vivo' : 'Revisão');
+        this.setState(state.mode === 'live' ? 'Ao vivo' : 'Gravado');
         this.tile.querySelector('.tile-codec').textContent = codec.toUpperCase();
         $('#codecStatus').textContent = `${codec.toUpperCase()} · ${this.frameCount} quadros`;
       },
@@ -961,16 +1013,17 @@ class CameraPlayer {
   decodeG726(data, type, epoch, headers) {
     const bytes = data.slice();
     const token = this.requestToken;
+    const audioToken = this.audioStreamToken;
     const config = getG726Config(headers, type);
     this.g726DecodeChain = this.g726DecodeChain.then(async () => {
-      if (this.stopped || token !== this.requestToken || !state.audioEnabled || state.audioSource !== this.name) return;
+      if (this.stopped || token !== this.requestToken || audioToken !== this.audioStreamToken || !state.audioEnabled || state.audioSource !== this.name) return;
       if (!config.rate) {
         this.setMessage('O frame G.726 não informa uma taxa reconhecida (16, 24, 32 ou 40 kb/s).');
         this.setState('Taxa G.726 desconhecida');
         return;
       }
       const Decoder = await loadG726Decoder();
-      if (this.stopped || token !== this.requestToken || !state.audioEnabled || state.audioSource !== this.name) return;
+      if (this.stopped || token !== this.requestToken || audioToken !== this.audioStreamToken || !state.audioEnabled || state.audioSource !== this.name) return;
       if (!this.g726 || this.g726Config?.rate !== config.rate || this.g726Config?.bitOrder !== config.bitOrder) {
         try { this.g726?.free(); } catch {}
         this.g726 = new Decoder(config.rate, config.bitOrder);
@@ -982,7 +1035,7 @@ class CameraPlayer {
       this.schedulePcm(pcm, 8000, 1, this.mediaTimestamp(epoch, 'audio'));
       this.audioCount += 1;
       this.setMessage('');
-      this.setState(state.mode === 'live' ? 'Ao vivo' : 'Revisão');
+      this.setState(state.mode === 'live' ? 'Ao vivo' : 'Gravado');
       this.tile.querySelector('.tile-codec').textContent = `G.726 ${config.rate} kb/s · ${config.bitOrder.toUpperCase()}${config.assumedBitOrder ? ' (RFC 3551)' : ''}`;
     }).catch(() => {
       if (this.stopped || token !== this.requestToken) return;
@@ -1240,9 +1293,9 @@ async function consumeMultipart(response, onPart) {
 }
 
 async function audioSourceChanged(oldSource, newSource) {
-  if (state.allStopped) return;
-  if (oldSource && state.tiles.has(oldSource)) await state.tiles.get(oldSource).restart();
-  if (newSource && newSource !== oldSource && state.tiles.has(newSource)) await state.tiles.get(newSource).restart();
+  if (oldSource && oldSource !== newSource) state.tiles.get(oldSource)?.stopAudioStream();
+  if (state.allStopped || !state.audioEnabled || !newSource || newSource === oldSource) return;
+  await state.tiles.get(newSource)?.startAudioStream();
 }
 
 function clearTimeline() {
@@ -1375,7 +1428,7 @@ function updateTimelinePlayhead(epoch = state.reviewEpoch) {
   const laneRect = videoLane.getBoundingClientRect();
   const tracksRect = timelineTracks.getBoundingClientRect();
   timelinePlayhead.style.left = `${Math.max(0, Math.min(tracksRect.width - 1, laneRect.left - tracksRect.left + laneRect.width * fraction))}px`;
-  timelinePlayhead.title = `Revisão em ${formatClock(clamped)}`;
+  timelinePlayhead.title = `Gravação em ${formatClock(clamped)}`;
   timelinePlayhead.hidden = false;
 }
 
@@ -1524,10 +1577,8 @@ elements.liveMode.addEventListener('click', () => setMode('live'));
 elements.reviewMode.addEventListener('click', () => setMode('playback'));
 elements.playReview.addEventListener('click', startReview);
 elements.stopAll.addEventListener('click', toggleAllStreams);
-elements.audioSource.addEventListener('change', async event => {
-  const old = state.audioSource;
-  state.audioSource = event.target.value;
-  if (state.audioEnabled && old !== state.audioSource) await audioSourceChanged(old, state.audioSource);
+elements.audioSource.addEventListener('change', event => {
+  focusCamera(event.target.value);
   updateAudioSources();
 });
 elements.audioToggle.addEventListener('click', async () => {
@@ -1537,7 +1588,11 @@ elements.audioToggle.addEventListener('click', async () => {
   state.audioEnabled = !state.audioEnabled;
   updateAudioSources();
   const source = state.audioSource || state.focused;
-  if (!state.allStopped && source && state.tiles.has(source)) await state.tiles.get(source).restart();
+  if (!state.allStopped && source && state.tiles.has(source)) {
+    const player = state.tiles.get(source);
+    if (state.audioEnabled) await player.startAudioStream();
+    else player.stopAudioStream();
+  }
 });
 elements.thumbnailInterval.addEventListener('change', () => {
   elements.customInterval.hidden = elements.thumbnailInterval.value !== 'custom';

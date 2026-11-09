@@ -430,16 +430,17 @@ async function handleApi(req, res, url) {
       await response.body.pipeTo(WritableStreamFromServerResponse(res));
       return;
     }
-    if (url.pathname === '/api/stream') {
+    if (url.pathname === '/api/stream' || url.pathname === '/api/audio-stream') {
+      const audioOnly = url.pathname === '/api/audio-stream';
       const mode = queryValue(url, 'mode');
       const camera = queryValue(url, 'camera');
-      const audio = queryValue(url, 'audio', false) === '1';
+      const audio = audioOnly || queryValue(url, 'audio', false) === '1';
       let response;
       if (mode === 'live') {
         const profile = queryValue(url, 'profile', false) || 'Visualization';
         if (!['Visualization', 'Recording'].includes(profile)) throw new Error('Perfil ao vivo inválido.');
         response = await apiFetch(id, config, 'Cameras/GetMediaStream', {
-          Camera: camera, Profile: profile, Audio: audio ? 'TRUE' : 'FALSE', Video: 'TRUE', TimestampHeader: 'TRUE', ResponseFormat: 'Text'
+          Camera: camera, Profile: profile, Audio: audio ? 'TRUE' : 'FALSE', Video: audioOnly ? 'FALSE' : 'TRUE', TimestampHeader: 'TRUE', ResponseFormat: 'Text'
         }, controller.signal);
       } else if (mode === 'playback') {
         response = await apiFetch(id, config, 'Cameras/Playback/GetMediaStream', {

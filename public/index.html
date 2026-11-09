@@ -66,7 +66,7 @@
               </button>
               <button class="mode-button" id="reviewMode" type="button" aria-pressed="false">
                 <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7"></circle><path d="M10 6v4l2.5 1.6"></path></svg>
-                Revisão
+                Gravado
               </button>
             </div>
             <div class="command-divider" aria-hidden="true"></div>
@@ -115,7 +115,7 @@
           <section id="reviewPanel" class="review-panel" hidden>
             <div class="timeline-heading">
               <div>
-                <span class="eyebrow">GRAVAÇÕES</span>
+                <span class="eyebrow">GRAVADO</span>
                 <h3 id="timelineCameraLabel">Timeline</h3>
               </div>
               <div class="timeline-legend"><span><i class="legend-video"></i>Vídeo</span><span><i class="legend-audio"></i>Áudio</span></div>
@@ -123,8 +123,8 @@
             <div class="timeline-scroll" id="timelineScroll">
               <div class="timeline-ruler" id="timelineRuler"></div>
               <div class="timeline-tracks" id="timelineTracks">
-                <div class="track-row"><span class="track-label">Vídeo</span><div class="track-lane" id="videoLane"></div></div>
-                <div class="track-row"><span class="track-label">Áudio</span><div class="track-lane" id="audioLane"></div></div>
+                <div class="track-row video-row"><div class="track-lane" id="videoLane" role="group" aria-label="Disponibilidade de vídeo"></div></div>
+                <div class="track-row audio-row"><div class="track-lane audio-lane" id="audioLane" role="group" aria-label="Disponibilidade de áudio"></div></div>
               <span class="timeline-playhead" id="timelinePlayhead" aria-hidden="true" hidden></span>
               </div>
             </div>

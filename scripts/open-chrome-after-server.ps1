@@ -10,10 +10,8 @@ while ([DateTime]::UtcNow -lt $deadline) {
     $response = Invoke-WebRequest -Uri $Url -TimeoutSec 2 -UseBasicParsing
     if ($response.StatusCode -ge 200 -and $response.StatusCode -lt 400) {
       $arguments = @(
-        '--disable-web-security',
         "--user-data-dir=`"$ProfilePath`"",
-        '--new-window',
-        "`"$Url`""
+        "--app=`"$Url`""
       ) -join ' '
       Start-Process -FilePath $ChromePath -ArgumentList $arguments
       exit 0

@@ -34,7 +34,7 @@ npm start
 
 Abra `http://127.0.0.1:4177`. O áudio só é solicitado depois de ativá-lo na interface.
 
-Como alternativa, execute `Iniciar-Digifort.bat`: o servidor fica no terminal atual e o Chrome abre quando a porta responder. Encerre o Node com `Ctrl+C` nesse terminal.
+Como alternativa, execute `Iniciar-Digifort.bat`: o servidor fica no terminal atual e o Chrome abre quando a porta responder, em uma janela de aplicativo sem barras de endereço/favoritos. O Chrome usa seu perfil dedicado e mantém as proteções de segurança web ativadas. Encerre o Node com `Ctrl+C` nesse terminal.
 
 O terminal mostra a URL local na inicialização e registra erros de transporte/API. Requisições e respostas normais, incluindo cabeçalhos e prévias de corpo, não são impressas.
 
