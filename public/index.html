@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#101719" />
+    <title>Digifort · Monitor</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script type="module" src="/app.js"></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="/" aria-label="Digifort Monitor, início">
+          <span class="brand-mark" aria-hidden="true"><span></span></span>
+          <span class="brand-copy"><strong>digifort</strong><small>monitor</small></span>
+        </a>
+        <div class="topbar-divider" aria-hidden="true"></div>
+        <div class="server-area">
+          <label for="serverSelect">Servidor</label>
+          <select id="serverSelect" aria-label="Servidor Digifort">
+            <option value="">Aguardando configurações…</option>
+          </select>
+        </div>
+        <div class="connection-state" id="connectionState" data-state="idle" role="status" aria-live="polite" aria-atomic="true">
+          <span class="state-dot" aria-hidden="true"></span>
+          <span id="connectionLabel">Sem conexão</span>
+        </div>
+        <div class="topbar-spacer"></div>
+        <div class="clock-block">
+          <span id="clockTime" class="clock-time">--:--:--</span>
+          <span id="clockDate" class="clock-date">—</span>
+        </div>
+      </header>
+
+      <div class="workspace">
+        <aside class="camera-rail" aria-label="Câmeras">
+          <div class="rail-heading">
+            <div>
+              <span class="eyebrow">FONTES</span>
+              <h1>Câmeras</h1>
+            </div>
+            <span class="camera-count" id="cameraCount">0</span>
+          </div>
+          <label class="search-box" for="cameraSearch">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.8" cy="8.8" r="5.6"></circle><path d="m13 13 4 4"></path></svg>
+            <input id="cameraSearch" type="search" placeholder="Buscar câmera" autocomplete="off" />
+            <kbd>/</kbd>
+          </label>
+          <div class="camera-list-wrap">
+            <div class="camera-list-label"><span>Todas as câmeras</span><span id="availableCount">—</span></div>
+            <div id="cameraList" class="camera-list"></div>
+            <div id="cameraListEmpty" class="rail-empty" hidden>Selecione um servidor para carregar as câmeras.</div>
+          </div>
+          <div class="rail-footer">
+            <span class="server-time-zone" id="serverTimeZone">Fuso horário não definido</span>
+            <span class="read-only-tag"><span aria-hidden="true">◉</span> Somente leitura</span>
+          </div>
+        </aside>
+
+        <main class="monitor-area">
+          <section class="command-bar" aria-label="Controles do player">
+            <div class="mode-switch" role="group" aria-label="Modo de reprodução">
+              <button class="mode-button is-active" id="liveMode" type="button" aria-pressed="true">
+                <span class="mode-live-mark" aria-hidden="true"></span>Ao vivo
+              </button>
+              <button class="mode-button" id="reviewMode" type="button" aria-pressed="false">
+                <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7"></circle><path d="M10 6v4l2.5 1.6"></path></svg>
+                Revisão
+              </button>
+            </div>
+            <div class="command-divider" aria-hidden="true"></div>
+            <div class="review-fields" id="reviewFields" hidden>
+              <label class="field-label" for="startDateTime">Início (obrigatório)</label>
+              <input id="startDateTime" type="datetime-local" step="1" aria-describedby="reviewTimeZone" />
+              <label class="field-label" for="endDateTime">Fim (opcional)</label>
+              <input id="endDateTime" type="datetime-local" step="1" aria-describedby="reviewTimeZone" />
+              <button id="playReview" class="button-primary" type="button">Reproduzir</button>
+              <span id="reviewTimeZone" class="review-time-zone">Horário do servidor: —</span>
+            </div>
+            <div class="topbar-spacer"></div>
+            <div class="audio-control-wrap">
+              <label class="field-label" for="audioSource">Áudio de</label>
+              <select id="audioSource" disabled aria-label="Fonte do áudio">
+                <option value="">Nenhuma câmera aberta</option>
+              </select>
+              <button id="audioToggle" class="audio-toggle" type="button" aria-pressed="false" disabled>
+                <svg class="speaker-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 8v4h3l4 3V5L6 8H3Z"></path><path d="M13 7.2a4 4 0 0 1 0 5.6M15 5a7 7 0 0 1 0 10"></path></svg>
+                <span>Ativar áudio</span>
+              </button>
+            </div>
+          </section>
+
+          <section class="viewer-heading" aria-live="polite">
+            <div>
+              <h2 id="viewTitle">Monitoramento</h2>
+              <p id="viewSubtitle">Escolha uma câmera para começar.</p>
+            </div>
+            <div class="viewer-tools">
+              <span class="tile-count" id="tileCount">0 abertas</span>
+              <button class="icon-button" id="stopAll" type="button" title="Parar todas as câmeras" aria-label="Parar todas as câmeras" disabled>
+                <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="5" y="5" width="10" height="10" rx="1"></rect></svg>
+              </button>
+            </div>
+          </section>
+
+          <section id="viewerGrid" class="viewer-grid" aria-label="Grade de câmeras">
+            <div class="empty-monitor" id="emptyMonitor">
+              <div class="empty-signal" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+              <h3>Nenhuma câmera aberta</h3>
+              <p>Escolha uma câmera na lista lateral. As câmeras configuradas como iniciais aparecem ao selecionar o servidor.</p>
+            </div>
+          </section>
+
+          <section id="reviewPanel" class="review-panel" hidden>
+            <div class="timeline-heading">
+              <div>
+                <span class="eyebrow">GRAVAÇÕES</span>
+                <h3 id="timelineCameraLabel">Timeline</h3>
+              </div>
+              <div class="timeline-legend"><span><i class="legend-video"></i>Vídeo</span><span><i class="legend-audio"></i>Áudio</span></div>
+            </div>
+            <div class="timeline-scroll" id="timelineScroll">
+              <div class="timeline-ruler" id="timelineRuler"></div>
+              <div class="timeline-tracks" id="timelineTracks">
+                <div class="track-row"><span class="track-label">Vídeo</span><div class="track-lane" id="videoLane"></div></div>
+                <div class="track-row"><span class="track-label">Áudio</span><div class="track-lane" id="audioLane"></div></div>
+              </div>
+            </div>
+            <div class="timeline-status" id="timelineStatus">Informe um período e carregue a timeline para localizar gravações.</div>
+          </section>
+
+          <section id="thumbnailPanel" class="thumbnail-panel" hidden>
+            <div class="thumbnail-heading">
+              <div><span class="eyebrow">QUADROS DE REFERÊNCIA</span><h3>Miniaturas</h3></div>
+              <div class="thumbnail-controls">
+                <label for="thumbnailInterval">A cada</label>
+                <select id="thumbnailInterval">
+                  <option value="30">30 s</option><option value="60">1 min</option><option value="300" selected>5 min</option><option value="900">15 min</option><option value="custom">Personalizado</option>
+                </select>
+                <input id="customInterval" type="number" min="1" step="1" value="120" aria-label="Intervalo personalizado em segundos" hidden />
+                <span id="thumbnailPageLabel">Página 1</span>
+                <button class="icon-button" id="thumbnailPrev" type="button" aria-label="Página anterior" disabled>‹</button>
+                <button class="icon-button" id="thumbnailNext" type="button" aria-label="Próxima página" disabled>›</button>
+              </div>
+            </div>
+            <div id="thumbnailGrid" class="thumbnail-grid"></div>
+            <div id="thumbnailStatus" class="thumbnail-status">As miniaturas usam imagens pontuais das gravações.</div>
+          </section>
+
+          <footer class="statusbar">
+            <span><span class="status-live-dot" id="statusLiveDot"></span><span id="modeStatus">Ao vivo</span></span>
+            <span id="focusedLabel">Nenhuma câmera em foco</span>
+            <span class="statusbar-spacer"></span>
+            <span id="codecStatus">Decoder aguardando stream</span>
+          </footer>
+        </main>
+      </div>
+      <div class="toast-region" id="toastRegion" aria-live="polite" aria-atomic="true"></div>
+    </div>
+  </body>
+</html>

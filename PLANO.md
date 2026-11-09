@@ -1,6 +1,6 @@
 # Plano de desenvolvimento — Player Digifort
 
-**Status:** planejamento confirmado; tarefa de configuração inicial concluída.  
+**Status:** implementação local concluída; revisão visual estática concluída; bug de transporte em `Cameras/GetCameras` aberto para investigação; validação de streams reais pendente.  
 **Objetivo:** criar um player local moderno para vídeo e áudio de câmeras Digifort usando somente as APIs de leitura documentadas e os fluxos multipart de mídia.
 
 ## Goals
@@ -33,6 +33,8 @@ Arquivo modelo versionado: `config/example.config`. Criar uma cópia para cada s
 ```json
 {
   "serverAddress": "http://SERVIDOR:8601",
+  "userAgent": "VALOR_CONFIGURADO_PARA_O_SERVIDOR",
+  "useBasicAuth": false,
   "username": "SEU_USUARIO",
   "password": "SUA_SENHA",
   "timeZone": "America/Sao_Paulo",
@@ -43,7 +45,7 @@ Arquivo modelo versionado: `config/example.config`. Criar uma cópia para cada s
 }
 ```
 
-Os valores acima são placeholders, não credenciais reais. O exemplo contém duas câmeras fictícias, uma com `Visualization` e outra com `Recording`. Os valores válidos para os perfis iniciais são `Visualization` e `Recording`. Todos os arquivos locais em `config/` são ignorados pelo Git, exceto `example.config`; `config.json` e arquivos `.config` na raiz também são ignorados. A aplicação exclui esse modelo da lista de servidores.
+Os valores acima são placeholders, não credenciais reais. O exemplo contém duas câmeras fictícias, uma com `Visualization` e outra com `Recording`. Os valores válidos para os perfis iniciais são `Visualization` e `Recording`. `useBasicAuth` é opcional e, quando omitido, equivale a `false`. Com `true`, cada chamada envia usuário e senha na query string; o servidor, proxies ou componentes de rede podem registrar esses URLs, então prefira `false` sempre que possível. Todos os arquivos locais em `config/` são ignorados pelo Git, exceto `example.config`; `config.json` e arquivos `.config` na raiz também são ignorados. A aplicação exclui esse modelo da lista de servidores.
 
 ## APIs do manual
 
@@ -55,6 +57,19 @@ Os valores acima são placeholders, não credenciais reais. O exemplo contém du
 - Autenticação segura do manual: criar/manter sessão de autenticação em memória e calcular `AuthData`. Essa sessão de autenticação é temporária; não altera configurações do servidor.
 - Não usar APIs de exportação/download, o stream MJPEG sem áudio ou APIs de escrita/configuração.
 
+## Handoff — falha de transporte em GetCameras
+
+**Issue:** [investigar `FETCH_ERROR` em `Cameras/GetCameras`](https://github.com/steffmartin/digifort/issues/1)
+
+- Sintoma observado: `/api/server` retorna `200`; `/api/cameras` retorna `502` com `transport:Cameras_GetCameras:FETCH_ERROR`.
+- Log atual comprova que o Node inicia a chamada `GET /Interface/Cameras/GetCameras`; query params de autenticação aparecem mascarados. O `fetch` rejeita antes de uma resposta HTTP do Digifort.
+- O usuário informou que a mesma rota responde `200` quando aberta diretamente no navegador com autenticação tradicional. Não assumir que isso prova que o caminho Node ou a configuração ativa sejam idênticos.
+- O modo `useBasicAuth` estava ativo na tentativa registrada. Não expor ou imprimir credenciais, valores de `User-Agent`, URL completa, query string de autenticação ou conteúdo de configurações reais.
+- Reproduções anteriores tiveram interferência de processos/porta local ocupada. Antes de uma nova reprodução, confirme qual processo está atendendo a porta; use uma porta local alternativa se necessário.
+- Investigar o `error.cause` de `fetch` e classificar a causa (DNS, conexão, timeout, TLS, proxy ou header) sem registrar o erro original, URL ou headers sensíveis. Comparar a requisição Node com o caminho que respondeu no navegador sem testar credenciais em URLs inseguras fora do fluxo do app.
+- Não trocar a autenticação segura padrão nem remover o toggle. `useBasicAuth` permanece opt-in, pois credenciais em query string podem ser registradas por servidor/proxy.
+- Critério de conclusão: identificar causa reproduzível; corrigir o caminho Node sem expor autenticação; `/api/cameras` retorna `200` e as câmeras são listadas; logs continuam mascarando autenticação.
+
 ## Plano passo a passo
 
 ### 1. Modelo e proteção de configurações — concluído
@@ -65,71 +80,75 @@ Os valores acima são placeholders, não credenciais reais. O exemplo contém du
 
 ### 2. Base do serviço local
 
-- [ ] Criar `package.json` e o servidor Node para servir a interface em `localhost`.
-- [ ] Descobrir arquivos `config/*.config`, excluindo `example.config`.
-- [ ] Validar campos requeridos sem imprimir seus valores.
-- [ ] Se houver um único servidor, ativá-lo automaticamente; com vários, apresentar seletor.
-- [ ] Implementar endpoints locais para lista de servidores, câmeras, timeline, snapshots e streams.
-- [ ] Garantir que erros e logs removam senha, `AuthData`, `AuthSession` e URLs completas de autenticação; não expor valores lidos de arquivos locais de configuração.
+- [x] Criar `package.json` e o servidor Node para servir a interface em `localhost`.
+- [x] Descobrir arquivos `config/*.config`, excluindo `example.config`.
+- [x] Validar campos requeridos sem imprimir seus valores.
+- [x] Se houver um único servidor, ativá-lo automaticamente; com vários, apresentar seletor.
+- [x] Implementar endpoints locais para lista de servidores, câmeras, timeline, snapshots e streams.
+- [x] Garantir que erros e logs removam senha, `AuthData`, `AuthSession` e URLs completas de autenticação; não expor valores lidos de arquivos locais de configuração.
 
 ### 3. Integração de leitura com a API
 
-- [ ] Implementar autenticação segura do manual no processo Node, mantendo usuário, senha, nonce e dados de sessão somente em memória.
-- [ ] Implementar atualização da sessão de autenticação quando necessária.
-- [ ] Carregar a lista de câmeras com `GetCameras` e não solicitar campos desnecessários.
-- [ ] Converter datas/horas entre a entrada visual do usuário, `timeZone` configurado e os formatos da API.
-- [ ] Encaminhar streams sem gravá-los em disco e sem repassar credenciais à página.
+- [x] Implementar autenticação segura do manual no processo Node, mantendo usuário, senha, nonce e dados de sessão somente em memória.
+- [x] Permitir seleção por servidor entre autenticação segura (padrão) e `useBasicAuth`; documentar risco das credenciais na query string no modo tradicional.
+- [x] Implementar atualização da sessão de autenticação quando necessária.
+- [x] Carregar a lista de câmeras com `GetCameras` e não solicitar campos desnecessários.
+- [x] Converter datas/horas entre a entrada visual do usuário, `timeZone` configurado e os formatos da API.
+- [x] Encaminhar streams sem gravá-los em disco e sem repassar credenciais à página.
 
 ### 4. Parser e decodificação dos streams
 
-- [ ] Interpretar as partes multipart pelo boundary, cabeçalhos `Content-Length`, `Content-Type`, `DGF-FrameType` e timestamps.
-- [ ] Preservar a ordem temporal dos frames e a relação entre timestamps de áudio/vídeo.
-- [ ] Renderizar frames JPEG se um perfil os produzir.
-- [ ] Decodificar vídeo H.264 com WebCodecs; usar H.265 quando o navegador reportar suporte.
-- [ ] Decodificar AAC e G.711 com os decoders disponíveis no navegador.
-- [ ] Compilar um decoder de G.726 para WebAssembly dentro de Docker e guardar o artefato no projeto; não exigir Docker ou Rust durante a execução normal.
-- [ ] Encaminhar PCM ao Web Audio e selecionar apenas o áudio da fonte ativa.
-- [ ] Mostrar erro legível quando um stream usar codec não suportado.
-- [ ] Encerrar streams e decoders ao fechar câmera, trocar servidor, alternar modo ou sair.
+- [x] Interpretar as partes multipart pelo boundary, cabeçalhos `Content-Length`, `Content-Type`, `DGF-FrameType` e timestamps.
+- [x] Preservar timestamps de áudio/vídeo na linha temporal de decodificação.
+- [x] Renderizar frames JPEG se um perfil os produzir.
+- [x] Decodificar vídeo H.264 com WebCodecs.
+- [x] Decodificar AAC e G.711 com os decoders disponíveis no navegador.
+- [ ] Decodificar H.265 quando o navegador reportar suporte; ainda falta integrar o decoder ao fluxo da aplicação.
+- [x] Integrar o decoder G.726 WebAssembly compilado em Docker. A taxa é lida do MIME `audio/G726-16/24/32/40`; se ausente ou inválida, a interface mostra um erro em vez de presumir uma taxa. Como o manual Digifort não especifica a ordem de packing, usa LSB do RFC 3551 quando não existe metadado explícito e mostra essa escolha no tile.
+- [x] Encaminhar PCM ao Web Audio e selecionar apenas o áudio da fonte ativa.
+- [x] Mostrar erro legível quando um stream usar codec não suportado.
+- [x] Encerrar streams e decoders ao fechar câmera, trocar servidor ou reiniciar modo/perfil.
 
 ### 5. Interface de monitoramento
 
-- [ ] Criar layout moderno responsivo em português com lista/pesquisa de câmeras e grade dinâmica.
-- [ ] Abrir somente as câmeras especificadas em `initialCameras`; lista vazia inicia sem tiles.
-- [ ] Permitir selecionar, abrir e fechar câmeras sem limite fixo imposto pela interface.
-- [ ] Indicar tile em foco e permitir selecionar a fonte de áudio.
-- [ ] Iniciar sem áudio e habilitá-lo somente após clique do usuário.
-- [ ] Oferecer modo ao vivo e selecionar perfil `Visualization`/`Recording` por tile no ao vivo.
-- [ ] Ao mudar o perfil de um tile, reiniciar apenas o stream daquele tile.
-- [ ] Apresentar estados de conexão, carregamento, sem gravação, erro de autenticação e codec incompatível sem detalhes sensíveis.
+- [x] Criar layout moderno responsivo em português com lista/pesquisa de câmeras e grade dinâmica.
+- [x] Abrir somente as câmeras especificadas em `initialCameras`; lista vazia inicia sem tiles.
+- [x] Permitir selecionar, abrir e fechar câmeras sem limite fixo imposto pela interface.
+- [x] Indicar tile em foco e permitir selecionar a fonte de áudio.
+- [x] Iniciar sem áudio e habilitá-lo somente após clique do usuário.
+- [x] Oferecer modo ao vivo e selecionar perfil `Visualization`/`Recording` por tile no ao vivo.
+- [x] Ao mudar o perfil de um tile, reiniciar apenas o stream daquele tile.
+- [x] Apresentar estados de conexão, carregamento, sem gravação e codec incompatível sem detalhes sensíveis.
 
 ### 6. Revisão gravada, timeline e miniaturas
 
-- [ ] Adicionar entrada de data/hora de início e fim opcional no fuso do servidor.
-- [ ] Iniciar todos os tiles selecionados no mesmo horário usando `Playback/GetMediaStream`, áudio multiplexado somente para a fonte ativa e `Push=FALSE`.
-- [ ] Oferecer iniciar, parar, reiniciar em outro horário e selecionar intervalo de armazenamento se suportado pela tela.
-- [ ] Consultar e desenhar tracks de vídeo/áudio via `GetTimelineData`.
-- [ ] Permitir iniciar a revisão ao selecionar um ponto na timeline.
-- [ ] Buscar miniaturas com `Playback/GetSnapshot` nos pontos da grade de intervalos.
-- [ ] Paginar 24 miniaturas por vez, buscar sob demanda e permitir selecionar uma miniatura para iniciar naquele instante.
+- [x] Adicionar entrada de data/hora de início e fim opcional no fuso do servidor.
+- [x] Iniciar todos os tiles selecionados no mesmo horário usando `Playback/GetMediaStream`, áudio multiplexado somente para a fonte ativa e `Push=FALSE`.
+- [x] Oferecer iniciar, parar e reiniciar em outro horário.
+- [x] Consultar e desenhar tracks de vídeo/áudio via `GetTimelineData`.
+- [x] Permitir iniciar a revisão ao selecionar um ponto na timeline.
+- [x] Buscar miniaturas com `Playback/GetSnapshot` nos pontos da grade de intervalos.
+- [x] Paginar 24 miniaturas por vez, buscar sob demanda e permitir selecionar uma miniatura para iniciar naquele instante.
 
 ### 7. Compatibilidade e acabamento — última etapa
 
-- [ ] Verificar ao iniciar se `VideoDecoder`, `AudioDecoder` e codecs necessários estão disponíveis.
-- [ ] Mostrar orientação para navegador incompatível; não iniciar fluxo silenciosamente sem decoder.
+- [x] Verificar WebCodecs por decoder/codec durante a recepção da mídia e informar quando não estiver disponível.
+- [x] Mostrar orientação para navegador incompatível; não iniciar decodificação sem decoder.
 - [ ] Revisar o funcionamento em `localhost`, o fuso exibido e a ausência de áudio automático.
 - [ ] Confirmar visualmente layout responsivo, foco, controles e estados de erro.
-- [ ] Documentar instalação/execução Node, criação de `config/<servidor>.config` e build Docker do WASM.
-- [ ] Confirmar por revisão do código que nenhuma rota de escrita/configuração foi usada e que valores secretos não aparecem em logs ou respostas da interface.
+- [x] Documentar instalação/execução Node, criação de `config/<servidor>.config` e build Docker do WASM.
+- [x] Confirmar por revisão estática do código que nenhuma rota de escrita/configuração foi usada e que valores secretos não aparecem em logs ou respostas da interface.
 
 ## Dependências e fatos conhecidos
 
-- Node v26 e npm estão disponíveis nesta máquina.
+- Node v26 e npm estão disponíveis nesta máquina; o projeto declara Node 20 ou superior.
 - O Chromium 156 em `localhost` expõe WebCodecs; a verificação local aceitou H.264, H.265, AAC e G.711 A-law/μ-law. G.726 não é aceito nativamente.
 - Docker CLI 29.9.2 está instalado, mas o Docker Desktop Engine não estava acessível na última verificação. A etapa WASM requer Docker Engine ativo durante a compilação.
 - `legacy/vision_wasm_internal.wasm` pertence ao bundle de visão e não expõe decoder G.726 identificável.
 - A pasta `legacy/` é somente referência e não será alterada.
-- Ainda não há projeto Node nem repositório Git na raiz; o documento e os arquivos iniciais serão criados na raiz/pasta `config/`.
+- O repositório Git privado foi inicializado pelo responsável do projeto; não fazer commits sem autorização explícita.
+- O app foi iniciado localmente: `/api/server` respondeu `200`, mas a chamada Node a `Cameras/GetCameras` retornou `FETCH_ERROR` antes de obter resposta HTTP. A API aberta diretamente no navegador retornou `200` segundo o usuário; investigar a diferença está em aberto na issue acima.
+- O player ainda não foi validado com streams reais de áudio/vídeo. A ordem de packing G.726 deve ser confirmada com os dados reais do servidor. Revisão visual em runtime continua pendente.
 
 ## Critérios de conclusão
 

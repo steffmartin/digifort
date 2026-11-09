@@ -1,0 +1,12 @@
+[package]
+name = "digifort-g726-wasm"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+oxideav-adpcm = "0.0.8"
+wasm-bindgen = "0.2"

@@ -1,0 +1,15 @@
+{
+  "name": "digifort-g726-wasm",
+  "type": "module",
+  "version": "0.1.0",
+  "files": [
+    "digifort_g726_wasm_bg.wasm",
+    "digifort_g726_wasm.js",
+    "digifort_g726_wasm.d.ts"
+  ],
+  "main": "digifort_g726_wasm.js",
+  "types": "digifort_g726_wasm.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}
