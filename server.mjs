@@ -54,6 +54,9 @@ async function getConfig(id) {
   }
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('A configuração deve ser um objeto JSON.');
   const { serverAddress, userAgent, username, password, timeZone, initialCameras } = value;
+  const name = typeof value.name === 'string' && value.name.trim()
+    ? value.name.trim().replace(/\s+/g, ' ').slice(0, 120)
+    : id;
   const useBasicAuth = value.useBasicAuth ?? false;
   if (typeof serverAddress !== 'string' || !/^https?:\/\//i.test(serverAddress)) throw new Error('A configuração precisa de um endereço HTTP ou HTTPS válido.');
   let parsedAddress;
@@ -68,23 +71,35 @@ async function getConfig(id) {
   for (const [camera, profile] of Object.entries(initialCameras)) {
     if (!camera.trim() || !['Visualization', 'Recording'].includes(profile)) throw new Error('Cada câmera inicial precisa ter um nome e o perfil Visualization ou Recording.');
   }
-  const parsed = { serverAddress: serverAddress.replace(/\/+$/, ''), userAgent: userAgent.trim(), username, password, useBasicAuth, timeZone, initialCameras };
+  const parsed = { id, name, serverAddress: serverAddress.replace(/\/+$/, ''), userAgent: userAgent.trim(), username, password, useBasicAuth, timeZone, initialCameras };
   configs.set(id, parsed);
   return parsed;
 }
 
-async function serverIds() {
+async function serverOptions() {
   let entries;
   try {
     entries = await fs.readdir(CONFIG_DIR, { withFileTypes: true });
   } catch {
     return [];
   }
-  return entries
+  const ids = entries
     .filter(entry => entry.isFile() && entry.name.toLowerCase().endsWith('.config') && entry.name.toLowerCase() !== 'example.config')
     .map(entry => entry.name.slice(0, -'.config'.length))
     .filter(safeId)
     .sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  return Promise.all(ids.map(async id => {
+    try {
+      const source = await fs.readFile(path.join(CONFIG_DIR, `${id}.config`), 'utf8');
+      const value = JSON.parse(source);
+      const name = typeof value?.name === 'string' && value.name.trim()
+        ? value.name.trim().replace(/\s+/g, ' ').slice(0, 120)
+        : id;
+      return { id, name };
+    } catch {
+      return { id, name: id };
+    }
+  }));
 }
 
 function activateServer(id) {
@@ -310,13 +325,13 @@ async function handleApi(req, res, url) {
   try {
     if (req.method !== 'GET') return sendJson(res, 405, { error: 'Método não disponível.' });
     if (url.pathname === '/api/servers') {
-      return sendJson(res, 200, { servers: await serverIds() });
+      return sendJson(res, 200, { servers: await serverOptions() });
     }
     const id = queryValue(url, 'server');
     if (url.pathname === '/api/server') {
       const config = await getConfig(id);
       activateServer(id);
-      return sendJson(res, 200, { id, timeZone: config.timeZone, initialCameras: config.initialCameras });
+      return sendJson(res, 200, { id, name: config.name, timeZone: config.timeZone, initialCameras: config.initialCameras });
     }
     if (activeServerId !== id) throw new Error('Selecione novamente o servidor antes de continuar.');
     const config = await getConfig(id);

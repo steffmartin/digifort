@@ -82,7 +82,9 @@ async function initializeServers() {
   setConnection('idle', 'Procurando servidores');
   try {
     const result = await apiJson('/api/servers');
-    state.servers = result.servers || [];
+    state.servers = (result.servers || []).map(server => typeof server === 'string'
+      ? { id: server, name: server }
+      : { id: server.id, name: server.name || server.id });
     elements.serverSelect.replaceChildren();
     if (!state.servers.length) {
       const option = new Option('Nenhuma configuração encontrada', '');
@@ -97,10 +99,10 @@ async function initializeServers() {
     if (state.servers.length > 1) {
       elements.serverSelect.add(new Option('Escolha um servidor…', ''));
     }
-    for (const id of state.servers) elements.serverSelect.add(new Option(id, id));
+    for (const server of state.servers) elements.serverSelect.add(new Option(server.name, server.id));
     if (state.servers.length === 1) {
-      elements.serverSelect.value = state.servers[0];
-      await selectServer(state.servers[0]);
+      elements.serverSelect.value = state.servers[0].id;
+      await selectServer(state.servers[0].id);
     } else {
       setConnection('idle', 'Escolha um servidor');
       elements.cameraListEmpty.textContent = 'Selecione um servidor para carregar as câmeras.';

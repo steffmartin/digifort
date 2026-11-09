@@ -3,6 +3,7 @@
 !/config/example.config
 /config.json
 /*.config
+.idea/
 /legacy/
 /.playwright-mcp/
 
@@ -55,3 +56,4 @@ desktop.ini
 /.env
 /.env.*
 !/.env.example
+/http-client.private.env.json
