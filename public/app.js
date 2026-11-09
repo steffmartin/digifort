@@ -32,7 +32,7 @@ const state = {
   allStopped: false,
   audioContext: null, reviewEpoch: null, reviewStart: null, reviewEnd: null,
   timeline: [], timelineStart: null, timelineEnd: null, timelineCamera: '',
-  thumbnailPage: 0, thumbnails: [], thumbnailObjectUrls: []
+  thumbnailPage: 0, thumbnails: [], thumbnailObjectUrls: [], thumbnailRequestId: 0, thumbnailControllers: new Set()
 };
 
 const elements = {
@@ -44,7 +44,8 @@ const elements = {
   audioSource: $('#audioSource'), audioToggle: $('#audioToggle'), viewerGrid: $('#viewerGrid'), emptyMonitor: $('#emptyMonitor'),
   viewTitle: $('#viewTitle'), viewSubtitle: $('#viewSubtitle'), tileCount: $('#tileCount'), stopAll: $('#stopAll'),
   reviewPanel: $('#reviewPanel'), timelineCameraLabel: $('#timelineCameraLabel'), timelineRuler: $('#timelineRuler'),
-  videoLane: $('#videoLane'), audioLane: $('#audioLane'), timelineStatus: $('#timelineStatus'),
+  videoLane: $('#videoLane'), audioLane: $('#audioLane'), timelineTracks: $('#timelineTracks'),
+  timelinePlayhead: $('#timelinePlayhead'), timelineStatus: $('#timelineStatus'),
   thumbnailPanel: $('#thumbnailPanel'), thumbnailGrid: $('#thumbnailGrid'), thumbnailStatus: $('#thumbnailStatus'),
   thumbnailInterval: $('#thumbnailInterval'), customInterval: $('#customInterval'), thumbnailPrev: $('#thumbnailPrev'),
   thumbnailNext: $('#thumbnailNext'), thumbnailPageLabel: $('#thumbnailPageLabel'),
@@ -213,16 +214,20 @@ function createTile(cameraName, profile) {
       <button class="tile-close-button" type="button">×</button>
     </div>`;
   tile.querySelector('.tile-camera-name').textContent = cameraName;
-  tile.querySelector('.tile-video').setAttribute('aria-label', `Focar câmera ${cameraName}`);
+  tile.querySelector('.tile-video').setAttribute('aria-label', `Focar câmera ${cameraName}. Pressione F para tela cheia.`);
   tile.querySelector('.tile-focus-button').setAttribute('aria-label', `Focar câmera ${cameraName}`);
   tile.querySelector('.tile-profile').setAttribute('aria-label', `Perfil da câmera ${cameraName}`);
   const closeButton = tile.querySelector('.tile-close-button');
   closeButton.setAttribute('aria-label', `Fechar câmera ${cameraName}`);
   closeButton.title = `Fechar câmera ${cameraName}`;
   tile.querySelector('.tile-profile').value = profile === 'Recording' ? 'Recording' : 'Visualization';
-  tile.querySelector('.tile-video').addEventListener('click', () => focusCamera(cameraName));
+  const videoSurface = tile.querySelector('.tile-video');
+  videoSurface.title = 'Clique duas vezes ou pressione F para abrir em tela cheia';
+  videoSurface.addEventListener('click', () => focusCamera(cameraName));
+  videoSurface.addEventListener('dblclick', () => toggleTileFullscreen(tile, cameraName));
   tile.querySelector('.tile-video').addEventListener('keydown', event => {
     if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); focusCamera(cameraName); }
+    if (event.key.toLowerCase() === 'f') { event.preventDefault(); toggleTileFullscreen(tile, cameraName); }
   });
   tile.querySelector('.tile-focus-button').addEventListener('click', () => focusCamera(cameraName));
   tile.querySelector('.tile-close-button').addEventListener('click', () => closeCamera(cameraName));
@@ -239,6 +244,26 @@ function createTile(cameraName, profile) {
   }
   return tile;
 }
+
+async function toggleTileFullscreen(tile, cameraName) {
+  if (document.fullscreenElement === tile) {
+    try { await document.exitFullscreen(); }
+    catch { toast(`Não foi possível sair da tela cheia de ${cameraName}.`, 'error'); }
+    return;
+  }
+  if (typeof tile.requestFullscreen !== 'function' || !document.fullscreenEnabled) {
+    toast('Este navegador não permite abrir a câmera em tela cheia.', 'error');
+    return;
+  }
+  try { await tile.requestFullscreen(); }
+  catch { toast(`Não foi possível abrir ${cameraName} em tela cheia.`, 'error'); }
+}
+
+document.addEventListener('keydown', event => {
+  if (event.key !== 'Escape' || !document.fullscreenElement?.classList.contains('camera-tile')) return;
+  event.preventDefault();
+  void document.exitFullscreen().catch(() => {});
+});
 
 async function openCamera(cameraName, initialProfile = 'Visualization') {
   if (!state.serverId || state.tiles.has(cameraName)) return;
@@ -338,8 +363,11 @@ function updateViewHeader() {
   elements.tileCount.textContent = `${count} ${count === 1 ? 'aberta' : 'abertas'}`;
   elements.cameraCount.textContent = String(count);
   elements.stopAll.disabled = count === 0;
-  elements.stopAll.title = state.allStopped ? 'Retomar todas as câmeras' : 'Parar todas as câmeras';
-  elements.stopAll.setAttribute('aria-label', state.allStopped ? 'Retomar todas as câmeras' : 'Parar todas as câmeras');
+  const stopAction = state.allStopped ? 'Retomar todas as câmeras' : 'Parar todas as câmeras';
+  elements.stopAll.title = stopAction;
+  elements.stopAll.setAttribute('aria-label', stopAction);
+  elements.stopAll.setAttribute('aria-pressed', String(state.allStopped));
+  elements.stopAll.dataset.state = state.allStopped ? 'stopped' : 'active';
   elements.viewTitle.textContent = state.mode === 'live' ? 'Monitoramento ao vivo' : 'Revisão de gravações';
   elements.viewSubtitle.textContent = state.focused ? `${state.focused}${state.mode === 'live' ? ' · transmissão instantânea' : ' · horário sincronizado'}` : 'Escolha uma câmera para começar.';
   elements.focusedLabel.textContent = state.focused ? `Foco · ${state.focused}` : 'Nenhuma câmera em foco';
@@ -361,6 +389,9 @@ function setMode(mode) {
   elements.thumbnailPanel.hidden = !wasPlayback;
   if (wasPlayback) {
     setDefaultReviewTimes();
+    state.reviewStart = null;
+    state.reviewEnd = null;
+    state.reviewEpoch = null;
     for (const player of state.tiles.values()) {
       player.profile = 'Recording';
       player.tile.querySelector('.tile-profile').hidden = true;
@@ -396,13 +427,25 @@ function startReview() {
     state.reviewEnd = elements.endDateTime.value ? inputToEpoch(elements.endDateTime.value, state.server.timeZone) : null;
     if (state.reviewEnd && state.reviewEnd <= state.reviewStart) throw new Error('O fim precisa ser posterior ao início.');
     state.reviewEpoch = state.reviewStart;
-  state.allStopped = false;
+    state.allStopped = false;
   } catch (error) {
     return toast(error.message || 'Confira o período selecionado.', 'error');
   }
+  clearTimeline();
+  state.timelineStart = state.reviewStart;
+  state.timelineEnd = state.reviewEnd ?? Date.now();
+  drawTimeline();
   for (const player of state.tiles.values()) player.restart();
   loadTimeline().catch(error => { elements.timelineStatus.textContent = error.message; });
   renderThumbnailPage(0).catch(() => {});
+}
+
+function seekReview(epoch) {
+  if (state.mode !== 'playback' || !Number.isFinite(epoch) || !Number.isFinite(state.reviewStart)) return;
+  const end = state.reviewEnd ?? state.timelineEnd ?? Date.now();
+  state.reviewEpoch = Math.max(state.reviewStart, Math.min(end, epoch));
+  updateTimelinePlayhead(state.reviewEpoch);
+  for (const player of state.tiles.values()) player.restart();
 }
 
 function epochToApi(epoch, timeZone) {
@@ -474,6 +517,13 @@ class CameraPlayer {
     this.lastLiveProfile = profile;
     this.abortController = null;
     this.videoDecoder = null;
+    this.videoCodec = '';
+    this.videoDecoderGeneration = 0;
+    this.activeVideoCodec = '';
+    this.videoCodecEpoch = 0;
+    this.hevcParameterSets = new Map();
+    this.hevcHasRandomAccess = false;
+    this.hevcDecodeChain = Promise.resolve();
     this.audioDecoder = null;
     this.g726 = null;
     this.g726Config = null;
@@ -501,7 +551,7 @@ class CameraPlayer {
         this.setMessage('Informe o horário e selecione Reproduzir.');
         return;
       }
-      const start = epochToApi(state.reviewStart, state.server.timeZone);
+      const start = epochToApi(state.reviewEpoch ?? state.reviewStart, state.server.timeZone);
       const end = state.reviewEnd ? epochToApi(state.reviewEnd, state.server.timeZone) : null;
       Object.assign(params, { startDate: start.date, startTime: start.time, endDate: end?.date, endTime: end?.time });
     }
@@ -546,10 +596,13 @@ class CameraPlayer {
     this.requestToken += 1;
     this.abortController?.abort();
     this.abortController = null;
-    try { this.videoDecoder?.close(); } catch {}
+    this.clearVideoDecoder();
+    this.activeVideoCodec = '';
+    this.videoCodecEpoch += 1;
     try { this.audioDecoder?.close(); } catch {}
     try { this.g726?.free(); } catch {}
-    this.videoDecoder = null;
+    this.hevcParameterSets.clear();
+    this.hevcDecodeChain = Promise.resolve();
     this.audioDecoder = null;
     this.g726 = null;
     this.g726Config = null;
@@ -568,6 +621,7 @@ class CameraPlayer {
   consumePart(part) {
     const type = `${part.headers['dgf-frametype'] || ''} ${part.headers['content-type'] || ''}`.toLowerCase();
     const epoch = parseFrameEpoch(part.headers);
+    if (state.mode === 'playback' && this.name === state.timelineCamera && epoch !== null) updateTimelinePlayhead(epoch);
     if (epoch) this.tile.querySelector('.tile-timecode').textContent = new Intl.DateTimeFormat('pt-BR', { timeZone: state.server.timeZone, hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(epoch);
     if (type.includes('jpeg') || part.headers['content-type']?.toLowerCase().includes('image/jpeg')) {
       this.drawJpeg(part.data);
@@ -581,8 +635,7 @@ class CameraPlayer {
       return;
     }
     if (type.includes('h.265') || type.includes('h265') || type.includes('hevc')) {
-      this.setMessage('Este stream usa H.265, que exige perfil de codec compatível.');
-      this.setState('Codec H.265');
+      this.decodeH265(part.data, type, epoch);
       return;
     }
     if (/g\.?726/i.test(type)) {
@@ -627,29 +680,24 @@ class CameraPlayer {
       this.setState('Navegador incompatível');
       return;
     }
+    if (this.activeVideoCodec !== 'h264') {
+      this.clearVideoDecoder();
+      this.hevcParameterSets.clear();
+      this.activeVideoCodec = 'h264';
+      this.videoCodecEpoch += 1;
+    }
     const bytes = normalizeAnnexB(data);
     const sps = findNal(bytes, 7);
     if (!this.videoDecoder && sps && sps.length >= 4) {
       const codec = `avc1.${[sps[1], sps[2], sps[3]].map(value => value.toString(16).padStart(2, '0')).join('')}`;
-      this.videoDecoder = new VideoDecoder({
-        output: frame => {
-          if (this.stopped) { frame.close(); return; }
-          if (this.canvas.width !== frame.displayWidth || this.canvas.height !== frame.displayHeight) {
-            this.canvas.width = frame.displayWidth;
-            this.canvas.height = frame.displayHeight;
-          }
-          this.context.drawImage(frame, 0, 0, this.canvas.width, this.canvas.height);
-          frame.close();
-          this.frameCount += 1;
-          this.setMessage('');
-          this.setState(state.mode === 'live' ? 'Ao vivo' : 'Revisão');
-          this.tile.querySelector('.tile-codec').textContent = codec.toUpperCase();
-          $('#codecStatus').textContent = `${codec.toUpperCase()} · ${this.frameCount} quadros`;
-        },
-        error: () => { this.setMessage('O navegador não conseguiu decodificar o perfil H.264 desta câmera.'); this.setState('Codec incompatível'); }
-      });
-      try { this.videoDecoder.configure({ codec, optimizeForLatency: true }); }
-      catch { this.setMessage('Perfil H.264 indisponível neste navegador.'); this.setState('Codec incompatível'); return; }
+      this.videoDecoder = this.createVideoDecoder(codec, 'H.264', this.requestToken);
+      try { this.videoDecoder.configure({ codec, optimizeForLatency: true }); this.videoCodec = codec; }
+      catch {
+        this.clearVideoDecoder();
+        this.setMessage('Perfil H.264 indisponível neste navegador.');
+        this.setState('Codec incompatível');
+        return;
+      }
     }
     if (!this.videoDecoder || this.videoDecoder.state !== 'configured') {
       if (!sps) this.setMessage('Aguardando quadro-chave com parâmetros H.264.');
@@ -661,11 +709,150 @@ class CameraPlayer {
     } catch { this.setMessage('Quadro H.264 inválido recebido do stream.'); }
   }
 
+  decodeH265(data, type, epoch) {
+    if (typeof VideoDecoder !== 'function' || typeof EncodedVideoChunk !== 'function') {
+      this.setMessage('Este navegador não oferece WebCodecs de vídeo. Use uma versão atual do Chromium ou Edge.');
+      this.setState('Navegador incompatível');
+      return;
+    }
+    const token = this.requestToken;
+    if (this.activeVideoCodec !== 'h265') {
+      this.clearVideoDecoder();
+      this.hevcParameterSets.clear();
+      this.activeVideoCodec = 'h265';
+      this.videoCodecEpoch += 1;
+    }
+    const codecEpoch = this.videoCodecEpoch;
+    this.hevcDecodeChain = this.hevcDecodeChain.then(async () => {
+      if (this.stopped || token !== this.requestToken || codecEpoch !== this.videoCodecEpoch) return;
+      await this.processH265(data, type, epoch, token, codecEpoch);
+    }).catch(() => {
+      if (!this.stopped && token === this.requestToken && codecEpoch === this.videoCodecEpoch) {
+        this.setMessage('Não foi possível preparar ou decodificar o frame H.265 recebido.');
+        this.setState('Codec incompatível');
+      }
+    });
+  }
+
+  async processH265(data, type, epoch, token, codecEpoch) {
+    const bytes = normalizeHevcAnnexB(data);
+    const nals = splitAnnexBNals(bytes);
+    for (const nal of nals) {
+      const nalType = (nal[0] >> 1) & 0x3f;
+      if (nalType >= 32 && nalType <= 34) this.hevcParameterSets.set(nalType, nal);
+    }
+
+    const sps = this.hevcParameterSets.get(33);
+    const randomAccess = nals.some(nal => {
+      const nalType = (nal[0] >> 1) & 0x3f;
+      return nalType >= 16 && nalType <= 21;
+    });
+    if (!sps) {
+      this.setMessage('Os frames recebidos não contêm um SPS H.265 válido em formato Annex B.');
+      this.setState('Aguardando H.265');
+      return;
+    }
+
+    let codec;
+    try { codec = hevcCodecString(sps); }
+    catch {
+      this.setMessage('Não foi possível identificar o perfil e nível do stream H.265.');
+      this.setState('Codec incompatível');
+      return;
+    }
+
+    const keyFrame = randomAccess;
+    if (!this.hevcHasRandomAccess && !keyFrame) {
+      this.setMessage('Aguardando um quadro-chave H.265 (IDR, CRA ou BLA).');
+      this.setState('Aguardando H.265');
+      return;
+    }
+
+    if (!this.videoDecoder) {
+      const missing = [32, 33, 34].filter(nalType => !this.hevcParameterSets.has(nalType));
+      if (missing.length) {
+        this.setMessage(`Aguardando parâmetros H.265 necessários (NAL ${missing.join(', ')}).`);
+        this.setState('Aguardando H.265');
+        return;
+      }
+      const config = await VideoDecoder.isConfigSupported({ codec, optimizeForLatency: true });
+      if (this.stopped || token !== this.requestToken || codecEpoch !== this.videoCodecEpoch) return;
+      if (!config.supported) {
+        this.setMessage(`Este navegador não suporta o perfil H.265 ${codec}.`);
+        this.setState('Codec incompatível');
+        return;
+      }
+      this.videoDecoder = this.createVideoDecoder(codec, 'H.265', token);
+      this.videoCodec = codec;
+      try { this.videoDecoder.configure(config.config); }
+      catch {
+        try { this.videoDecoder.close(); } catch {}
+        this.videoDecoder = null;
+        this.videoCodec = '';
+        this.setMessage(`Não foi possível configurar o decoder H.265 ${codec}.`);
+        this.setState('Codec incompatível');
+        return;
+      }
+    } else if (this.videoCodec !== codec) {
+      this.setMessage('O perfil H.265 mudou durante o stream; reinicie a câmera para reconfigurar o decoder.');
+      this.setState('Codec incompatível');
+      return;
+    }
+
+    let accessUnit = bytes;
+    if (keyFrame) accessUnit = prependMissingHevcParameterSets(bytes, nals, this.hevcParameterSets);
+    const timestamp = this.mediaTimestamp(epoch, 'video');
+    try {
+      if (this.videoDecoder.decodeQueueSize < 14) {
+        this.videoDecoder.decode(new EncodedVideoChunk({ type: keyFrame ? 'key' : 'delta', timestamp, data: accessUnit }));
+        if (keyFrame) this.hevcHasRandomAccess = true;
+      }
+    } catch {
+      this.hevcHasRandomAccess = false;
+      this.setMessage('O navegador rejeitou um frame H.265. Verifique o formato do stream e os parâmetros VPS/SPS/PPS.');
+      this.setState('Codec incompatível');
+    }
+  }
+
+  createVideoDecoder(codec, label, token) {
+    const generation = ++this.videoDecoderGeneration;
+    return new VideoDecoder({
+      output: frame => {
+        if (this.stopped || token !== this.requestToken || generation !== this.videoDecoderGeneration) { frame.close(); return; }
+        if (this.canvas.width !== frame.displayWidth || this.canvas.height !== frame.displayHeight) {
+          this.canvas.width = frame.displayWidth;
+          this.canvas.height = frame.displayHeight;
+        }
+        this.context.drawImage(frame, 0, 0, this.canvas.width, this.canvas.height);
+        frame.close();
+        this.frameCount += 1;
+        this.setMessage('');
+        this.setState(state.mode === 'live' ? 'Ao vivo' : 'Revisão');
+        this.tile.querySelector('.tile-codec').textContent = codec.toUpperCase();
+        $('#codecStatus').textContent = `${codec.toUpperCase()} · ${this.frameCount} quadros`;
+      },
+      error: () => {
+        if (this.stopped || token !== this.requestToken || generation !== this.videoDecoderGeneration) return;
+        this.clearVideoDecoder();
+        this.setMessage(`O navegador não conseguiu decodificar o perfil ${label} desta câmera.`);
+        this.setState('Codec incompatível');
+      }
+    });
+  }
+
+  clearVideoDecoder() {
+    this.videoDecoderGeneration += 1;
+    try { this.videoDecoder?.close(); } catch {}
+    this.videoDecoder = null;
+    this.videoCodec = '';
+    this.hevcHasRandomAccess = false;
+  }
+
   mediaTimestamp(epoch, kind) {
     if (epoch === null) return kind === 'video' ? (this.frameCount * 40000) : (this.audioCount * 20000);
     let base = kind === 'video' ? this.videoEpoch : this.audioEpoch;
     if (base === null) {
-      base = state.mode === 'playback' && state.reviewStart ? state.reviewStart : epoch;
+      base = state.mode === 'playback' && state.reviewStart ? (state.reviewEpoch ?? state.reviewStart) : epoch;
       if (kind === 'video') this.videoEpoch = base; else this.audioEpoch = base;
     }
     return Math.max(0, Math.round((epoch - base) * 1000));
@@ -800,6 +987,122 @@ function normalizeAnnexB(data) {
   return normalized;
 }
 
+function splitAnnexBNals(bytes) {
+  const starts = [];
+  for (let i = 0; i + 2 < bytes.length;) {
+    if (bytes[i] === 0 && bytes[i + 1] === 0 && bytes[i + 2] === 1) {
+      starts.push({ start: i, data: i + 3 });
+      i += 3;
+    } else if (i + 3 < bytes.length && bytes[i] === 0 && bytes[i + 1] === 0 && bytes[i + 2] === 0 && bytes[i + 3] === 1) {
+      starts.push({ start: i, data: i + 4 });
+      i += 4;
+    } else i += 1;
+  }
+  return starts.map((start, index) => {
+    const end = starts[index + 1]?.start ?? bytes.length;
+    let trimmedEnd = end;
+    while (trimmedEnd > start.data && bytes[trimmedEnd - 1] === 0) trimmedEnd -= 1;
+    return bytes.subarray(start.data, trimmedEnd);
+  }).filter(nal => nal.length >= 2);
+}
+
+function normalizeHevcAnnexB(data) {
+  const bytes = data instanceof Uint8Array ? data : new Uint8Array(data);
+  for (let i = 0; i + 3 < bytes.length; i += 1) {
+    if (bytes[i] === 0 && bytes[i + 1] === 0 && (bytes[i + 2] === 1 || (bytes[i + 2] === 0 && bytes[i + 3] === 1))) return bytes;
+  }
+  const nals = [];
+  let offset = 0;
+  let lengthPrefixed = bytes.length >= 6 && bytes[0] === 0 && bytes[1] === 0;
+  while (lengthPrefixed && offset + 4 <= bytes.length) {
+    const length = bytes[offset] * 0x1000000 + (bytes[offset + 1] << 16) + (bytes[offset + 2] << 8) + bytes[offset + 3];
+    offset += 4;
+    if (!length || offset + length > bytes.length) { lengthPrefixed = false; break; }
+    nals.push(bytes.subarray(offset, offset + length));
+    offset += length;
+  }
+  if (lengthPrefixed && nals.length && offset === bytes.length) {
+    const result = new Uint8Array(nals.reduce((total, nal) => total + 4 + nal.length, 0));
+    let cursor = 0;
+    for (const nal of nals) {
+      result.set([0, 0, 0, 1], cursor);
+      cursor += 4;
+      result.set(nal, cursor);
+      cursor += nal.length;
+    }
+    return result;
+  }
+  return normalizeAnnexB(bytes);
+}
+
+function hevcCodecString(sps) {
+  if (sps.length < 4 || ((sps[0] >> 1) & 0x3f) !== 33 || (sps[0] & 0x80) !== 0 || (sps[1] & 0x07) === 0) throw new Error('Invalid HEVC SPS');
+  const rbsp = [];
+  let zeros = 0;
+  for (const value of sps.subarray(2)) {
+    if (zeros >= 2 && value === 3) { zeros = 0; continue; }
+    rbsp.push(value);
+    zeros = value === 0 ? zeros + 1 : 0;
+  }
+  let bitOffset = 0;
+  const readBits = count => {
+    if (bitOffset + count > rbsp.length * 8) throw new Error('Truncated HEVC SPS');
+    let value = 0n;
+    for (let i = 0; i < count; i += 1) {
+      const byte = rbsp[bitOffset >> 3];
+      const bit = (byte >> (7 - (bitOffset & 7))) & 1;
+      value = (value << 1n) | BigInt(bit);
+      bitOffset += 1;
+    }
+    return value;
+  };
+  const skipBits = count => { readBits(count); };
+
+  skipBits(4); // sps_video_parameter_set_id
+  const maxSubLayersMinus1 = Number(readBits(3));
+  skipBits(1); // sps_temporal_id_nesting_flag
+  const profileSpace = Number(readBits(2));
+  const tierFlag = Number(readBits(1));
+  const profileIdc = Number(readBits(5));
+  const compatibilityBits = readBits(32);
+  const constraintBits = readBits(48);
+  const levelIdc = Number(readBits(8));
+  const subLayerProfilePresent = [];
+  const subLayerLevelPresent = [];
+  for (let i = 0; i < maxSubLayersMinus1; i += 1) {
+    subLayerProfilePresent.push(Number(readBits(1)) === 1);
+    subLayerLevelPresent.push(Number(readBits(1)) === 1);
+  }
+  if (maxSubLayersMinus1 > 0) skipBits((8 - maxSubLayersMinus1) * 2);
+  for (let i = 0; i < maxSubLayersMinus1; i += 1) {
+    if (subLayerProfilePresent[i]) skipBits(2 + 1 + 5 + 32 + 48);
+    if (subLayerLevelPresent[i]) skipBits(8);
+  }
+
+  const compatibility = compatibilityBits.toString(2).padStart(32, '0').split('').reverse().join('');
+  const compatibilityHex = BigInt(`0b${compatibility}`).toString(16);
+  const constraints = constraintBits.toString(16).padStart(12, '0').toUpperCase().replace(/(?:00)+$/, '');
+  const spacePrefix = profileSpace === 0 ? '' : String.fromCharCode(64 + profileSpace);
+  return `hev1.${spacePrefix}${profileIdc}.${compatibilityHex}.${tierFlag ? 'H' : 'L'}${levelIdc}${constraints ? `.${constraints}` : ''}`;
+}
+
+function prependMissingHevcParameterSets(bytes, nals, parameterSets) {
+  const included = new Set(nals.map(nal => (nal[0] >> 1) & 0x3f));
+  const missing = [32, 33, 34].filter(type => !included.has(type)).map(type => parameterSets.get(type)).filter(Boolean);
+  if (!missing.length) return bytes;
+  const prefixLength = missing.reduce((total, nal) => total + nal.length + 4, 0);
+  const result = new Uint8Array(prefixLength + bytes.length);
+  let offset = 0;
+  for (const nal of missing) {
+    result.set([0, 0, 0, 1], offset);
+    offset += 4;
+    result.set(nal, offset);
+    offset += nal.length;
+  }
+  result.set(bytes, offset);
+  return result;
+}
+
 function parseAdts(data) {
   if (data.length < 7 || data[0] !== 0xff || (data[1] & 0xf6) !== 0xf0) return null;
   const profile = (data[2] >> 6) & 3;
@@ -886,6 +1189,7 @@ function clearTimeline() {
   elements.videoLane.replaceChildren();
   elements.audioLane.replaceChildren();
   elements.timelineRuler.replaceChildren();
+  elements.timelinePlayhead.hidden = true;
 }
 
 function parseTimelinePart(part) {
@@ -943,6 +1247,8 @@ function drawTimeline() {
     const epoch = start + span * tick / 4;
     const mark = document.createElement('span');
     mark.className = 'ruler-tick';
+    if (tick === 0) mark.dataset.edge = 'start';
+    if (tick === 4) mark.dataset.edge = 'end';
     mark.style.left = `${tick * 25}%`;
     mark.textContent = new Intl.DateTimeFormat('pt-BR', { timeZone: state.server.timeZone, hour: '2-digit', minute: '2-digit' }).format(epoch);
     elements.timelineRuler.append(mark);
@@ -960,15 +1266,33 @@ function drawTimeline() {
     lane.append(segment);
   }
   for (const lane of [elements.videoLane, elements.audioLane]) lane.onclick = event => seekFromTimeline(event, lane);
+  updateTimelinePlayhead();
 }
 
 function seekFromTimeline(event, lane) {
   const rect = lane.getBoundingClientRect();
   const percent = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
   const epoch = state.timelineStart + (state.timelineEnd - state.timelineStart) * percent;
-  elements.startDateTime.value = epochToInput(epoch, state.server.timeZone);
-  startReview();
+  seekReview(epoch);
 }
+
+function updateTimelinePlayhead(epoch = state.reviewEpoch) {
+  const { timelinePlayhead, timelineTracks, videoLane } = elements;
+  if (!Number.isFinite(epoch) || !Number.isFinite(state.timelineStart) || !Number.isFinite(state.timelineEnd) || state.timelineEnd <= state.timelineStart) {
+    timelinePlayhead.hidden = true;
+    return;
+  }
+  const clamped = Math.max(state.timelineStart, Math.min(state.timelineEnd, epoch));
+  state.reviewEpoch = clamped;
+  const fraction = (clamped - state.timelineStart) / (state.timelineEnd - state.timelineStart);
+  const laneRect = videoLane.getBoundingClientRect();
+  const tracksRect = timelineTracks.getBoundingClientRect();
+  timelinePlayhead.style.left = `${Math.max(0, Math.min(tracksRect.width - 1, laneRect.left - tracksRect.left + laneRect.width * fraction))}px`;
+  timelinePlayhead.title = `Revisão em ${formatClock(clamped)}`;
+  timelinePlayhead.hidden = false;
+}
+
+window.addEventListener('resize', () => updateTimelinePlayhead());
 
 function formatClock(epoch) {
   return new Intl.DateTimeFormat('pt-BR', { timeZone: state.server?.timeZone, hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(epoch);
@@ -991,6 +1315,9 @@ async function toggleAllStreams() {
 }
 
 function clearThumbnails() {
+  state.thumbnailRequestId += 1;
+  for (const controller of state.thumbnailControllers) controller.abort();
+  state.thumbnailControllers.clear();
   for (const url of state.thumbnailObjectUrls) URL.revokeObjectURL(url);
   state.thumbnailObjectUrls = [];
   state.thumbnails = [];
@@ -1014,6 +1341,7 @@ async function renderThumbnailPage(page) {
   const offset = state.thumbnailPage * 24;
   const pageItems = Array.from({ length: Math.min(24, total - offset) }, (_, index) => state.reviewStart + (offset + index) * interval);
   clearThumbnails();
+  const requestId = state.thumbnailRequestId;
   state.thumbnails = pageItems;
   elements.thumbnailPageLabel.textContent = `Página ${state.thumbnailPage + 1} / ${pages}`;
   elements.thumbnailPrev.disabled = state.thumbnailPage === 0;
@@ -1023,32 +1351,78 @@ async function renderThumbnailPage(page) {
     const card = document.createElement('button');
     card.type = 'button';
     card.className = 'thumbnail-card';
+    card.dataset.loadState = 'loading';
+    card.setAttribute('aria-busy', 'true');
+    card.setAttribute('aria-label', `Revisar ${camera} a partir de ${formatClock(epoch)}`);
+    const media = document.createElement('span');
+    media.className = 'thumbnail-media';
+    media.setAttribute('aria-hidden', 'true');
+    const spinner = document.createElement('span');
+    spinner.className = 'thumbnail-spinner';
+    spinner.setAttribute('aria-hidden', 'true');
     const image = document.createElement('img');
-    image.alt = `Quadro de ${camera} às ${formatClock(epoch)}`;
+    image.alt = '';
+    image.hidden = true;
+    const placeholder = document.createElement('span');
+    placeholder.className = 'thumbnail-placeholder';
+    placeholder.textContent = 'Miniatura indisponível';
+    placeholder.hidden = true;
+    media.append(spinner, image, placeholder);
     const label = document.createElement('span');
     label.textContent = formatClock(epoch);
-    card.append(image, label);
-    card.addEventListener('click', () => { elements.startDateTime.value = epochToInput(epoch, state.server.timeZone); startReview(); });
+    card.append(media, label);
+    card.addEventListener('click', () => seekReview(epoch));
     elements.thumbnailGrid.append(card);
-    return { epoch, image };
+    return { epoch, card, image, spinner, placeholder };
   });
   let cursor = 0;
+  const finishCard = (item, success) => {
+    if (requestId !== state.thumbnailRequestId) return;
+    item.card.dataset.loadState = success ? 'loaded' : 'error';
+    item.card.setAttribute('aria-busy', 'false');
+    item.spinner.hidden = true;
+    item.image.hidden = !success;
+    item.placeholder.hidden = success;
+    if (!success) {
+      item.card.disabled = true;
+      item.card.setAttribute('aria-label', `Miniatura indisponível para ${camera} às ${formatClock(item.epoch)}`);
+    }
+  };
   const workers = Array.from({ length: Math.min(4, cards.length) }, async () => {
     while (cursor < cards.length) {
       const item = cards[cursor++];
+      const controller = new AbortController();
+      state.thumbnailControllers.add(controller);
       const api = epochToApi(item.epoch, state.server.timeZone);
       try {
-        const response = await fetch(`/api/snapshot?${query({ server: state.serverId, camera, date: api.date, time: api.time })}`, { cache: 'no-store' });
-        if (!response.ok) continue;
+        const response = await fetch(`/api/snapshot?${query({ server: state.serverId, camera, date: api.date, time: api.time })}`, { cache: 'no-store', signal: controller.signal });
+        if (requestId !== state.thumbnailRequestId) continue;
+        if (!response.ok) { finishCard(item, false); continue; }
         const blob = await response.blob();
+        if (requestId !== state.thumbnailRequestId) continue;
+        if (!blob.size || (blob.type && !blob.type.startsWith('image/'))) { finishCard(item, false); continue; }
         const objectUrl = URL.createObjectURL(blob);
+        if (requestId !== state.thumbnailRequestId) { URL.revokeObjectURL(objectUrl); continue; }
         state.thumbnailObjectUrls.push(objectUrl);
-        item.image.src = objectUrl;
-      } catch {}
+        await new Promise(resolve => {
+          item.image.addEventListener('load', () => { finishCard(item, true); resolve(); }, { once: true });
+          item.image.addEventListener('error', () => { finishCard(item, false); resolve(); }, { once: true });
+          item.image.src = objectUrl;
+        });
+      } catch (error) {
+        if (requestId === state.thumbnailRequestId && error.name !== 'AbortError') finishCard(item, false);
+      } finally {
+        state.thumbnailControllers.delete(controller);
+      }
     }
   });
   await Promise.all(workers);
-  elements.thumbnailStatus.textContent = cards.some(card => card.image.src) ? `${cards.length} pontos nesta página · clique em uma miniatura para revisar daquele instante.` : 'Nenhuma miniatura encontrada nesta página.';
+  if (requestId !== state.thumbnailRequestId) return;
+  const loaded = cards.filter(card => card.card.dataset.loadState === 'loaded').length;
+  const failed = cards.length - loaded;
+  elements.thumbnailStatus.textContent = loaded
+    ? `${loaded} miniaturas carregadas${failed ? ` · ${failed} indisponíveis` : ''} · clique em uma miniatura para revisar daquele instante.`
+    : 'Nenhuma miniatura encontrada nesta página.';
 }
 
 function clockTick() {

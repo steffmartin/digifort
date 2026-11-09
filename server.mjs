@@ -125,7 +125,6 @@ const DIGIFORT_REQUEST_HEADERS = Object.freeze({
 
 const AUTH_QUERY_KEYS = /^(authuser|authpass|authsession|authdata|username|password|passwd|token|nonce|authorization)$/i;
 const PRIVATE_QUERY_KEYS = /^(camera|startdate|starttime|enddate|endtime)$/i;
-const AUTH_BODY_KEYS = /^(authuser|authpass|authsession|authdata|username|user|password|passwd|token|nonce|authorization|secret|credential)$/i;
 
 function safeApiTarget(url) {
   const parsed = new URL(url);
@@ -137,97 +136,13 @@ function safeApiTarget(url) {
   return target.replace(/[\r\n]/g, '').slice(0, 1600);
 }
 
-function redactJsonForLog(value, parentKey = '') {
-  if (Array.isArray(value)) return value.map(item => redactJsonForLog(item, parentKey));
-  if (!value || typeof value !== 'object') return value;
-  return Object.fromEntries(Object.entries(value).map(([key, child]) => {
-    if (AUTH_BODY_KEYS.test(key) || (/^(id)$/i.test(key) && /session/i.test(parentKey))) {
-      return [key, '[REDACTED]'];
-    }
-    return [key, redactJsonForLog(child, key)];
-  }));
-}
-
-function sanitizeApiBodyForLog(body, operation) {
-  try {
-    return JSON.stringify(redactJsonForLog(JSON.parse(body)));
-  } catch {
-    let text = body
-      .replace(/("(?:AuthUser|AuthPass|AuthSession|AuthData|UserName|Password|Pass|Token|Nonce|Authorization)"\s*:\s*)"(?:\\.|[^"\\])*"/gi, '$1"[REDACTED]"')
-      .replace(/<(AuthUser|AuthPass|AuthSession|AuthData|UserName|Password|Pass|Token|Nonce|Authorization)\b[^>]*>[\s\S]*?<\/\1>/gi, '<$1>[REDACTED]</$1>')
-      .replace(/\b(AuthUser|AuthPass|AuthSession|AuthData|UserName|Password|Pass|Token|Nonce|Authorization)(\s*[=:]\s*)([^&;,\s<>"']+)/gi, '$1$2[REDACTED]');
-    if (/^CreateAuthSession$/i.test(operation)) {
-      text = text
-        .replace(/("(?:ID|NOnce|Nonce)"\s*:\s*)"(?:\\.|[^"\\])*"/gi, '$1"[REDACTED]"')
-        .replace(/<(ID|NOnce|Nonce)\b[^>]*>[\s\S]*?<\/\1>/gi, '<$1>[REDACTED]</$1>')
-        .replace(/(^|\n)(\s*(?:ID|NOnce|Nonce)\s*=\s*)[^\r\n]+/gi, '$1$2[REDACTED]');
-    }
-    return text.slice(0, 6000);
-  }
-}
-
-async function readResponsePreview(response, maxBytes = 8192) {
-  if (!response.body) return { text: '', truncated: false };
-  const reader = response.clone().body.getReader();
-  const chunks = [];
-  let total = 0;
-  let truncated = false;
-  try {
-    while (total < maxBytes) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      const remaining = maxBytes - total;
-      const chunk = value.subarray(0, remaining);
-      chunks.push(chunk);
-      total += chunk.byteLength;
-      if (value.byteLength > remaining) {
-        truncated = true;
-        await reader.cancel().catch(() => {});
-        break;
-      }
-    }
-    if (total === maxBytes) {
-      truncated = true;
-      await reader.cancel().catch(() => {});
-    }
-  } finally {
-    reader.releaseLock();
-  }
-  const bytes = new Uint8Array(total);
-  let offset = 0;
-  for (const chunk of chunks) {
-    bytes.set(chunk, offset);
-    offset += chunk.byteLength;
-  }
-  return { text: new TextDecoder().decode(bytes), truncated };
-}
-
-async function logApiResponse(method, target, response, operation) {
-  const contentType = (response.headers.get('content-type') || 'unknown').replace(/[\r\n]/g, '').slice(0, 120);
-  const contentLength = response.headers.get('content-length') || 'unknown';
-  let bodyInfo = 'body=[omitted: media/binary]';
-  const responseBodyIsSafeToPreview = /^(CreateAuthSession|UpdateAuthSession|Cameras_GetCameras)$/i.test(operation);
-  if (responseBodyIsSafeToPreview && /json|xml|text\//i.test(contentType) && !/multipart/i.test(contentType)) {
-    try {
-      const preview = await readResponsePreview(response);
-      const safeBody = sanitizeApiBodyForLog(preview.text, operation);
-      bodyInfo = `body=${JSON.stringify(safeBody)}${preview.truncated ? '[truncated]' : ''}`;
-    } catch {
-      bodyInfo = 'body=[unavailable]';
-    }
-  }
-  process.stdout.write(`[api:response] ${method} ${target} HTTP ${response.status} content-type=${contentType} bytes=${contentLength} ${bodyInfo}\n`);
-}
-
 async function fetchDigifort(config, url, options = {}, operation = 'upstream_request') {
   const method = String(options.method || 'GET').toUpperCase();
   const target = safeApiTarget(url);
   const headers = new Headers({ ...DIGIFORT_REQUEST_HEADERS, 'User-Agent': config.userAgent });
   new Headers(options.headers).forEach((value, key) => headers.set(key, value));
-  process.stdout.write(`[api:request] ${method} ${target} headers={Accept-Language:pt-BR,pt;q=0.9, Accept-Encoding:gzip, deflate, User-Agent:[CONFIGURED; REDACTED]}\n`);
   try {
     const response = await fetch(url, { ...options, headers });
-    await logApiResponse(method, target, response, operation);
     return response;
   } catch (error) {
     const causeCode = error?.cause?.code;
@@ -516,10 +431,6 @@ function staticFile(res, pathname) {
 
 const server = createServer((req, res) => {
   const url = new URL(req.url, `http://${HOST}:${PORT}`);
-  const startedAt = Date.now();
-  res.once('finish', () => {
-    process.stdout.write(`[http] ${req.method} ${url.pathname} ${res.statusCode} ${Date.now() - startedAt}ms\n`);
-  });
   if (url.pathname === '/favicon.ico') {
     res.writeHead(204).end();
     return;

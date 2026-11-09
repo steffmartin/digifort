@@ -98,8 +98,8 @@
             </div>
             <div class="viewer-tools">
               <span class="tile-count" id="tileCount">0 abertas</span>
-              <button class="icon-button" id="stopAll" type="button" title="Parar todas as câmeras" aria-label="Parar todas as câmeras" disabled>
-                <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="5" y="5" width="10" height="10" rx="1"></rect></svg>
+              <button class="icon-button" id="stopAll" type="button" title="Parar todas as câmeras" aria-label="Parar todas as câmeras" aria-pressed="false" data-state="active" disabled>
+                <svg viewBox="0 0 20 20" aria-hidden="true"><rect class="stop-icon" x="5" y="5" width="10" height="10" rx="1"></rect><path class="play-icon" d="M7 4.5v11l9-5.5-9-5.5Z"></path></svg>
               </button>
             </div>
           </section>
@@ -125,6 +125,7 @@
               <div class="timeline-tracks" id="timelineTracks">
                 <div class="track-row"><span class="track-label">Vídeo</span><div class="track-lane" id="videoLane"></div></div>
                 <div class="track-row"><span class="track-label">Áudio</span><div class="track-lane" id="audioLane"></div></div>
+              <span class="timeline-playhead" id="timelinePlayhead" aria-hidden="true" hidden></span>
               </div>
             </div>
             <div class="timeline-status" id="timelineStatus">Informe um período e carregue a timeline para localizar gravações.</div>

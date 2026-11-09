@@ -23,7 +23,11 @@ Abra `http://127.0.0.1:4177`. O player só solicita áudio depois de ativá-lo n
 
 Como alternativa, execute `Iniciar-Digifort.bat`: o servidor fica no terminal atual e o Chrome abre quando a porta responder. Encerre o Node com `Ctrl+C` nesse terminal.
 
-O terminal registra método, rota, status e duração das requisições locais, além das chamadas e respostas HTTP ao Digifort. Prévia textual limitada aparece para autenticação e listagem de câmeras; campos de autenticação são mascarados. Corpos binários/multipart de vídeo e áudio não são registrados.
+O terminal mostra a URL local na inicialização e registra erros de transporte/API. Requisições e respostas normais, incluindo cabeçalhos e prévias de corpo, não são impressas.
+
+## Decodificação de vídeo
+
+O player decodifica vídeo H.264 e H.265/HEVC com WebCodecs. Para H.265, deriva o codec string do SPS recebido, verifica o suporte do navegador à configuração indicada e aguarda VPS/SPS/PPS e um quadro de acesso aleatório antes de iniciar a decodificação. O caminho H.264 permanece disponível. A disponibilidade genérica do WebCodecs no navegador não garante suporte ao perfil HEVC específico de cada stream. A integração H.265 ainda precisa ser validada com streams reais ao vivo e gravados.
 
 ## Falha conhecida
 
@@ -40,6 +44,12 @@ npm run build:g726
 O arquivo `.wasm` gerado fica em `public/wasm` e é reutilizado em execuções seguintes. Docker não é necessário para iniciar o player.
 
 O decoder é carregado sob demanda quando o áudio G.726 é habilitado. A taxa vem do MIME do frame (`audio/G726-16/24/32/40`); se o stream não identificar uma taxa válida, o player informa o problema. O manual Digifort não define a ordem de packing, então o player usa LSB conforme RFC 3551 e identifica esse fallback no tile. O código Rust usa `oxideav-adpcm` 0.0.8, sob licença MIT.
+
+## Sem áudio
+
+Ativar o botão faz o player solicitar `Audio=TRUE`, mas uma resposta HTTP 200 não garante que o servidor entregou uma trilha de áudio. Em três observações locais de aproximadamente cinco segundos (duas ao vivo e uma gravada), chegaram apenas partes `video/h265`; não havia amostra de áudio para testar codecs. Permissão, configuração da câmera e disponibilidade da trilha ainda precisam ser distinguidas.
+
+O manual Digifort 7.3.0 também documenta `Cameras/GetAudioStream`, uma rota ao vivo separada que pode entregar PCM ou WAV com metadados de canais, taxa de amostragem, bits por amostra e timestamp. Essa rota ainda não está integrada nem testada. Se o servidor entregar áudio por ela, PCM/WAV evita adivinhar codecs comprimidos; a revisão gravada continua usando áudio multiplexado em `Playback/GetMediaStream?Audio=TRUE`, quando houver áudio gravado.
 
 ## APIs
 

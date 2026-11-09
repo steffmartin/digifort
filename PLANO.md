@@ -1,6 +1,6 @@
 # Plano de desenvolvimento — Player Digifort
 
-**Status:** implementação local concluída; revisão visual estática concluída; bug de transporte em `Cameras/GetCameras` aberto para investigação; validação de streams reais pendente.  
+**Status:** integração H.265 no cliente e correções de layout/tela cheia concluídas; validação de streams reais e revisão no servidor pendentes; investigação de áudio via `GetAudioStream` aberta; bug de transporte em `Cameras/GetCameras` aberto para investigação.
 **Objetivo:** criar um player local moderno para vídeo e áudio de câmeras Digifort usando somente as APIs de leitura documentadas e os fluxos multipart de mídia.
 
 ## Goals
@@ -25,6 +25,7 @@
 - Timeline com intervalos gravados. Miniaturas por `Playback/GetSnapshot`, selecionáveis a cada 30 s, 1 min, 5 min, 15 min ou intervalo personalizado; 24 por página e carregamento sob demanda.
 - Cada servidor exige `timeZone` IANA válido. Formatar timestamps da API no fuso configurado.
 - Verificação explícita dos recursos do navegador fica para a etapa final. Codec sem decoder disponível deve gerar estado de erro legível no tile.
+- Manter suporte a H.264 e acrescentar H.265/HEVC como codec adicional. A presença de `VideoDecoder` ou suporte do navegador, por si só, não significa que o player já decodifique o formato recebido.
 
 ## Modelo de configuração
 
@@ -102,8 +103,18 @@ Os valores acima são placeholders, não credenciais reais. O exemplo contém du
 - [x] Preservar timestamps de áudio/vídeo na linha temporal de decodificação.
 - [x] Renderizar frames JPEG se um perfil os produzir.
 - [x] Decodificar vídeo H.264 com WebCodecs.
+- [x] Registrar a linha de base do H.264 em uso: formato dos frames multipart, identificação de keyframes/parâmetros e configuração do `VideoDecoder`; usar esse fluxo como referência para a integração H.265 sem remover H.264.
 - [x] Decodificar AAC e G.711 com os decoders disponíveis no navegador.
-- [ ] Decodificar H.265 quando o navegador reportar suporte; ainda falta integrar o decoder ao fluxo da aplicação.
+- [ ] Investigar e integrar `Interface/Cameras/GetAudioStream` como caminho de áudio ao vivo separado: `Format=PCM` (padrão) ou `WAV`, `TimestampHeader=TRUE`; manter as credenciais no processo Node e encaminhar somente os chunks multipart autorizados.
+- [ ] Interpretar os cabeçalhos PCM (`DGF-PCMChannels`, `DGF-PCMSamplesPerSecond`, `DGF-PCMBitsPerSample`, `DGF-FrameDate` e `DGF-FrameTime`) e enviar o áudio PCM ao Web Audio sem codec guessing; tratar WAV conforme o cabeçalho e amostras recebidos.
+- [ ] Confirmar em uma conta/câmera com áudio habilitado se `GetAudioStream` entrega frames; exibir separadamente ausência de track, falta de permissão e erro de formato. Não criar amostra nem tentar codecs quando não houver payload de áudio.
+- [ ] Preservar o áudio multiplexado de `Playback/GetMediaStream?Audio=TRUE` para revisão gravada; o manual não documenta uma rota separada de reprodução gravada somente de áudio.
+- [ ] Inspecionar cabeçalhos e payloads H.265/HEVC dos frames recebidos (`Content-Type`, `DGF-FrameType`, NALs e timestamps) para identificar formato de empacotamento e parâmetros necessários à configuração do decoder; usar fixtures locais sem credenciais e sem registrar payloads de mídia.
+- [x] Derivar a configuração HEVC exigida pelo WebCodecs a partir dos parâmetros do SPS e consultar `VideoDecoder.isConfigSupported` para o codec string derivado antes de iniciar a decodificação.
+- [x] Integrar a decodificação H.265 ao ciclo de vida de vídeo já usado por H.264: despacho por codec, keyframes, timestamps, renderização no canvas, atualização de estado/indicador, fila de decodificação, fechamento e reinício do decoder.
+- [ ] Manter o caminho H.264 funcional e testar a seleção entre H.264 e H.265 em streams multipart; não presumir suporte apenas pelo nome do navegador ou por teste de configuração genérico.
+- [x] Apresentar erro específico quando o navegador não suportar o perfil HEVC derivado, quando faltarem parâmetros do stream ou quando um frame H.265 for inválido; não deixar a mensagem genérica de codec compatível ocultar a causa.
+- [ ] Validar H.264 e H.265 com streams reais em modo ao vivo e revisão gravada, incluindo primeira imagem após keyframe, continuidade de timestamps e comportamento ao fechar/reabrir tile ou trocar perfil.
 - [x] Integrar o decoder G.726 WebAssembly compilado em Docker. A taxa é lida do MIME `audio/G726-16/24/32/40`; se ausente ou inválida, a interface mostra um erro em vez de presumir uma taxa. Como o manual Digifort não especifica a ordem de packing, usa LSB do RFC 3551 quando não existe metadado explícito e mostra essa escolha no tile.
 - [x] Encaminhar PCM ao Web Audio e selecionar apenas o áudio da fonte ativa.
 - [x] Mostrar erro legível quando um stream usar codec não suportado.
@@ -116,6 +127,8 @@ Os valores acima são placeholders, não credenciais reais. O exemplo contém du
 - [x] Permitir selecionar, abrir e fechar câmeras sem limite fixo imposto pela interface.
 - [x] Indicar tile em foco e permitir selecionar a fonte de áudio.
 - [x] Iniciar sem áudio e habilitá-lo somente após clique do usuário.
+- [x] Limitar a altura da grade de câmeras e permitir rolagem interna para manter os controles e a timeline visíveis.
+- [x] Manter o aspect ratio das imagens e permitir expandir um tile para tela cheia por duplo clique ou tecla F; sair com Esc.
 - [x] Oferecer modo ao vivo e selecionar perfil `Visualization`/`Recording` por tile no ao vivo.
 - [x] Ao mudar o perfil de um tile, reiniciar apenas o stream daquele tile.
 - [x] Apresentar estados de conexão, carregamento, sem gravação e codec incompatível sem detalhes sensíveis.
@@ -136,6 +149,7 @@ Os valores acima são placeholders, não credenciais reais. O exemplo contém du
 - [x] Mostrar orientação para navegador incompatível; não iniciar decodificação sem decoder.
 - [ ] Revisar o funcionamento em `localhost`, o fuso exibido e a ausência de áudio automático.
 - [ ] Confirmar visualmente layout responsivo, foco, controles e estados de erro.
+- [x] Revisar lista rolável, tiles limitados, proporção da imagem e entrada/saída de tela cheia em viewports de desktop e tablet, usando APIs mockadas.
 - [x] Documentar instalação/execução Node, criação de `config/<servidor>.config` e build Docker do WASM.
 - [x] Confirmar por revisão estática do código que nenhuma rota de escrita/configuração foi usada e que valores secretos não aparecem em logs ou respostas da interface.
 
@@ -143,17 +157,22 @@ Os valores acima são placeholders, não credenciais reais. O exemplo contém du
 
 - Node v26 e npm estão disponíveis nesta máquina; o projeto declara Node 20 ou superior.
 - O Chromium 156 em `localhost` expõe WebCodecs; a verificação local aceitou H.264, H.265, AAC e G.711 A-law/μ-law. G.726 não é aceito nativamente.
+- O cliente decodifica H.264 e agora implementa a configuração/decodificação H.265 via WebCodecs; compatibilidade do perfil HEVC exato e formato real das unidades multipart ainda precisam de validação com streams reais.
+- Em diagnóstico local com acesso possivelmente limitado, `Audio=TRUE` retornou HTTP 200 em duas chamadas ao vivo e uma de revisão; durante aproximadamente 5 s por chamada foram observadas somente partes `video/h265`, sem MIME/cabeçalho de áudio. Nenhuma amostra de áudio foi salva nem codec tentado porque não chegou payload de áudio. Permissão da conta, configuração da câmera e disponibilidade da trilha continuam como causas possíveis.
+- O manual da Digifort 7.3.0/API 1.9.0 documenta `Cameras/GetAudioStream` (seção 4.3.8, páginas 73–75): stream multipart ao vivo PCM ou WAV, com cabeçalhos de canais, samples/segundo, bits por sample e timestamps. Essa rota não está implementada nem testada no player; pode contornar decodificação de G.711/G.726/AAC se o servidor conceder acesso e entregar áudio.
+- O mesmo manual documenta que `Playback/GetMediaStream` só inclui áudio gravado quando `Audio=TRUE` e quando há áudio gravado; `GetJPEGStream` de revisão não transmite áudio. Não há rota de reprodução gravada somente de áudio documentada no índice/API consultados.
 - Docker CLI 29.9.2 está instalado, mas o Docker Desktop Engine não estava acessível na última verificação. A etapa WASM requer Docker Engine ativo durante a compilação.
 - `legacy/vision_wasm_internal.wasm` pertence ao bundle de visão e não expõe decoder G.726 identificável.
 - A pasta `legacy/` é somente referência e não será alterada.
 - O repositório Git privado foi inicializado pelo responsável do projeto; não fazer commits sem autorização explícita.
 - O app foi iniciado localmente: `/api/server` respondeu `200`, mas a chamada Node a `Cameras/GetCameras` retornou `FETCH_ERROR` antes de obter resposta HTTP. A API aberta diretamente no navegador retornou `200` segundo o usuário; investigar a diferença está em aberto na issue acima.
-- O player ainda não foi validado com streams reais de áudio/vídeo. A ordem de packing G.726 deve ser confirmada com os dados reais do servidor. Revisão visual em runtime continua pendente.
+- H.265 está integrado como suporte adicional; H.264 continua suportado. Não houve validação de imagem com stream H.265 real nesta implementação.
+- O player ainda precisa de validação abrangente com streams reais de áudio/vídeo. A ordem de packing G.726 deve ser confirmada com os dados reais do servidor. Revisão visual em runtime continua pendente.
 
 ## Critérios de conclusão
 
 - Um arquivo real por servidor é carregado sem expor credenciais no navegador, terminal ou logs.
-- Câmeras iniciais e seleção dinâmica abrem fluxos de vídeo reais; quando houver áudio suportado, a fonte escolhida toca após ativação explícita.
+- Câmeras iniciais e seleção dinâmica decodificam fluxos H.264 e H.265 reais ao vivo e gravados; quando houver áudio suportado, a fonte escolhida toca após ativação explícita.
 - Revisão gravada abre o stream no instante escolhido, mantém as câmeras alinhadas e não usa endpoint de download.
 - Timeline e miniaturas correspondem aos intervalos/instantes do servidor e podem navegar para a revisão gravada.
 - Nenhuma API que altere configuração do servidor ou preferências do usuário é chamada.
