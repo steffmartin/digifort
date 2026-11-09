@@ -317,6 +317,58 @@ function findCameras(payload) {
   return [...found.values()].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
 }
 
+function findCameraStatuses(payload) {
+  const found = new Map();
+  const getField = (object, name) => {
+    const entry = Object.entries(object).find(([key]) => key.toLowerCase() === name.toLowerCase());
+    return entry?.[1];
+  };
+  const toBoolean = value => {
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'number') return value === 1 ? true : value === 0 ? false : null;
+    if (typeof value !== 'string') return null;
+    const normalized = value.trim().toLowerCase();
+    if (['true', '1', 'yes'].includes(normalized)) return true;
+    if (['false', '0', 'no'].includes(normalized)) return false;
+    return null;
+  };
+  const toSeconds = value => {
+    if (value === undefined || value === null || value === '') return null;
+    const seconds = Number(value);
+    return Number.isFinite(seconds) && seconds >= 0 ? seconds : null;
+  };
+  const add = (name, working, activeTime, inactiveTime) => {
+    if (typeof name !== 'string' || !name.trim()) return;
+    found.set(name, {
+      working: toBoolean(working),
+      activeTime: toSeconds(activeTime),
+      inactiveTime: toSeconds(inactiveTime)
+    });
+  };
+  const walk = value => {
+    if (!value || typeof value !== 'object') return;
+    if (Array.isArray(value)) {
+      value.forEach(walk);
+      return;
+    }
+    const name = getField(value, 'Name');
+    if (typeof name === 'string') {
+      add(name, getField(value, 'Working'), getField(value, 'ActiveTime'), getField(value, 'InactiveTime'));
+    }
+    Object.values(value).forEach(walk);
+  };
+  walk(payload);
+  if (!found.size && payload && typeof payload === 'object') {
+    const flat = payload.Response?.Data ?? payload.Data ?? payload;
+    const prefixes = new Set(Object.keys(flat).map(key => key.match(/^(CAMERA_\d+)_NAME$/i)?.[1]).filter(Boolean));
+    for (const prefix of prefixes) {
+      const get = suffix => flat[`${prefix}_${suffix}`] ?? flat[`${prefix}_${suffix.toLowerCase()}`];
+      add(get('NAME'), get('WORKING'), get('ACTIVETIME'), get('INACTIVETIME'));
+    }
+  }
+  return [...found].map(([name, status]) => ({ name, ...status }));
+}
+
 async function handleApi(req, res, url) {
   const controller = new AbortController();
   res.on('close', () => {
@@ -342,6 +394,13 @@ async function handleApi(req, res, url) {
       }, controller.signal);
       const payload = await readJsonResponse(response);
       return sendJson(res, 200, { cameras: findCameras(payload) });
+    }
+    if (url.pathname === '/api/camera-status') {
+      const response = await apiFetch(id, config, 'Cameras/GetStatus', {
+        ResponseFormat: 'JSON'
+      }, controller.signal);
+      const payload = await readJsonResponse(response);
+      return sendJson(res, 200, { statuses: findCameraStatuses(payload) });
     }
     if (url.pathname === '/api/timeline') {
       const camera = queryValue(url, 'camera');

@@ -28,10 +28,12 @@ function getG726Config(headers, type) {
 
 const state = {
   servers: [], serverId: '', server: null, cameras: [], tiles: new Map(),
+  cameraStatuses: new Map(), statusTimer: null, statusRequestId: 0, statusRefreshing: false,
   mode: 'live', focused: '', audioSource: '', audioEnabled: false,
   allStopped: false,
   audioContext: null, reviewEpoch: null, reviewStart: null, reviewEnd: null,
   timeline: [], timelineStart: null, timelineEnd: null, timelineCamera: '',
+  timelineRequestId: 0, timelineController: null,
   thumbnailPage: 0, thumbnails: [], thumbnailObjectUrls: [], thumbnailRequestId: 0, thumbnailControllers: new Set()
 };
 
@@ -117,11 +119,17 @@ async function initializeServers() {
 
 async function selectServer(id) {
   if (!id) return;
+  if (state.statusTimer) window.clearInterval(state.statusTimer);
+  state.statusTimer = null;
+  state.statusRequestId += 1;
+  state.statusRefreshing = false;
+  clearTimeline();
   await closeAllTiles();
   state.mode = 'live';
   state.serverId = id;
   state.server = null;
   state.cameras = [];
+  state.cameraStatuses.clear();
   state.focused = '';
   state.audioSource = '';
   state.audioEnabled = false;
@@ -151,6 +159,8 @@ async function selectServer(id) {
     elements.cameraListEmpty.hidden = state.cameras.length > 0;
     elements.cameraListEmpty.textContent = state.cameras.length ? '' : 'O servidor não retornou câmeras disponíveis para esta conta.';
     drawCameraList();
+    void refreshCameraStatuses(id);
+    state.statusTimer = window.setInterval(() => void refreshCameraStatuses(id), 60000);
     updateAudioSources();
     setConnection('connected', 'Conectado');
     const initial = Object.entries(serverInfo.initialCameras || {});
@@ -175,15 +185,29 @@ function drawCameraList() {
   elements.availableCount.textContent = String(state.cameras.length);
   for (const camera of visible) {
     const isOpen = state.tiles.has(camera.name);
+    const status = state.cameraStatuses.get(camera.name);
+    const unavailable = status?.working === false;
+    const description = camera.description || (camera.active ? 'Disponível' : 'Desativada');
     const button = document.createElement('button');
     button.type = 'button';
-    button.className = `camera-row${isOpen ? ' is-open' : ''}`;
+    button.className = `camera-row${isOpen ? ' is-open' : ''}${unavailable ? ' is-unavailable' : ''}`;
     button.setAttribute('aria-pressed', String(isOpen));
-    button.setAttribute('aria-label', `Câmera ${camera.name}`);
-    button.title = isOpen ? `Fechar câmera ${camera.name}` : `Abrir câmera ${camera.name}`;
-    button.innerHTML = '<span class="camera-icon" aria-hidden="true"></span><span class="camera-meta"><span class="camera-name"></span><span class="camera-description"></span></span><span class="camera-add" aria-hidden="true"></span>';
+    const statusLabel = unavailable ? 'indisponível' : status?.working === true ? 'funcionando' : '';
+    const statusDetail = unavailable
+      ? `Indisponível${status.inactiveTime === null ? '' : ` · parada há ${formatDuration(status.inactiveTime)}`}`
+      : status?.working === true && status.activeTime !== null
+        ? `Funcionando há ${formatDuration(status.activeTime)}`
+        : '';
+    const action = isOpen ? 'Fechar' : 'Abrir';
+    button.setAttribute('aria-label', `Câmera ${camera.name}; ${description}${statusLabel ? `; ${statusDetail || statusLabel}` : ''}`);
+    button.title = `${action} câmera ${camera.name} · ${description}${statusLabel ? ` · ${statusDetail || statusLabel}` : ''}`;
+    button.innerHTML = '<span class="camera-icon" aria-hidden="true"><span class="camera-health-mark" hidden>!</span></span><span class="camera-meta"><span class="camera-name"></span><span class="camera-description"></span><span class="camera-status-detail" hidden></span></span><span class="camera-add" aria-hidden="true"></span>';
     button.querySelector('.camera-name').textContent = camera.name;
-    button.querySelector('.camera-description').textContent = camera.description || (camera.active ? 'Disponível' : 'Desativada');
+    button.querySelector('.camera-description').textContent = description;
+    const statusDetailNode = button.querySelector('.camera-status-detail');
+    statusDetailNode.textContent = statusDetail;
+    statusDetailNode.hidden = !statusDetail;
+    button.querySelector('.camera-health-mark').hidden = !unavailable;
     button.querySelector('.camera-add').textContent = isOpen ? '×' : '+';
     button.disabled = !camera.active;
     button.addEventListener('click', () => isOpen ? closeCamera(camera.name) : openCamera(camera.name));
@@ -197,15 +221,51 @@ function drawCameraList() {
   }
 }
 
+function formatDuration(seconds) {
+  const value = Math.max(0, Math.floor(seconds));
+  const days = Math.floor(value / 86400);
+  const hours = Math.floor((value % 86400) / 3600);
+  const minutes = Math.floor((value % 3600) / 60);
+  const remainingSeconds = value % 60;
+  if (days) return `${days} d ${hours} h`;
+  if (hours) return `${hours} h ${minutes} min`;
+  if (minutes) return `${minutes} min ${remainingSeconds} s`;
+  return `${remainingSeconds} s`;
+}
+
+async function refreshCameraStatuses(serverId) {
+  if (!serverId || serverId !== state.serverId || state.statusRefreshing) return;
+  state.statusRefreshing = true;
+  const requestId = ++state.statusRequestId;
+  try {
+    const result = await apiJson(`/api/camera-status?${query({ server: serverId })}`);
+    if (requestId !== state.statusRequestId || serverId !== state.serverId || !Array.isArray(result.statuses)) return;
+    for (const status of result.statuses) {
+      if (!status || typeof status.name !== 'string') continue;
+      state.cameraStatuses.set(status.name, {
+        working: typeof status.working === 'boolean' ? status.working : null,
+        activeTime: Number.isFinite(status.activeTime) ? status.activeTime : null,
+        inactiveTime: Number.isFinite(status.inactiveTime) ? status.inactiveTime : null
+      });
+    }
+    drawCameraList();
+  } catch {
+    // Keep the last known status, or leave it unknown when no status was received.
+  } finally {
+    if (requestId === state.statusRequestId) state.statusRefreshing = false;
+  }
+}
+
 function createTile(cameraName, profile) {
   const tile = document.createElement('article');
   tile.className = 'camera-tile';
   tile.dataset.camera = cameraName;
+  const camera = state.cameras.find(item => item.name === cameraName);
   tile.innerHTML = `
     <div class="tile-video" tabindex="0" role="button" aria-label="Focar câmera">
       <canvas class="tile-canvas"></canvas>
       <div class="tile-overlay">
-        <div class="tile-topline"><span class="tile-camera-name"></span><span class="tile-state"><span class="tile-state-text">Conectando</span></span></div>
+        <div class="tile-topline"><div class="tile-camera-meta"><span class="tile-camera-name"></span><span class="tile-camera-description"></span></div><span class="tile-state"><span class="tile-state-text">Conectando</span></span></div>
         <div class="tile-message" hidden></div>
         <div class="tile-bottomline"><span class="tile-timecode">--:--:--</span><span class="tile-codec"></span></div>
       </div>
@@ -216,6 +276,9 @@ function createTile(cameraName, profile) {
       <button class="tile-close-button" type="button">×</button>
     </div>`;
   tile.querySelector('.tile-camera-name').textContent = cameraName;
+  const cameraDescription = tile.querySelector('.tile-camera-description');
+  cameraDescription.textContent = camera?.description || '';
+  cameraDescription.hidden = !camera?.description;
   tile.querySelector('.tile-video').setAttribute('aria-label', `Focar câmera ${cameraName}. Pressione F para tela cheia.`);
   tile.querySelector('.tile-focus-button').setAttribute('aria-label', `Focar câmera ${cameraName}`);
   tile.querySelector('.tile-profile').setAttribute('aria-label', `Perfil da câmera ${cameraName}`);
@@ -307,7 +370,6 @@ async function closeCamera(cameraName) {
   updateAudioSources();
   drawCameraList();
   updateViewHeader();
-  if (state.mode === 'playback') loadTimeline().catch(() => {});
 }
 
 async function closeAllTiles() {
@@ -336,7 +398,6 @@ function focusCamera(cameraName) {
   updateAudioSources();
   updateViewHeader();
   if (state.audioEnabled && oldSource !== state.audioSource) audioSourceChanged(oldSource, state.audioSource);
-  if (state.mode === 'playback' && state.timelineCamera !== cameraName) loadTimeline().catch(() => {});
 }
 
 function updateAudioSources() {
@@ -438,7 +499,8 @@ function startReview() {
   state.timelineEnd = state.reviewEnd ?? Date.now();
   drawTimeline();
   for (const player of state.tiles.values()) player.restart();
-  loadTimeline().catch(error => { elements.timelineStatus.textContent = error.message; });
+  const timelineCamera = state.focused || state.tiles.keys().next().value;
+  void loadTimeline(timelineCamera);
   renderThumbnailPage(0).catch(() => {});
 }
 
@@ -1184,6 +1246,9 @@ async function audioSourceChanged(oldSource, newSource) {
 }
 
 function clearTimeline() {
+  state.timelineRequestId += 1;
+  state.timelineController?.abort();
+  state.timelineController = null;
   state.timeline = [];
   state.timelineCamera = '';
   state.timelineStart = null;
@@ -1210,31 +1275,51 @@ function parseTimelinePart(part) {
   };
 }
 
-async function loadTimeline() {
+async function loadTimeline(camera) {
   if (state.mode !== 'playback' || !state.server || !state.tiles.size || !state.reviewStart) return;
-  const camera = state.focused || state.tiles.keys().next().value;
   if (!camera) return;
+  const requestId = state.timelineRequestId;
+  const startEpoch = state.reviewStart;
+  const endEpoch = state.reviewEnd ?? Date.now();
+  const controller = new AbortController();
+  state.timelineController = controller;
+  state.timeline = [];
   state.timelineCamera = camera;
+  state.timelineStart = startEpoch;
+  state.timelineEnd = endEpoch;
   elements.timelineCameraLabel.textContent = camera;
   elements.timelineStatus.textContent = 'Carregando disponibilidade de gravações…';
-  const start = epochToApi(state.reviewStart, state.server.timeZone);
-  const end = state.reviewEnd ? epochToApi(state.reviewEnd, state.server.timeZone) : epochToApi(Date.now(), state.server.timeZone);
-  const response = await fetch(`/api/timeline?${query({ server: state.serverId, camera, startDate: start.date, startTime: start.time, endDate: end.date, endTime: end.time })}`, { cache: 'no-store' });
-  if (!response.ok) {
-    let message = 'Não foi possível carregar a timeline.';
-    try { message = (await response.json()).error || message; } catch {}
-    throw new Error(message);
+  const start = epochToApi(startEpoch, state.server.timeZone);
+  const end = epochToApi(endEpoch, state.server.timeZone);
+  try {
+    const response = await fetch(`/api/timeline?${query({ server: state.serverId, camera, startDate: start.date, startTime: start.time, endDate: end.date, endTime: end.time })}`, { cache: 'no-store', signal: controller.signal });
+    if (requestId !== state.timelineRequestId) return;
+    if (!response.ok) {
+      let message = 'Não foi possível carregar a timeline.';
+      try { message = (await response.json()).error || message; } catch {}
+      throw new Error(message);
+    }
+    const data = [];
+    await consumeMultipart(response, part => {
+      if (requestId !== state.timelineRequestId) return;
+      const parsed = parseTimelinePart(part);
+      if (!parsed || !Number.isFinite(parsed.start) || !Number.isFinite(parsed.end)) return;
+      data.push(parsed);
+      state.timeline = data.slice();
+      drawTimeline();
+      elements.timelineStatus.textContent = `Carregando disponibilidade de gravações… ${data.length} intervalos recebidos`;
+    });
+    if (requestId !== state.timelineRequestId) return;
+    state.timeline = data;
+    drawTimeline();
+    elements.timelineStatus.textContent = data.length ? `${data.filter(item => item.kind === 'video').length} intervalos de vídeo · ${data.filter(item => item.kind === 'audio').length} intervalos de áudio` : 'Nenhuma gravação encontrada neste período.';
+  } catch (error) {
+    if (requestId === state.timelineRequestId && error.name !== 'AbortError') {
+      elements.timelineStatus.textContent = error.message || 'Não foi possível carregar a timeline.';
+    }
+  } finally {
+    if (state.timelineController === controller) state.timelineController = null;
   }
-  const data = [];
-  await consumeMultipart(response, part => {
-    const parsed = parseTimelinePart(part);
-    if (parsed && Number.isFinite(parsed.start) && Number.isFinite(parsed.end)) data.push(parsed);
-  });
-  state.timeline = data;
-  state.timelineStart = state.reviewStart;
-  state.timelineEnd = state.reviewEnd || Date.now();
-  drawTimeline();
-  elements.timelineStatus.textContent = data.length ? `${data.filter(item => item.kind === 'video').length} intervalos de vídeo · ${data.filter(item => item.kind === 'audio').length} intervalos de áudio` : 'Nenhuma gravação encontrada neste período.';
 }
 
 function drawTimeline() {

@@ -66,14 +66,21 @@ button:focus-visible, input:focus-visible, select:focus-visible, [role="button"]
 .camera-row { width: 100%; min-height: 48px; display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 0; border-left: 2px solid transparent; text-align: left; background: transparent; color: var(--text); }
 .camera-row:hover { background: #1a292b; }
 .camera-row.is-open { background: #1c2c2f; border-left-color: var(--live); }
+.camera-row.is-unavailable .camera-icon { color: var(--danger); border-color: var(--danger); }
+.camera-row.is-unavailable .camera-icon::after { border-color: var(--danger); }
+.camera-row.is-unavailable .camera-status-detail { color: var(--danger); }
 .camera-row:disabled { opacity: .38; }
 .camera-icon { width: 27px; height: 22px; flex: 0 0 27px; position: relative; display: grid; place-items: center; border: 1px solid #526965; border-radius: 50% / 38%; color: var(--muted); }
 .camera-icon::before { content: ""; width: 9px; height: 9px; border: 1px solid currentColor; border-radius: 50%; }
 .camera-icon::after { content: ""; position: absolute; right: -5px; top: 7px; width: 4px; height: 7px; border: 1px solid #526965; border-left: 0; }
+.camera-health-mark { position: absolute; z-index: 1; top: -4px; right: -6px; width: 12px; height: 12px; display: grid; place-items: center; border: 1px solid var(--ink-deep); border-radius: 50%; background: var(--danger); color: var(--ink-deep); font: 700 8px/1 var(--font); }
 .camera-row.is-open .camera-icon { color: var(--live); border-color: var(--live); }
+.camera-row.is-open.is-unavailable .camera-icon { color: var(--danger); border-color: var(--danger); }
+.camera-row.is-open.is-unavailable .camera-icon::after { border-color: var(--danger); }
 .camera-meta { min-width: 0; display: grid; gap: 3px; }
 .camera-name { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 11px; font-weight: 500; }
 .camera-description { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--dim); font-size: 9px; }
+.camera-status-detail { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--muted); font-size: 9px; }
 .camera-add { margin-left: auto; color: var(--live); opacity: 0; font-size: 17px; }
 .camera-row:hover .camera-add, .camera-row:focus-visible .camera-add { opacity: 1; }
 .rail-empty { margin: 22px 18px; color: var(--muted); font-size: 11px; line-height: 1.55; }
@@ -135,7 +142,9 @@ button:focus-visible, input:focus-visible, select:focus-visible, [role="button"]
 .tile-video canvas { display: block; width: auto; height: auto; max-width: 100cqw; max-height: 100cqh; object-fit: contain; object-position: center; justify-self: center; align-self: center; }
 .tile-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: space-between; padding: 11px 12px; pointer-events: none; }
 .tile-topline { display: flex; align-items: start; justify-content: space-between; gap: 12px; }
-.tile-camera-name { max-width: 70%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 11px; text-shadow: 0 1px 5px #000; }
+.tile-camera-meta { min-width: 0; max-width: 70%; display: grid; gap: 3px; text-shadow: 0 1px 5px #000; }
+.tile-camera-name { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 11px; }
+.tile-camera-description { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: #c1d0cc; font-size: 9px; }
 .tile-state { display: inline-flex; align-items: center; gap: 6px; padding: 4px 6px; background: #081012b8; color: var(--live); font: 9px var(--mono); text-transform: uppercase; }
 .tile-state.review { color: var(--review); }
 .tile-state::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
