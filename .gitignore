@@ -1,0 +1,7 @@
+# Configurações locais podem conter credenciais.
+/config/*
+!/config/example.config
+/config.json
+/*.config
+/legacy/
+/.playwright-mcp/
