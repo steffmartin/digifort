@@ -33,7 +33,8 @@ const state = {
   allStopped: false, mosaic: 'auto', overlaysVisible: false, timelineVisible: true, thumbnailsVisible: true, surveillance: false,
   audioContext: null, reviewEpoch: null, reviewStart: null, reviewEnd: null,
   timeline: [], timelineStart: null, timelineEnd: null, timelineCamera: '',
-  timelineRequestId: 0, timelineController: null,
+  timelineRequestId: 0, timelineController: null, recordings: new Map(), recordingSession: null,
+  pendingRecordingScope: null,
   thumbnailPage: 0, thumbnailSize: 'medium', thumbnails: [], thumbnailObjectUrls: [], thumbnailRequestId: 0, thumbnailControllers: new Set()
 };
 
@@ -54,6 +55,7 @@ const elements = {
   toggleOverlayVisibility: $('#toggleOverlayVisibility'), toggleTimelineVisibility: $('#toggleTimelineVisibility'), toggleThumbnailVisibility: $('#toggleThumbnailVisibility'),
   surveillanceToggle: $('#surveillanceToggle'), exitSurveillance: $('#exitSurveillance'), contextMenu: $('#contextMenu'), thumbnailSize: $('#thumbnailSize'),
   thumbnailNext: $('#thumbnailNext'), thumbnailPageLabel: $('#thumbnailPageLabel'),
+  recordDialog: $('#recordDialog'), recordForm: $('#recordForm'), recordFormat: $('#recordFormat'), recordFormatHelp: $('#recordFormatHelp'), recordConfirm: $('#recordConfirm'),
   toastRegion: $('#toastRegion')
 };
 
@@ -184,6 +186,11 @@ function createPlaybackMenu(scope) {
   const menu = document.createElement('div');
   menu.className = 'context-submenu';
   menu.setAttribute('role', 'menu');
+  appendPlaybackShortcuts(menu, scope);
+  return menu;
+}
+
+function appendPlaybackShortcuts(menu, scope) {
   for (const entry of PLAYBACK_SHORTCUTS) {
     if (!entry) { const separator = document.createElement('div'); separator.className = 'context-separator'; separator.setAttribute('role', 'separator'); menu.append(separator); continue; }
     const [label, seconds] = entry;
@@ -192,19 +199,71 @@ function createPlaybackMenu(scope) {
     item.addEventListener('click', () => { void beginContextPlayback(scope, seconds); closeContextMenu(); });
     menu.append(item);
   }
+}
+
+function createCaptureMenu(scope) {
+  const menu = document.createElement('div');
+  menu.className = 'context-submenu';
+  menu.setAttribute('role', 'menu');
+  const capture = document.createElement('button');
+  capture.type = 'button'; capture.className = 'context-item'; capture.setAttribute('role', 'menuitem');
+  capture.textContent = scope.all ? 'Frame' : 'Frame';
+  capture.disabled = !(scope.all ? state.tiles.size : state.tiles.has(scope.camera));
+  capture.addEventListener('click', () => { void captureFrames(scope); closeContextMenu(); });
+  menu.append(capture);
+  appendRecordingActions(menu, scope);
   return menu;
 }
 
-function createContextBranch(label, scope) {
+function createCameraScopeMenu(scope, { includeCapture = true } = {}) {
+  const menu = document.createElement('div');
+  menu.className = 'context-submenu context-scope-menu';
+  menu.setAttribute('role', 'menu');
+  menu.append(createContextBranch('Gravado', () => createPlaybackMenu(scope)));
+  if (includeCapture) menu.append(createContextBranch('Captura', () => createCaptureMenu(scope)));
+  return menu;
+}
+
+function scopedCameraNames(scope) { return scope.all ? [...state.tiles.keys()] : [scope.camera].filter(name => state.tiles.has(name)); }
+
+function appendRecordingActions(menu, scope) {
+  const names = scopedCameraNames(scope);
+  const session = state.recordingSession;
+  const belongsToSession = session?.key === recordingScopeKey(scope);
+  const active = session ? session.cameras.map(name => state.recordings.get(name)).filter(Boolean) : [];
+  const actions = session ? [
+    ['start', 'Iniciar gravação', true],
+    ['pause', 'Pausar gravação', !belongsToSession || session.status === 'starting' || !active.some(recording => recording.status === 'recording')],
+    ['resume', 'Retomar gravação', !belongsToSession || !active.some(recording => recording.status === 'paused')],
+    ['stop', 'Finalizar gravação', !belongsToSession || active.length === 0]
+  ] : [['start', 'Iniciar gravação', !names.length || names.some(name => !state.tiles.has(name))]];
+  if (actions.length) { const separator = document.createElement('div'); separator.className = 'context-separator'; separator.setAttribute('role', 'separator'); menu.append(separator); }
+  for (const [action, label, disabled] of actions) {
+    const item = document.createElement('button');
+    item.type = 'button'; item.className = 'context-item'; item.setAttribute('role', 'menuitem'); item.textContent = label; item.disabled = disabled;
+    if (session && !belongsToSession && action !== 'start') item.title = `Esta gravação foi iniciada no menu ${session.all ? 'Todas as câmeras' : 'Esta câmera'}.`;
+    item.addEventListener('click', () => {
+      if (item.disabled) return;
+      closeContextMenu();
+      if (action === 'start') openRecordingDialog(scope);
+      else changeRecordingState(scope, action);
+    });
+    menu.append(item);
+  }
+}
+
+function recordingScopeKey(scope) { return scope.all ? 'all-cameras' : `camera:${scope.camera}`; }
+
+function createContextBranch(label, makeSubmenu) {
   const wrapper = document.createElement('div');
   wrapper.className = 'context-branch';
   const trigger = document.createElement('button');
   trigger.type = 'button'; trigger.className = 'context-item context-branch-trigger'; trigger.setAttribute('role', 'menuitem'); trigger.setAttribute('aria-haspopup', 'menu'); trigger.setAttribute('aria-expanded', 'false');
   trigger.append(document.createTextNode(label));
   const arrow = document.createElement('span'); arrow.setAttribute('aria-hidden', 'true'); arrow.textContent = '›'; trigger.append(arrow);
-  const submenu = createPlaybackMenu(scope); submenu.hidden = true; wrapper.append(trigger, submenu);
+  const submenu = makeSubmenu(); submenu.hidden = true; wrapper.append(trigger, submenu);
   const show = () => {
-    for (const sibling of elements.contextMenu.querySelectorAll('.context-branch')) {
+    for (const sibling of wrapper.parentElement.querySelectorAll(':scope > .context-branch')) {
       if (sibling === wrapper) continue;
       sibling.querySelector('.context-submenu').hidden = true;
       sibling.querySelector('[aria-haspopup="menu"]').setAttribute('aria-expanded', 'false');
@@ -234,18 +293,257 @@ function openContextMenu(x, y, cameraScope, allScope = null) {
   state.contextInvoker = document.activeElement;
   root.replaceChildren(); root.hidden = false;
   if (allScope) {
-    root.append(createContextBranch('Esta câmera', cameraScope), createContextBranch('Todas as câmeras da grade', allScope));
+    root.append(
+      createContextBranch('Esta câmera', () => createCameraScopeMenu(cameraScope)),
+      createContextBranch('Todas as câmeras', () => createCameraScopeMenu(allScope))
+    );
   } else {
-    for (const entry of PLAYBACK_SHORTCUTS) {
-      if (!entry) { const separator = document.createElement('div'); separator.className = 'context-separator'; separator.setAttribute('role', 'separator'); root.append(separator); continue; }
-      const [label, seconds] = entry;
-      const item = document.createElement('button'); item.type = 'button'; item.className = 'context-item'; item.setAttribute('role', 'menuitem'); item.textContent = label;
-      item.addEventListener('click', () => { void beginContextPlayback(cameraScope, seconds); closeContextMenu(); }); root.append(item);
-    }
+    appendPlaybackShortcuts(root, cameraScope);
   }
   root.style.left = `${Math.max(8, Math.min(x, innerWidth - 240))}px`;
   root.style.top = `${Math.max(8, Math.min(y, innerHeight - Math.min(root.scrollHeight || 320, innerHeight - 16) - 8))}px`;
   root.querySelector('[role="menuitem"]')?.focus();
+}
+
+function safeMediaFilename(value) {
+  return value.normalize('NFKC').replace(/\s+/gu, '-').replace(/[^\p{L}\p{N}_-]/gu, '_').replace(/[-_]+$/g, '').slice(0, 60) || 'camera';
+}
+
+function mediaEpoch() {
+  if (state.mode !== 'playback') return Date.now();
+  const epoch = state.reviewEpoch ?? state.reviewStart;
+  if (!Number.isFinite(epoch)) throw new Error('Inicie a revisão antes de capturar a imagem ou o vídeo.');
+  return epoch;
+}
+
+function mediaFilenames(cameras, extension, epoch) {
+  const localTime = epochToInput(epoch, state.server.timeZone).replace(/:/g, '-');
+  const milliseconds = String(new Date(epoch).getUTCMilliseconds()).padStart(3, '0');
+  const stamp = `${localTime}-${milliseconds}`;
+  const used = new Set();
+  return cameras.map(camera => {
+    const base = `${safeMediaFilename(camera)}-${stamp}`;
+    let filename = base + extension;
+    for (let suffix = 2; used.has(filename.toLowerCase()); suffix++) {
+      filename = `${base}-${suffix}${extension}`;
+    }
+    used.add(filename.toLowerCase());
+    return filename;
+  });
+}
+
+function captureCanvasBlob(canvas) {
+  return new Promise((resolve, reject) => canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Não foi possível capturar o quadro da câmera.')), 'image/png'));
+}
+
+async function postMedia(path, params, body = null, contentType = 'application/octet-stream') {
+  const response = await fetch(`${path}?${query({ server: state.serverId, ...params })}`, {
+    method: 'POST', cache: 'no-store', headers: body ? { 'Content-Type': contentType } : {}, body
+  });
+  if (!response.ok) {
+    let message = 'Não foi possível salvar a mídia na pasta configurada.';
+    try { message = (await response.json()).error || message; } catch {}
+    throw new Error(message);
+  }
+  return response.json();
+}
+
+async function captureFrames(scope) {
+  if (!state.server?.screenshotFolderConfigured) {
+    return toast('Defina screenshotFolder ou mediaFolder no arquivo de configuração do servidor.', 'error');
+  }
+  const cameraNames = scope.all ? [...state.tiles.keys()] : [scope.camera];
+  const players = cameraNames.map(name => state.tiles.get(name)).filter(Boolean);
+  if (!players.length) return toast('Abra uma câmera para capturar o quadro exibido.', 'error');
+  if (players.some(player => !player.canvas.width || !player.canvas.height)) return toast('Aguarde a chegada do primeiro quadro antes de capturar.', 'error');
+  try {
+    const filenames = mediaFilenames(players.map(player => player.name), '.png', mediaEpoch());
+    const blobs = await Promise.all(players.map(player => captureCanvasBlob(player.canvas)));
+    for (const [index, filename] of filenames.entries()) {
+      await postMedia('/api/media-file', { filename }, blobs[index], 'image/png');
+    }
+    toast(players.length === 1 ? 'Screenshot salvo sem sobreposições.' : `${players.length} screenshots salvos.`);
+  } catch (error) {
+    if (error.name !== 'AbortError') toast(error.message || 'Não foi possível salvar o screenshot.', 'error');
+  }
+}
+
+function recordingMime(format) {
+  const candidates = format === 'mp4'
+    ? ['video/mp4;codecs="avc1.42E01E,mp4a.40.2"', 'video/mp4']
+    : ['video/mpeg'];
+  return candidates.find(type => MediaRecorder.isTypeSupported(type)) || '';
+}
+
+function openRecordingDialog(scope) {
+  if (!state.server?.videoFolderConfigured) {
+    return toast('Defina videoFolder ou mediaFolder no arquivo de configuração do servidor.', 'error');
+  }
+  if (typeof MediaRecorder !== 'function') return toast('Este navegador não oferece gravação local de mídia.', 'error');
+  state.pendingRecordingScope = scope;
+  const mp4 = recordingMime('mp4');
+  const mpeg = recordingMime('mpeg');
+  for (const option of elements.recordFormat.options) {
+    const supported = option.value === 'mp4' ? mp4 : mpeg;
+    option.disabled = !supported;
+    option.textContent = option.value === 'mp4'
+      ? `MP4${mp4 ? '' : ' (não suportado neste navegador)'}`
+      : `MPG / MPEG${mpeg ? '' : ' (não suportado neste navegador)'}`;
+  }
+  elements.recordFormat.value = mp4 ? 'mp4' : 'mpeg';
+  updateRecordFormatHelp();
+  elements.recordDialog.showModal();
+}
+
+function updateRecordFormatHelp() {
+  const type = recordingMime(elements.recordFormat.value);
+  elements.recordFormatHelp.textContent = type
+    ? `Formato disponível neste navegador (${type}). O vídeo é recodificado a partir dos quadros exibidos.`
+    : 'Este navegador não consegue gravar o formato selecionado. Escolha um formato disponível para continuar.';
+  elements.recordConfirm.disabled = !type;
+}
+
+function setRecordingOverlay(camera, status) {
+  const tile = state.tiles.get(camera)?.tile;
+  if (!tile) return;
+  const badge = tile.querySelector('.tile-state');
+  badge.classList.toggle('is-recording', status === 'recording');
+  badge.classList.toggle('is-recording-paused', status === 'paused');
+  state.tiles.get(camera)?.setState(state.mode === 'live' ? 'Ao vivo' : 'Gravado');
+}
+
+function startRecording(camera, filename, mimeType, session) {
+  const player = state.tiles.get(camera);
+  if (!player || state.recordings.has(camera)) return;
+  if (player.stopped || state.allStopped || !player.canvas.width || !player.canvas.height) throw new Error(`Aguarde a chegada do vídeo de ${camera} antes de gravar.`);
+  if (typeof player.canvas.captureStream !== 'function') throw new Error('Este navegador não permite capturar os quadros exibidos.');
+  const stream = player.canvas.captureStream(30);
+  if (!state.audioContext) state.audioContext = new AudioContext();
+  const destination = state.audioContext.createMediaStreamDestination();
+  stream.addTrack(destination.stream.getAudioTracks()[0]);
+  let opened = false;
+  try {
+    const recorder = new MediaRecorder(stream, { mimeType });
+    const recording = { camera, recorder, destination, status: 'recording', bytes: 0, writeChain: Promise.resolve(), writeError: null };
+    recording.finished = new Promise(resolve => { recording.resolveFinished = resolve; });
+    recorder.addEventListener('dataavailable', event => {
+      if (!event.data?.size || recording.writeError) return;
+      recording.bytes += event.data.size;
+      recording.writeChain = recording.writeChain.then(() => {
+        if (recording.writeError) return;
+        return postMedia('/api/media-recording', { filename, action: 'chunk' }, event.data, mimeType);
+      }).catch(error => { recording.writeError = error; });
+    });
+    recorder.addEventListener('error', () => {
+      recording.writeError ||= new Error('O navegador encontrou um erro durante a gravação.');
+      if (recorder.state !== 'inactive') recorder.stop();
+    });
+    recorder.addEventListener('stop', async () => {
+      try {
+        await recording.writeChain;
+        if (recording.writeError || recording.bytes === 0) {
+          if (recording.writeError) throw recording.writeError;
+          throw new Error('A gravação não produziu mídia válida; o arquivo foi descartado.');
+        }
+        await postMedia('/api/media-recording', { filename, action: 'finish' });
+        toast(`Gravação salva: ${filename}`);
+      } catch (error) {
+        if (opened) await postMedia('/api/media-recording', { filename, action: 'abort' }).catch(() => {});
+        if (error.name !== 'AbortError') toast(error.message || 'Não foi possível finalizar o arquivo de gravação.', 'error');
+      } finally {
+        for (const track of stream.getTracks()) track.stop();
+        destination.disconnect?.();
+        state.recordings.delete(camera);
+        setRecordingOverlay(camera, 'stopped');
+        if (state.recordingSession === session && session.status !== 'starting' &&
+            session.cameras.every(name => !state.recordings.has(name))) state.recordingSession = null;
+        recording.resolveFinished();
+      }
+    }, { once: true });
+    recorder.start(1000);
+    recording.writeChain = postMedia('/api/media-recording', { filename, action: 'start' }).then(() => {
+      opened = true;
+    }).catch(error => {
+      recording.writeError = error;
+      if (recorder.state !== 'inactive') recorder.stop();
+    });
+    state.recordings.set(camera, recording);
+    setRecordingOverlay(camera, 'recording');
+    return recording;
+  } catch (error) {
+    for (const track of stream.getTracks()) track.stop();
+    destination.disconnect?.();
+    throw error;
+  }
+}
+
+async function changeRecordingState(scope, action) {
+  const names = scopedCameraNames(scope);
+  if (action === 'start') {
+    if (!state.server?.videoFolderConfigured) {
+      return toast('Defina videoFolder ou mediaFolder no arquivo de configuração do servidor.', 'error');
+    }
+    if (state.recordingSession) return toast('Finalize a gravação atual no submenu que a iniciou antes de iniciar outra.', 'error');
+    if (!names.length) return toast('Abra uma câmera antes de iniciar a gravação.', 'error');
+    const mimeType = recordingMime(elements.recordFormat.value);
+    if (!mimeType) return toast('O formato escolhido não é suportado por este navegador.', 'error');
+    const session = { key: recordingScopeKey(scope), all: Boolean(scope.all), cameras: names.slice(), status: 'starting' };
+    const started = [];
+    state.recordingSession = session;
+    try {
+      const extension = mimeType.startsWith('video/mp4') ? '.mp4' : '.mpg';
+      const filenames = mediaFilenames(session.cameras, extension, mediaEpoch());
+      for (const [index, camera] of session.cameras.entries()) {
+        const recording = startRecording(camera, filenames[index], mimeType, session);
+        if (recording) started.push(recording);
+      }
+      session.status = 'recording';
+      if (session.cameras.every(name => !state.recordings.has(name))) state.recordingSession = null;
+    } catch (error) {
+      if (started.length) {
+        session.status = 'stopping';
+        for (const recording of started) if (recording.recorder.state !== 'inactive') recording.recorder.stop();
+        await Promise.all(started.map(recording => recording.finished));
+      }
+      if (state.recordingSession === session) state.recordingSession = null;
+      if (error.name !== 'AbortError') toast(error.message || 'Não foi possível iniciar a gravação.', 'error');
+    }
+    return;
+  }
+  const session = state.recordingSession;
+  if (!session || session.key !== recordingScopeKey(scope)) return;
+  if (session.status === 'starting') {
+    if (action === 'stop') requestStopRecordingSession();
+    return;
+  }
+  for (const camera of session.cameras) {
+    const recording = state.recordings.get(camera);
+    if (!recording) continue;
+    try {
+      if (action === 'pause' && recording.status === 'recording') {
+        recording.recorder.pause(); recording.status = 'paused'; setRecordingOverlay(camera, 'paused');
+        session.status = 'paused';
+      } else if (action === 'resume' && recording.status === 'paused') {
+        recording.recorder.resume(); recording.status = 'recording'; setRecordingOverlay(camera, 'recording');
+        session.status = 'recording';
+      } else if (action === 'stop' && recording.recorder.state !== 'inactive') {
+        session.status = 'stopping'; recording.status = 'stopping'; recording.recorder.stop();
+      }
+    } catch { toast(`Não foi possível atualizar a gravação de ${camera}.`, 'error'); }
+  }
+}
+
+function requestStopRecordingSession() {
+  const session = state.recordingSession;
+  if (!session) return [];
+  session.status = 'stopping';
+  const active = session.cameras.map(camera => state.recordings.get(camera)).filter(Boolean);
+  for (const recording of active) {
+    recording.status = 'stopping';
+    if (recording.recorder.state !== 'inactive') recording.recorder.stop();
+  }
+  if (!active.length && state.recordingSession === session) state.recordingSession = null;
+  return active.map(recording => recording.finished);
 }
 
 function closeContextMenu(restoreFocus = false) {
@@ -546,6 +844,30 @@ function createTile(cameraName, profile) {
   videoSurface.addEventListener('click', () => focusCamera(cameraName));
   videoSurface.addEventListener('dblclick', () => toggleTileFullscreen(tile, cameraName));
   tile.addEventListener('contextmenu', event => { event.preventDefault(); openContextMenu(event.clientX, event.clientY, { camera: cameraName, all: false }, { camera: cameraName, all: true }); });
+  const canvas = tile.querySelector('.tile-canvas');
+  const zoom = { scale: 1, x: 0, y: 0 };
+  const applyZoom = () => { canvas.style.transform = `translate(${zoom.x}px, ${zoom.y}px) scale(${zoom.scale})`; };
+  const resetZoom = () => { zoom.scale = 1; zoom.x = 0; zoom.y = 0; applyZoom(); };
+  tile.resetZoom = resetZoom;
+  tile.addEventListener('wheel', event => {
+    if (document.fullscreenElement !== tile || !event.target.closest('.tile-video') || event.ctrlKey || event.metaKey) return;
+    event.preventDefault();
+    const nextScale = Math.max(1, Math.min(8, zoom.scale * (event.deltaY < 0 ? 1.15 : 1 / 1.15)));
+    if (nextScale <= 1.001) { resetZoom(); return; }
+    if (nextScale === zoom.scale) return;
+    const rect = canvas.getBoundingClientRect();
+    const baseLeft = rect.left - zoom.x;
+    const baseTop = rect.top - zoom.y;
+    const anchorX = (event.clientX - rect.left) / zoom.scale;
+    const anchorY = (event.clientY - rect.top) / zoom.scale;
+    zoom.x = event.clientX - baseLeft - anchorX * nextScale;
+    zoom.y = event.clientY - baseTop - anchorY * nextScale;
+    zoom.scale = nextScale;
+    applyZoom();
+  }, { passive: false });
+  tile.addEventListener('dblclick', event => {
+    if (document.fullscreenElement === tile) { event.preventDefault(); resetZoom(); }
+  });
   tile.addEventListener('keydown', event => {
     if ((event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) && !['SELECT', 'BUTTON'].includes(event.target.tagName)) { event.preventDefault(); const rect = tile.getBoundingClientRect(); openContextMenu(rect.left + rect.width / 2, rect.top + rect.height / 2, { camera: cameraName, all: false }, { camera: cameraName, all: true }); }
   });
@@ -603,6 +925,10 @@ document.addEventListener('keydown', event => {
   event.preventDefault();
   void document.exitFullscreen().catch(() => {});
 });
+document.addEventListener('fullscreenchange', () => {
+  if (document.fullscreenElement) return;
+  for (const tile of elements.viewerGrid.querySelectorAll('.camera-tile')) tile.resetZoom?.();
+});
 
 async function openCamera(cameraName, initialProfile = 'Visualization') {
   if (!state.serverId || state.tiles.has(cameraName)) return;
@@ -630,6 +956,10 @@ async function openCamera(cameraName, initialProfile = 'Visualization') {
 async function closeCamera(cameraName) {
   const player = state.tiles.get(cameraName);
   if (!player) return;
+  const recording = state.recordings.get(cameraName);
+  if (recording) {
+    await Promise.all(requestStopRecordingSession());
+  }
   const oldAudioSource = state.audioSource;
   const wasFocused = state.focused === cameraName;
   player.stop();
@@ -726,6 +1056,7 @@ function updateViewHeader() {
 
 function setMode(mode) {
   if (state.mode === mode) return;
+  if (state.mode === 'playback' && mode !== 'playback' && state.recordings.size) requestStopRecordingSession();
   state.mode = mode;
   state.allStopped = false;
   const wasPlayback = mode === 'playback';
@@ -1018,7 +1349,13 @@ class CameraPlayer {
     if (clear && this.context) this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
   }
 
-  setState(label) { this.tile.querySelector('.tile-state-text').textContent = label; }
+  setState(label) {
+    const recording = state.recordings.get(this.name);
+    const base = state.mode === 'live' ? 'Ao vivo' : 'Gravado';
+    if (recording?.status === 'recording') label = `${base} (capturando)`;
+    else if (recording?.status === 'paused') label = `${base} (pausado)`;
+    this.tile.querySelector('.tile-state-text').textContent = label;
+  }
   setMessage(message) {
     const node = this.tile.querySelector('.tile-message');
     node.textContent = message;
@@ -1366,6 +1703,9 @@ class CameraPlayer {
       const relativeSeconds = typeof timestampUs === 'number' ? Math.max(0, timestampUs / 1e6) : 0;
       const startAt = Math.max(ctx.currentTime + 0.02, (state.audioContextStart || ctx.currentTime) + relativeSeconds);
       source.start(startAt);
+      for (const recording of state.recordings.values()) {
+        if (recording.camera === this.name && recording.destination) source.connect(recording.destination);
+      }
     } catch {}
   }
 }
@@ -1733,6 +2073,7 @@ function formatClock(epoch) {
 async function toggleAllStreams() {
   if (!state.tiles.size) return;
   if (!state.allStopped) {
+    await Promise.all(requestStopRecordingSession());
     for (const player of state.tiles.values()) {
       player.stop();
       player.setState('Parado');
@@ -1871,6 +2212,16 @@ elements.cameraSearch.addEventListener('input', drawCameraList);
 elements.liveMode.addEventListener('click', () => setMode('live'));
 elements.reviewMode.addEventListener('click', () => setMode('playback'));
 elements.playReview.addEventListener('click', startReview);
+elements.recordFormat.addEventListener('change', updateRecordFormatHelp);
+elements.recordForm.addEventListener('submit', event => {
+  if (event.submitter?.value !== 'start') return;
+  event.preventDefault();
+  const scope = state.pendingRecordingScope;
+  state.pendingRecordingScope = null;
+  elements.recordDialog.close();
+  if (scope) void changeRecordingState(scope, 'start');
+});
+elements.recordDialog.addEventListener('close', () => { state.pendingRecordingScope = null; });
 elements.stopAll.addEventListener('click', toggleAllStreams);
 elements.mosaicSelect.addEventListener('change', event => {
   const next = getMosaic(event.target.value);

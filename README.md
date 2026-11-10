@@ -16,6 +16,7 @@ Também descrito como **Digifort surveillance client**, **Digifort camera viewer
 - Veja vídeo H.264 e H.265/HEVC com decodificação WebCodecs. O navegador precisa aceitar o perfil de codec enviado pelo servidor.
 - Ative o áudio após uma interação explícita, selecione a câmera de origem e ouça áudio ao vivo ou disponível na gravação. O player decodifica AAC, G.711 e G.726 quando esses formatos são enviados.
 - Revise gravações por data e hora, acompanhe intervalos de vídeo e áudio na timeline e navegue por cliques na timeline ou nas miniaturas.
+- Salve screenshots limpos ou gravações locais do vídeo reproduzido.
 - Expanda uma câmera em tela cheia com duplo clique ou a tecla F; pressione Esc para voltar. No modo vigilância, outro Esc encerra a vigilância.
 - Organize as câmeras em mosaicos predefinidos ou deixe a grade automática calcular linhas e colunas conforme a quantidade de câmeras abertas.
 - Ajuste o tamanho das miniaturas e mantenha timeline e miniaturas sincronizadas com a câmera em foco.
@@ -25,7 +26,8 @@ Também descrito como **Digifort surveillance client**, **Digifort camera viewer
 1. Copie `config/example.config` para `config/<servidor>.config`.
 2. Preencha `name` com o rótulo amigável mostrado na lista; se omitido ou vazio, será usado o nome do arquivo. Preencha também `serverAddress`, `userAgent`, `username`, `password` e `timeZone`.
 3. Edite `initialCameras` com nomes de câmera exatamente como o Digifort os retorna e o perfil `Visualization` ou `Recording`.
-4. Mantenha os arquivos reais dentro de `config/`. O Git ignora essas configurações locais e preserva somente `example.config`.
+4. Para salvar capturas, configure caminhos completos para pastas graváveis pelo usuário. Defina `mediaFolder` para usar a mesma pasta para tudo. Para separar os destinos, defina `screenshotFolder` para imagens e `videoFolder` para vídeos. Cada opção vazia ou omitida usa `mediaFolder`. Se também faltar esse destino padrão, o app pede que você configure a pasta antes de salvar o tipo de mídia correspondente.
+5. Mantenha os arquivos reais dentro de `config/`. O Git ignora essas configurações locais e preserva somente `example.config`.
 
 O player mantém usuário, senha e dados de autenticação no processo local. Eles não são enviados à página nem escritos em logs. Não coloque credenciais reais no arquivo de exemplo.
 
@@ -64,6 +66,8 @@ O player decodifica H.264 e H.265/HEVC com WebCodecs. Para H.265, deriva a strin
 A pasta [`api/`](api/) contém a especificação OpenAPI 3.0.3 da HTTP API 1.9.0, o manual de origem e instruções de importação e uso no JetBrains. A especificação cobre as operações e os parâmetros documentados no manual.
 
 O player usa `GetCameras`, `GetMediaStream`, `Playback/GetMediaStream`, `GetTimelineData` e `Playback/GetSnapshot`. Não usa API de exportação/download, MJPEG como substituto do stream de mídia nem APIs que alterem configuração do servidor ou preferências do usuário.
+
+O menu de contexto oferece captura PNG sem sobreposições e gravação local com iniciar, pausar, retomar e finalizar. A captura de vídeo regrava os quadros reproduzidos pelo navegador e inclui o áudio decodificado quando ativado. A lista de formatos depende do suporte `MediaRecorder` do navegador. A interface desabilita MPG/MPEG ou MP4 quando o navegador não consegue gravá-lo. Os arquivos são salvos diretamente na pasta configurada. Os nomes usam o fuso do servidor, com a hora da máquina ao vivo e a posição da timeline durante a revisão.
 
 ## Grade inicial
 

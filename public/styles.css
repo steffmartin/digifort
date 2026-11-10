@@ -161,7 +161,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, [role="button"]
 .camera-tile:fullscreen .tile-video, .camera-tile:-webkit-full-screen .tile-video { flex: 1 1 auto; min-height: 0; }
 .tile-video { position: relative; flex: 1; min-height: 0; display: grid; place-items: center; overflow: hidden; container-type: size; background: #070d0f; cursor: zoom-in; }
 .camera-tile:fullscreen .tile-video, .camera-tile:-webkit-full-screen .tile-video { cursor: zoom-out; }
-.tile-video canvas { display: block; width: auto; height: auto; max-width: 100cqw; max-height: 100cqh; object-fit: contain; object-position: center; justify-self: center; align-self: center; }
+.tile-video canvas { display: block; width: auto; height: auto; max-width: 100cqw; max-height: 100cqh; object-fit: contain; object-position: center; justify-self: center; align-self: center; transform-origin: top left; }
 .tile-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: space-between; padding: 11px 12px; pointer-events: none; }
 .tile-topline { display: flex; align-items: start; justify-content: space-between; gap: 12px; }
 .tile-camera-meta { min-width: 0; max-width: 70%; display: grid; gap: 3px; text-shadow: 0 1px 5px #000; }
@@ -169,6 +169,11 @@ button:focus-visible, input:focus-visible, select:focus-visible, [role="button"]
 .tile-camera-description { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: #c1d0cc; font-size: 9px; }
 .tile-state { display: inline-flex; align-items: center; gap: 6px; padding: 4px 6px; background: #081012b8; color: var(--live); font: 9px var(--mono); text-transform: uppercase; }
 .tile-state.review { color: var(--review); }
+.tile-state.is-recording { color: #ff6a64; background: #260e0edb; font-weight: 700; }
+.tile-state.is-recording-paused { color: #efd34c; background: #29240edb; font-weight: 700; }
+.tile-state.is-recording::before, .tile-state.is-recording-paused::before { background: currentColor; }
+.tile-state.is-recording::before { animation: recording-pulse 1.2s ease-in-out infinite; }
+@keyframes recording-pulse { 50% { opacity: .35; } }
 .overlays-hidden .tile-camera-meta, .overlays-hidden .tile-bottomline { visibility: hidden; }
 .tile-state::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
 .tile-message { margin: auto; max-width: 75%; padding: 8px 11px; color: var(--muted); background: #0c1517d9; font-size: 11px; text-align: center; line-height: 1.5; }
@@ -229,10 +234,22 @@ button:focus-visible, input:focus-visible, select:focus-visible, [role="button"]
 .context-branch { position: relative; }
 .context-item { width: 100%; min-height: 31px; display: flex; align-items: center; justify-content: space-between; gap: 15px; padding: 6px 10px; border: 0; background: transparent; color: var(--text); text-align: left; font-size: 11px; }
 .context-item:hover, .context-item:focus-visible { outline: none; background: #263738; color: #fff; }
+.context-item:disabled { opacity: .4; cursor: not-allowed; }
 .context-branch-trigger span { color: var(--live); font-size: 16px; }
 .context-submenu { position: fixed; z-index: 2; max-height: calc(100dvh - 16px); overflow: auto; }
 .context-separator { height: 1px; margin: 4px 8px; background: var(--line); }
 .exit-surveillance { position: fixed; right: 16px; bottom: 16px; z-index: 25; min-height: 38px; padding: 0 13px; border: 1px solid #74613f; background: #171c1bbd; color: var(--review); backdrop-filter: blur(8px); }
+.record-dialog { width: min(460px, calc(100vw - 32px)); padding: 0; border: 1px solid #405255; background: #101a1c; color: var(--text); box-shadow: 0 18px 60px #000b; }
+.record-dialog::backdrop { background: #030808c9; backdrop-filter: blur(3px); }
+.record-dialog form { display: grid; gap: 12px; padding: 22px; }
+.record-dialog h2 { margin: 0 0 4px; font-size: 16px; font-weight: 550; }
+.record-dialog label { color: var(--muted); font-size: 10px; }
+.record-dialog select { height: 35px; border: 1px solid var(--line); background: #111b1d; color: var(--text); }
+.record-format-help, .record-dialog-note { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.6; }
+.record-dialog-actions { display: flex; justify-content: end; gap: 8px; margin-top: 5px; }
+.record-dialog-actions button { min-height: 34px; padding: 0 12px; border: 1px solid var(--line); background: transparent; color: var(--text); font-size: 10px; }
+.record-dialog-actions .record-confirm { border-color: var(--review); background: var(--review); color: #1d201f; font-weight: 700; }
+.record-dialog-actions button:disabled { opacity: .4; cursor: not-allowed; }
 .is-surveillance .topbar, .is-surveillance .camera-rail, .is-surveillance .command-bar, .is-surveillance .review-panel, .is-surveillance .thumbnail-panel { display: none !important; }
 .is-surveillance .workspace { display: block; height: 100dvh; }
 .is-surveillance .monitor-area { width: 100%; height: 100%; padding: 0; }

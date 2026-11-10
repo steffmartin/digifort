@@ -1,7 +1,9 @@
 import { createHash } from 'node:crypto';
 import { createServer } from 'node:http';
-import { createReadStream, promises as fs } from 'node:fs';
+import { createReadStream, createWriteStream, promises as fs } from 'node:fs';
 import path from 'node:path';
+import { once } from 'node:events';
+import { pipeline } from 'node:stream/promises';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
@@ -12,6 +14,7 @@ const PORT = Number(process.env.PORT || 4177);
 const configs = new Map();
 const authStates = new Map();
 const authPromises = new Map();
+const mediaWriters = new Map();
 let activeServerId = '';
 let authGeneration = 0;
 
@@ -74,7 +77,13 @@ async function getConfig(id) {
   const mosaicIds = new Set(['auto', '2x2', '3x3-six', '4x4-eight', '3x3', '4x4-ten', '4x4-thirteen-a', '4x4-thirteen-b', '4x4-center', '4x4', '5x5']);
   const initialMosaic = value.initialMosaic ?? 'auto';
   if (typeof initialMosaic !== 'string' || !mosaicIds.has(initialMosaic)) throw new Error('initialMosaic deve corresponder a um mosaico disponível.');
-  const parsed = { id, name, serverAddress: serverAddress.replace(/\/+$/, ''), userAgent: userAgent.trim(), username, password, useBasicAuth, timeZone, initialCameras, initialMosaic };
+  for (const key of ['mediaFolder', 'screenshotFolder', 'videoFolder']) {
+    if (value[key] !== undefined && typeof value[key] !== 'string') throw new Error(`${key} deve ser um caminho de pasta ou uma string vazia.`);
+  }
+  const mediaFolder = value.mediaFolder?.trim() || '';
+  const screenshotFolder = value.screenshotFolder?.trim() || mediaFolder;
+  const videoFolder = value.videoFolder?.trim() || mediaFolder;
+  const parsed = { id, name, serverAddress: serverAddress.replace(/\/+$/, ''), userAgent: userAgent.trim(), username, password, useBasicAuth, timeZone, initialCameras, initialMosaic, screenshotFolder, videoFolder };
   configs.set(id, parsed);
   return parsed;
 }
@@ -267,6 +276,81 @@ function sendJson(res, status, data) {
   res.end(body);
 }
 
+function mediaTarget(config, filename, screenshot) {
+  const key = screenshot ? 'screenshotFolder' : 'videoFolder';
+  if (!config[key]) throw new Error(`Defina ${key} ou mediaFolder no arquivo de configuração do servidor.`);
+  const validName = screenshot ? /^[\p{L}\p{N}_-]{1,100}\.png$/u : /^[\p{L}\p{N}_-]{1,100}\.(?:mp4|mpg)$/u;
+  if (typeof filename !== 'string' || !validName.test(filename)) throw new Error('Nome de arquivo de mídia inválido.');
+  const folder = path.resolve(config[key]);
+  return { folder, finalPath: path.join(folder, filename), partPath: path.join(folder, `${filename}.part`) };
+}
+
+async function waitForStreamOpen(stream) {
+  await Promise.race([once(stream, 'open'), once(stream, 'error').then(([error]) => Promise.reject(error))]);
+}
+
+async function writeRequestToStream(req, stream) {
+  for await (const chunk of req) {
+    if (!stream.write(chunk)) await Promise.race([once(stream, 'drain'), once(stream, 'error').then(([error]) => Promise.reject(error))]);
+  }
+}
+
+async function handleMediaPost(req, res, url) {
+  try {
+    if (req.method !== 'POST') return sendJson(res, 405, { error: 'Método não disponível.' });
+    const id = queryValue(url, 'server');
+    if (activeServerId !== id) throw new Error('Selecione novamente o servidor antes de continuar.');
+    const config = await getConfig(id);
+    const filename = queryValue(url, 'filename');
+    const screenshot = url.pathname === '/api/media-file';
+    const { folder, finalPath, partPath } = mediaTarget(config, filename, screenshot);
+    await fs.mkdir(folder, { recursive: true });
+    if (screenshot) {
+      if ((req.headers['content-type'] || '').toLowerCase() !== 'image/png') throw new Error('O tipo de imagem enviado é inválido.');
+      const temporaryPath = `${partPath}.${process.pid}`;
+      try { await pipeline(req, createWriteStream(temporaryPath, { flags: 'wx' })); }
+      catch (error) { await fs.unlink(temporaryPath).catch(() => {}); throw error; }
+      if (await fs.stat(finalPath).then(() => true, () => false)) { await fs.unlink(temporaryPath).catch(() => {}); throw new Error('Já existe um arquivo com esse nome.'); }
+      await fs.rename(temporaryPath, finalPath);
+      return sendJson(res, 201, { filename });
+    }
+    if (url.pathname !== '/api/media-recording') return sendJson(res, 404, { error: 'Rota não encontrada.' });
+    const action = queryValue(url, 'action');
+    const key = `${id}\0${filename}`;
+    if (action === 'start') {
+      if (mediaWriters.has(key) || await fs.stat(partPath).then(() => true, () => false) || await fs.stat(finalPath).then(() => true, () => false)) throw new Error('Já existe uma gravação com esse nome.');
+      const stream = createWriteStream(partPath, { flags: 'wx' });
+      stream.on('error', () => { mediaWriters.delete(key); void fs.unlink(partPath).catch(() => {}); });
+      try { await waitForStreamOpen(stream); } catch (error) { throw new Error(`Não foi possível criar o arquivo de gravação: ${error.code || 'erro de escrita'}.`); }
+      mediaWriters.set(key, { stream, partPath, finalPath });
+      return sendJson(res, 201, { filename });
+    }
+    const writer = mediaWriters.get(key);
+    if (!writer) throw new Error('A gravação local não está aberta.');
+    if (action === 'chunk') {
+      await writeRequestToStream(req, writer.stream);
+      return sendJson(res, 200, { accepted: true });
+    }
+    if (action === 'abort') {
+      mediaWriters.delete(key);
+      const closed = writer.stream.closed ? Promise.resolve() : once(writer.stream, 'close').catch(() => {});
+      writer.stream.destroy();
+      await closed;
+      await fs.unlink(writer.partPath).catch(() => {});
+      return sendJson(res, 200, { discarded: true });
+    }
+    if (action !== 'finish') throw new Error('Ação de gravação inválida.');
+    mediaWriters.delete(key);
+    writer.stream.end();
+    await once(writer.stream, 'close');
+    await fs.rename(writer.partPath, writer.finalPath);
+    return sendJson(res, 201, { filename });
+  } catch (error) {
+    const message = error?.message && !/password|authdata|authsession|nonce/i.test(error.message) ? error.message : 'Não foi possível salvar a mídia local.';
+    sendJson(res, 400, { error: message });
+  }
+}
+
 function safeErrorCategory(error) {
   const message = String(error?.message ?? '');
   const transport = message.match(/^Falha de transporte na etapa ([a-zA-Z0-9_]+) \(([A-Z0-9_]+)\)\.?$/);
@@ -378,6 +462,7 @@ async function handleApi(req, res, url) {
     if (!res.writableEnded) controller.abort();
   });
   try {
+    if (req.method === 'POST' && ['/api/media-file', '/api/media-recording'].includes(url.pathname)) return await handleMediaPost(req, res, url);
     if (req.method !== 'GET') return sendJson(res, 405, { error: 'Método não disponível.' });
     if (url.pathname === '/api/servers') {
       return sendJson(res, 200, { servers: await serverOptions() });
@@ -386,7 +471,7 @@ async function handleApi(req, res, url) {
     if (url.pathname === '/api/server') {
       const config = await getConfig(id);
       activateServer(id);
-      return sendJson(res, 200, { id, name: config.name, timeZone: config.timeZone, initialCameras: config.initialCameras, initialMosaic: config.initialMosaic });
+      return sendJson(res, 200, { id, name: config.name, timeZone: config.timeZone, initialCameras: config.initialCameras, initialMosaic: config.initialMosaic, screenshotFolderConfigured: Boolean(config.screenshotFolder), videoFolderConfigured: Boolean(config.videoFolder) });
     }
     if (activeServerId !== id) throw new Error('Selecione novamente o servidor antes de continuar.');
     const config = await getConfig(id);
