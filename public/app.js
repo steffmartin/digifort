@@ -321,12 +321,14 @@ function mediaFilenames(cameras, extension, epoch) {
   const milliseconds = String(new Date(epoch).getUTCMilliseconds()).padStart(3, '0');
   const stamp = `${localTime}-${milliseconds}`;
   const used = new Set();
+  const random = new Uint32Array(1);
   return cameras.map(camera => {
     const base = `${safeMediaFilename(camera)}-${stamp}`;
-    let filename = base + extension;
-    for (let suffix = 2; used.has(filename.toLowerCase()); suffix++) {
+    let filename;
+    do {
+      const suffix = crypto.getRandomValues(random)[0].toString(36).padStart(6, '0').slice(-6);
       filename = `${base}-${suffix}${extension}`;
-    }
+    } while (used.has(filename.toLowerCase()));
     used.add(filename.toLowerCase());
     return filename;
   });
