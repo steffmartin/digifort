@@ -30,11 +30,11 @@ const state = {
   servers: [], serverId: '', server: null, cameras: [], tiles: new Map(),
   cameraStatuses: new Map(), statusTimer: null, statusRequestId: 0, statusRefreshing: false,
   mode: 'live', focused: '', audioSource: '', audioEnabled: false,
-  allStopped: false,
+  allStopped: false, mosaic: 'auto', overlaysVisible: true, surveillance: false,
   audioContext: null, reviewEpoch: null, reviewStart: null, reviewEnd: null,
   timeline: [], timelineStart: null, timelineEnd: null, timelineCamera: '',
   timelineRequestId: 0, timelineController: null,
-  thumbnailPage: 0, thumbnails: [], thumbnailObjectUrls: [], thumbnailRequestId: 0, thumbnailControllers: new Set()
+  thumbnailPage: 0, thumbnailSize: 'medium', thumbnails: [], thumbnailObjectUrls: [], thumbnailRequestId: 0, thumbnailControllers: new Set()
 };
 
 const elements = {
@@ -44,16 +44,200 @@ const elements = {
   liveMode: $('#liveMode'), reviewMode: $('#reviewMode'), reviewFields: $('#reviewFields'),
   startDateTime: $('#startDateTime'), endDateTime: $('#endDateTime'), playReview: $('#playReview'),
   audioSource: $('#audioSource'), audioToggle: $('#audioToggle'), viewerGrid: $('#viewerGrid'), emptyMonitor: $('#emptyMonitor'),
-  viewTitle: $('#viewTitle'), viewSubtitle: $('#viewSubtitle'), tileCount: $('#tileCount'), stopAll: $('#stopAll'),
+  viewSubtitle: $('#viewSubtitle'), stopAll: $('#stopAll'),
   reviewPanel: $('#reviewPanel'), timelineCameraLabel: $('#timelineCameraLabel'), timelineRuler: $('#timelineRuler'),
   videoLane: $('#videoLane'), audioLane: $('#audioLane'), timelineTracks: $('#timelineTracks'),
   timelinePlayhead: $('#timelinePlayhead'), timelineStatus: $('#timelineStatus'),
   thumbnailPanel: $('#thumbnailPanel'), thumbnailGrid: $('#thumbnailGrid'), thumbnailStatus: $('#thumbnailStatus'),
   thumbnailInterval: $('#thumbnailInterval'), customInterval: $('#customInterval'), thumbnailPrev: $('#thumbnailPrev'),
+  mosaicSelect: $('#mosaicSelect'), mosaicPreview: $('#mosaicPreview'), overlayToggle: $('#overlayToggle'), surveillanceToggle: $('#surveillanceToggle'), exitSurveillance: $('#exitSurveillance'), contextMenu: $('#contextMenu'), thumbnailSize: $('#thumbnailSize'),
   thumbnailNext: $('#thumbnailNext'), thumbnailPageLabel: $('#thumbnailPageLabel'),
-  modeStatus: $('#modeStatus'), statusLiveDot: $('#statusLiveDot'), focusedLabel: $('#focusedLabel'),
-  codecStatus: $('#codecStatus'), toastRegion: $('#toastRegion')
+  toastRegion: $('#toastRegion')
 };
+
+// The current thumbnail grid starts at 150px wide; request half, current, and double size.
+const THUMBNAIL_SIZES = { small: [75, 51], medium: [150, 102], large: [300, 205] };
+const MOSAICS = [
+  { id: 'auto', name: 'Padrão do sistema', columns: 0, capacity: Infinity },
+  { id: '2x2', name: '2 × 2', columns: 2, capacity: 4 },
+  { id: '3x3-six', name: '3 × 3 · 6 câmeras', columns: 3, capacity: 6, slots: [[1,1,2,2],[1,3,1,1],[2,3,1,1],[3,1,1,1],[3,2,1,1],[3,3,1,1]] },
+  { id: '4x4-eight', name: '4 × 4 · 8 câmeras', columns: 4, capacity: 8, slots: [[1,1,2,2],[1,3,1,1],[1,4,1,1],[2,3,1,1],[2,4,1,1],[3,1,1,1],[4,1,1,1],[3,3,2,2]] },
+  { id: '3x3', name: '3 × 3 · 9 câmeras', columns: 3, capacity: 9 },
+  { id: '4x4-ten', name: '4 × 4 · 10 câmeras', columns: 4, capacity: 10, slots: [[1,1,2,2],[1,3,1,1],[1,4,1,1],[2,3,1,1],[2,4,1,1],[3,1,1,1],[3,2,1,1],[3,3,2,2],[4,1,1,1],[4,2,1,1]] },
+  { id: '4x4-thirteen-a', name: '4 × 4 · 13 câmeras A', columns: 4, capacity: 13, slots: [[1,1,1,2],[1,3,1,2],[2,1,1,2],[2,3,1,1],[2,4,1,1],[3,1,1,1],[3,2,1,1],[3,3,1,1],[3,4,1,1],[4,1,1,1],[4,2,1,1],[4,3,1,1],[4,4,1,1]] },
+  { id: '4x4-thirteen-b', name: '4 × 4 · 13 câmeras B', columns: 4, capacity: 13, slots: [[1,1,2,1],[1,2,2,1],[1,3,2,1],[1,4,1,1],[2,4,1,1],[3,1,1,1],[3,2,1,1],[3,3,1,1],[3,4,1,1],[4,1,1,1],[4,2,1,1],[4,3,1,1],[4,4,1,1]] },
+  { id: '4x4-center', name: '4 × 4 · 13 câmeras central', columns: 4, capacity: 13, slots: [[2,2,2,2],[1,1,1,1],[1,2,1,1],[1,3,1,1],[1,4,1,1],[2,1,1,1],[2,4,1,1],[3,1,1,1],[3,4,1,1],[4,1,1,1],[4,2,1,1],[4,3,1,1],[4,4,1,1]] },
+  { id: '4x4', name: '4 × 4 · 16 câmeras', columns: 4, capacity: 16 },
+  { id: '5x5', name: '5 × 5 · 25 câmeras', columns: 5, capacity: 25 }
+];
+
+function getMosaic(id = state.mosaic) { return MOSAICS.find(item => item.id === id) || MOSAICS[0]; }
+
+function setupMosaics(initial = 'auto') {
+  elements.mosaicSelect.replaceChildren(...MOSAICS.map(item => new Option(item.name, item.id)));
+  state.mosaic = MOSAICS.some(item => item.id === initial) ? initial : 'auto';
+  elements.mosaicSelect.value = state.mosaic;
+  applyMosaic();
+}
+
+function applyMosaic() {
+  const grid = elements.viewerGrid;
+  const mosaic = getMosaic();
+  grid.dataset.mosaic = mosaic.id;
+  grid.style.setProperty('--mosaic-columns', mosaic.columns || 'auto-fit');
+  grid.style.setProperty('--mosaic-min', mosaic.columns ? '0px' : 'min(400px, 100%)');
+  drawMosaicPreview(mosaic);
+  grid.querySelectorAll('.camera-tile').forEach((tile, index) => {
+    const slot = mosaic.slots?.[index];
+    tile.style.gridArea = slot ? `${slot[0]} / ${slot[1]} / span ${slot[2]} / span ${slot[3]}` : '';
+  });
+  drawCameraList();
+}
+
+function drawMosaicPreview(mosaic) {
+  const size = mosaic.columns || 3;
+  elements.mosaicPreview.replaceChildren();
+  elements.mosaicPreview.style.setProperty('--preview-columns', size);
+  elements.mosaicPreview.style.setProperty('--preview-rows', mosaic.columns || 3);
+  for (let index = 0; index < Math.min(mosaic.capacity, 25); index += 1) {
+    const cell = document.createElement('i');
+    cell.style.gridArea = mosaic.slots?.[index] ? `${mosaic.slots[index][0]} / ${mosaic.slots[index][1]} / span ${mosaic.slots[index][2]} / span ${mosaic.slots[index][3]}` : '';
+    elements.mosaicPreview.append(cell);
+  }
+}
+
+function updateOverlayState() {
+  elements.viewerGrid.classList.toggle('overlays-hidden', !state.overlaysVisible);
+  elements.overlayToggle.setAttribute('aria-pressed', String(state.overlaysVisible));
+  elements.overlayToggle.textContent = state.overlaysVisible ? 'Ocultar dados' : 'Mostrar dados';
+}
+
+function reorderTiles() {
+  const ordered = [...elements.viewerGrid.querySelectorAll('.camera-tile')].map(tile => [tile.dataset.camera, state.tiles.get(tile.dataset.camera)]).filter(([, player]) => player);
+  state.tiles = new Map(ordered);
+  applyMosaic();
+  updateAudioSources();
+}
+
+function updateSurveillance() {
+  document.body.classList.toggle('is-surveillance', state.surveillance);
+  elements.surveillanceToggle.setAttribute('aria-pressed', String(state.surveillance));
+  elements.surveillanceToggle.setAttribute('aria-label', state.surveillance ? 'Sair do modo vigilância' : 'Ativar modo vigilância');
+  elements.exitSurveillance.hidden = !state.surveillance;
+}
+
+const PLAYBACK_SHORTCUTS = [
+  ['10 segundos atrás', 10], ['30 segundos atrás', 30], ['1 minuto atrás', 60], ['15 minutos atrás', 900], ['30 minutos atrás', 1800],
+  null, ['1 hora atrás', 3600], ['6 horas atrás', 21600], ['12 horas atrás', 43200], null,
+  ['1 dia atrás', 86400], ['2 dias atrás', 172800], ['3 dias atrás', 259200], null,
+  ['1 semana atrás', 604800], ['2 semanas atrás', 1209600], null, ['Personalizado', null]
+];
+
+function createPlaybackMenu(scope) {
+  const menu = document.createElement('div');
+  menu.className = 'context-submenu';
+  menu.setAttribute('role', 'menu');
+  for (const entry of PLAYBACK_SHORTCUTS) {
+    if (!entry) { const separator = document.createElement('div'); separator.className = 'context-separator'; separator.setAttribute('role', 'separator'); menu.append(separator); continue; }
+    const [label, seconds] = entry;
+    const item = document.createElement('button');
+    item.type = 'button'; item.className = 'context-item'; item.setAttribute('role', 'menuitem'); item.textContent = label;
+    item.addEventListener('click', () => { void beginContextPlayback(scope, seconds); closeContextMenu(); });
+    menu.append(item);
+  }
+  return menu;
+}
+
+function createContextBranch(label, scope) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'context-branch';
+  const trigger = document.createElement('button');
+  trigger.type = 'button'; trigger.className = 'context-item context-branch-trigger'; trigger.setAttribute('role', 'menuitem'); trigger.setAttribute('aria-haspopup', 'menu'); trigger.setAttribute('aria-expanded', 'false');
+  trigger.append(document.createTextNode(label));
+  const arrow = document.createElement('span'); arrow.setAttribute('aria-hidden', 'true'); arrow.textContent = '›'; trigger.append(arrow);
+  const submenu = createPlaybackMenu(scope); submenu.hidden = true; wrapper.append(trigger, submenu);
+  const show = () => { submenu.hidden = false; trigger.setAttribute('aria-expanded', 'true'); positionSubmenu(wrapper, submenu); };
+  trigger.addEventListener('click', () => { show(); submenu.querySelector('[role="menuitem"]')?.focus(); });
+  wrapper.addEventListener('mouseenter', show);
+  wrapper.addEventListener('focusin', show);
+  return wrapper;
+}
+
+function positionSubmenu(wrapper, submenu) {
+  const parent = wrapper.getBoundingClientRect();
+  const width = submenu.getBoundingClientRect().width || 220;
+  const height = Math.min(submenu.scrollHeight, innerHeight - 16);
+  const left = parent.right + width <= innerWidth - 8 ? parent.right - 1 : parent.left - width + 1;
+  const top = Math.max(8, Math.min(parent.top - 5, innerHeight - 8 - height));
+  submenu.style.left = `${Math.max(8, left)}px`;
+  submenu.style.top = `${top}px`;
+}
+
+function openContextMenu(x, y, cameraScope, allScope = null) {
+  const root = elements.contextMenu;
+  state.contextInvoker = document.activeElement;
+  root.replaceChildren(); root.hidden = false;
+  if (allScope) {
+    root.append(createContextBranch('Esta câmera', cameraScope), createContextBranch('Todas as câmeras da grade', allScope));
+  } else {
+    for (const entry of PLAYBACK_SHORTCUTS) {
+      if (!entry) { const separator = document.createElement('div'); separator.className = 'context-separator'; separator.setAttribute('role', 'separator'); root.append(separator); continue; }
+      const [label, seconds] = entry;
+      const item = document.createElement('button'); item.type = 'button'; item.className = 'context-item'; item.setAttribute('role', 'menuitem'); item.textContent = label;
+      item.addEventListener('click', () => { void beginContextPlayback(cameraScope, seconds); closeContextMenu(); }); root.append(item);
+    }
+  }
+  root.style.left = `${Math.max(8, Math.min(x, innerWidth - 240))}px`;
+  root.style.top = `${Math.max(8, Math.min(y, innerHeight - Math.min(root.scrollHeight || 320, innerHeight - 16) - 8))}px`;
+  root.querySelector('[role="menuitem"]')?.focus();
+}
+
+function closeContextMenu(restoreFocus = false) {
+  const invoker = state.contextInvoker;
+  elements.contextMenu.hidden = true; elements.contextMenu.replaceChildren();
+  if (restoreFocus && invoker?.isConnected) invoker.focus();
+}
+
+async function beginContextPlayback(scope, seconds) {
+  if (!state.server || (scope.all && !state.tiles.has(scope.camera))) return;
+  const selectedAt = Date.now();
+  if (!scope.all) {
+    for (const camera of [...state.tiles.keys()]) if (camera !== scope.camera) await closeCamera(camera);
+    state.mosaic = 'auto'; elements.mosaicSelect.value = 'auto'; applyMosaic();
+    if (!state.tiles.has(scope.camera)) await openCamera(scope.camera, 'Recording');
+  }
+  state.surveillance = false; updateSurveillance();
+  setMode('playback');
+  if (seconds === null) {
+    elements.startDateTime.value = ''; elements.endDateTime.value = '';
+    state.reviewStart = null; state.reviewEnd = null; state.reviewEpoch = null;
+    clearTimeline(); clearThumbnails();
+    elements.timelineStatus.textContent = 'Informe um período para carregar a timeline.';
+    elements.thumbnailStatus.textContent = 'Informe um período para carregar miniaturas.';
+    elements.startDateTime.focus();
+    return;
+  }
+  elements.startDateTime.value = epochToInput(selectedAt - seconds * 1000, state.server.timeZone);
+  elements.endDateTime.value = '';
+  startReview();
+}
+
+elements.contextMenu.addEventListener('keydown', event => {
+  const current = event.target.closest('[role="menuitem"]');
+  const menu = event.target.closest('[role="menu"]');
+  const items = [...menu.querySelectorAll(':scope > [role="menuitem"], :scope > .context-branch > [role="menuitem"]')].filter(item => !item.disabled && item.offsetParent !== null);
+  const index = items.indexOf(current);
+  if (event.key === 'ArrowDown' || event.key === 'ArrowUp') { event.preventDefault(); items[(index + (event.key === 'ArrowDown' ? 1 : items.length - 1)) % items.length]?.focus(); }
+  if (event.key === 'ArrowRight' && current?.getAttribute('aria-haspopup') === 'menu') {
+    event.preventDefault();
+    if (current.getAttribute('aria-expanded') !== 'true') current.click();
+    current.parentElement.querySelector('.context-submenu [role="menuitem"]')?.focus();
+  }
+  if (event.key === 'ArrowLeft' && menu !== elements.contextMenu) { event.preventDefault(); const branch = menu.parentElement; menu.hidden = true; branch.querySelector('[aria-haspopup="menu"]').setAttribute('aria-expanded', 'false'); branch.querySelector('[aria-haspopup="menu"]').focus(); }
+  if (event.key === 'Escape') { event.preventDefault(); closeContextMenu(true); }
+});
+
+document.addEventListener('pointerdown', event => { if (!elements.contextMenu.contains(event.target)) closeContextMenu(); });
 
 function toast(message, kind = 'info') {
   const node = document.createElement('div');
@@ -135,6 +319,7 @@ async function selectServer(id) {
   state.audioEnabled = false;
   state.allStopped = false;
   state.reviewEpoch = null;
+  state.surveillance = false; updateSurveillance();
   state.reviewStart = null;
   state.reviewEnd = null;
   elements.liveMode.classList.add('is-active');
@@ -153,7 +338,7 @@ async function selectServer(id) {
     const serverInfo = await apiJson(`/api/server?${query({ server: id })}`);
     state.server = serverInfo;
     elements.timeZone.textContent = `Fuso · ${serverInfo.timeZone}`;
-    $('#reviewTimeZone').textContent = `Horário do servidor · ${serverInfo.timeZone}`;
+    setupMosaics(serverInfo.initialMosaic || 'auto');
     const result = await apiJson(`/api/cameras?${query({ server: id })}`);
     state.cameras = result.cameras || [];
     elements.cameraListEmpty.hidden = state.cameras.length > 0;
@@ -185,6 +370,7 @@ function drawCameraList() {
   elements.availableCount.textContent = String(state.cameras.length);
   for (const camera of visible) {
     const isOpen = state.tiles.has(camera.name);
+    const full = !isOpen && state.tiles.size >= getMosaic().capacity;
     const status = state.cameraStatuses.get(camera.name);
     const unavailable = status?.working === false;
     const description = camera.description || (camera.active ? 'Disponível' : 'Desativada');
@@ -210,7 +396,13 @@ function drawCameraList() {
     button.querySelector('.camera-health-mark').hidden = !unavailable;
     button.querySelector('.camera-add').textContent = isOpen ? '×' : '+';
     button.disabled = !camera.active;
-    button.addEventListener('click', () => isOpen ? closeCamera(camera.name) : openCamera(camera.name));
+    button.setAttribute('aria-disabled', String(full));
+    if (full) button.title = `${camera.name} · libere uma posição no mosaico para abrir esta câmera`;
+    button.addEventListener('click', () => isOpen ? closeCamera(camera.name) : full ? toast('O mosaico está cheio. Libere uma posição antes de abrir outra câmera.', 'error') : openCamera(camera.name));
+    button.addEventListener('contextmenu', event => { event.preventDefault(); openContextMenu(event.clientX, event.clientY, { camera: camera.name, all: false }); });
+    button.addEventListener('keydown', event => {
+      if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) { event.preventDefault(); const rect = button.getBoundingClientRect(); openContextMenu(rect.left + 12, rect.top + 12, { camera: camera.name, all: false }); }
+    });
     elements.cameraList.append(button);
   }
   if (state.cameras.length && !visible.length) {
@@ -260,6 +452,7 @@ function createTile(cameraName, profile) {
   const tile = document.createElement('article');
   tile.className = 'camera-tile';
   tile.dataset.camera = cameraName;
+  tile.draggable = true;
   const camera = state.cameras.find(item => item.name === cameraName);
   tile.innerHTML = `
     <div class="tile-video" tabindex="0" role="button" aria-label="Focar câmera">
@@ -290,6 +483,24 @@ function createTile(cameraName, profile) {
   videoSurface.title = 'Clique duas vezes ou pressione F para abrir em tela cheia';
   videoSurface.addEventListener('click', () => focusCamera(cameraName));
   videoSurface.addEventListener('dblclick', () => toggleTileFullscreen(tile, cameraName));
+  tile.addEventListener('contextmenu', event => { event.preventDefault(); openContextMenu(event.clientX, event.clientY, { camera: cameraName, all: false }, { camera: cameraName, all: true }); });
+  tile.addEventListener('keydown', event => {
+    if ((event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) && !['SELECT', 'BUTTON'].includes(event.target.tagName)) { event.preventDefault(); const rect = tile.getBoundingClientRect(); openContextMenu(rect.left + rect.width / 2, rect.top + rect.height / 2, { camera: cameraName, all: false }, { camera: cameraName, all: true }); }
+  });
+  tile.addEventListener('dragstart', event => { event.dataTransfer.setData('text/plain', cameraName); event.dataTransfer.effectAllowed = 'move'; tile.classList.add('is-dragging'); });
+  tile.addEventListener('dragend', () => tile.classList.remove('is-dragging'));
+  tile.addEventListener('dragover', event => { if (event.dataTransfer.types.includes('text/plain')) { event.preventDefault(); event.dataTransfer.dropEffect = 'move'; } });
+  tile.addEventListener('drop', event => {
+    event.preventDefault();
+    const moving = elements.viewerGrid.querySelector(`[data-camera="${CSS.escape(event.dataTransfer.getData('text/plain'))}"]`);
+    if (!moving || moving === tile) return;
+    const tiles = [...elements.viewerGrid.querySelectorAll('.camera-tile')];
+    const sourceIndex = tiles.indexOf(moving);
+    const targetIndex = tiles.indexOf(tile);
+    [tiles[sourceIndex], tiles[targetIndex]] = [tiles[targetIndex], tiles[sourceIndex]];
+    for (const item of tiles) elements.viewerGrid.append(item);
+    reorderTiles();
+  });
   tile.querySelector('.tile-video').addEventListener('keydown', event => {
     if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); focusCamera(cameraName); }
     if (event.key.toLowerCase() === 'f') { event.preventDefault(); toggleTileFullscreen(tile, cameraName); }
@@ -325,6 +536,7 @@ async function toggleTileFullscreen(tile, cameraName) {
 }
 
 document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && state.surveillance && !document.fullscreenElement) { state.surveillance = false; updateSurveillance(); return; }
   if (event.key !== 'Escape' || !document.fullscreenElement?.classList.contains('camera-tile')) return;
   event.preventDefault();
   void document.exitFullscreen().catch(() => {});
@@ -334,14 +546,14 @@ async function openCamera(cameraName, initialProfile = 'Visualization') {
   if (!state.serverId || state.tiles.has(cameraName)) return;
   const camera = state.cameras.find(item => item.name === cameraName);
   if (!camera?.active) return toast('Esta câmera está desativada ou indisponível.', 'error');
-  const profile = ['Visualization', 'Recording'].includes(initialProfile) ? initialProfile : 'Visualization';
+  if (state.tiles.size >= getMosaic().capacity) return toast('O mosaico está cheio. Libere uma posição antes de abrir outra câmera.', 'error');
+  const profile = state.mode === 'playback' ? 'Recording' : ['Visualization', 'Recording'].includes(initialProfile) ? initialProfile : 'Visualization';
   const tile = createTile(cameraName, profile);
   elements.emptyMonitor.hidden = true;
-  elements.viewerGrid.classList.toggle('has-many', state.tiles.size >= 3);
   elements.viewerGrid.append(tile);
   const player = new CameraPlayer(cameraName, tile, profile);
   state.tiles.set(cameraName, player);
-  elements.viewerGrid.classList.toggle('has-many', state.tiles.size >= 3);
+  applyMosaic();
   const resumeExisting = state.allStopped;
   state.allStopped = false;
   if (resumeExisting) for (const existing of state.tiles.values()) if (existing !== player) await existing.start();
@@ -359,7 +571,6 @@ async function closeCamera(cameraName) {
   const oldAudioSource = state.audioSource;
   player.stop();
   state.tiles.delete(cameraName);
-  elements.viewerGrid.classList.toggle('has-many', state.tiles.size >= 3);
   player.tile.remove();
   if (state.focused === cameraName) state.focused = state.tiles.keys().next().value || '';
   if (state.audioSource === cameraName) state.audioSource = state.focused;
@@ -368,6 +579,7 @@ async function closeCamera(cameraName) {
     state.audioEnabled = false;
   }
   if (!state.tiles.size) state.allStopped = false;
+  applyMosaic();
   updateAudioSources();
   drawCameraList();
   updateViewHeader();
@@ -425,7 +637,6 @@ function updateAudioSources(preferredSource = '') {
 
 function updateViewHeader() {
   const count = state.tiles.size;
-  elements.tileCount.textContent = `${count} ${count === 1 ? 'aberta' : 'abertas'}`;
   elements.cameraCount.textContent = String(count);
   elements.stopAll.disabled = count === 0;
   const stopAction = state.allStopped ? 'Retomar todas as câmeras' : 'Parar todas as câmeras';
@@ -433,11 +644,7 @@ function updateViewHeader() {
   elements.stopAll.setAttribute('aria-label', stopAction);
   elements.stopAll.setAttribute('aria-pressed', String(state.allStopped));
   elements.stopAll.dataset.state = state.allStopped ? 'stopped' : 'active';
-  elements.viewTitle.textContent = state.mode === 'live' ? 'Monitoramento ao vivo' : 'Gravado';
   elements.viewSubtitle.textContent = state.focused ? `${state.focused}${state.mode === 'live' ? ' · transmissão instantânea' : ' · horário sincronizado'}` : 'Escolha uma câmera para começar.';
-  elements.focusedLabel.textContent = state.focused ? `Foco · ${state.focused}` : 'Nenhuma câmera em foco';
-  elements.modeStatus.textContent = state.mode === 'live' ? 'Ao vivo' : 'Gravado';
-  elements.statusLiveDot.classList.toggle('review', state.mode === 'playback');
 }
 
 function setMode(mode) {
@@ -633,7 +840,6 @@ class CameraPlayer {
         throw new Error(message);
       }
       this.setMessage('Recebendo mídia…');
-      $('#codecStatus').textContent = 'Stream multipart ativo';
       void consumeMultipart(response, part => {
         if (!this.stopped && token === this.requestToken) this.consumePart(part);
       }).then(() => {
@@ -945,7 +1151,6 @@ class CameraPlayer {
         this.setMessage('');
         this.setState(state.mode === 'live' ? 'Ao vivo' : 'Gravado');
         this.tile.querySelector('.tile-codec').textContent = codec.toUpperCase();
-        $('#codecStatus').textContent = `${codec.toUpperCase()} · ${this.frameCount} quadros`;
       },
       error: () => {
         if (this.stopped || token !== this.requestToken || generation !== this.videoDecoderGeneration) return;
@@ -1340,7 +1545,7 @@ async function loadTimeline(camera) {
   state.timelineCamera = camera;
   state.timelineStart = startEpoch;
   state.timelineEnd = endEpoch;
-  elements.timelineCameraLabel.textContent = camera;
+  elements.timelineCameraLabel.textContent = `Gravado: ${camera}`;
   elements.timelineStatus.textContent = 'Carregando disponibilidade de gravações…';
   const start = epochToApi(startEpoch, state.server.timeZone);
   const end = epochToApi(endEpoch, state.server.timeZone);
@@ -1472,6 +1677,8 @@ function getThumbnailInterval() {
 async function renderThumbnailPage(page) {
   if (!state.server || !state.reviewStart || !state.tiles.size) return;
   const camera = state.focused || state.tiles.keys().next().value;
+  const [requestedWidth] = THUMBNAIL_SIZES[state.thumbnailSize] || THUMBNAIL_SIZES.medium;
+  elements.thumbnailGrid.style.setProperty('--thumbnail-card-width', `${requestedWidth}px`);
   const end = state.reviewEnd || Date.now();
   const interval = getThumbnailInterval() * 1000;
   if (end <= state.reviewStart) return;
@@ -1535,7 +1742,8 @@ async function renderThumbnailPage(page) {
       state.thumbnailControllers.add(controller);
       const api = epochToApi(item.epoch, state.server.timeZone);
       try {
-        const response = await fetch(`/api/snapshot?${query({ server: state.serverId, camera, date: api.date, time: api.time })}`, { cache: 'no-store', signal: controller.signal });
+        const [width, height] = THUMBNAIL_SIZES[state.thumbnailSize] || THUMBNAIL_SIZES.medium;
+        const response = await fetch(`/api/snapshot?${query({ server: state.serverId, camera, date: api.date, time: api.time, width, height })}`, { cache: 'no-store', signal: controller.signal });
         if (requestId !== state.thumbnailRequestId) continue;
         if (!response.ok) { finishCard(item, false); continue; }
         const blob = await response.blob();
@@ -1577,6 +1785,22 @@ elements.liveMode.addEventListener('click', () => setMode('live'));
 elements.reviewMode.addEventListener('click', () => setMode('playback'));
 elements.playReview.addEventListener('click', startReview);
 elements.stopAll.addEventListener('click', toggleAllStreams);
+elements.mosaicSelect.addEventListener('change', event => {
+  const next = getMosaic(event.target.value);
+  if (state.tiles.size > next.capacity) {
+    elements.mosaicSelect.value = state.mosaic;
+    toast(`Esse mosaico comporta até ${next.capacity} câmeras. Feche algumas câmeras antes de selecioná-lo.`, 'error');
+    return;
+  }
+  state.mosaic = next.id; applyMosaic();
+});
+elements.overlayToggle.addEventListener('click', () => { state.overlaysVisible = !state.overlaysVisible; updateOverlayState(); });
+elements.surveillanceToggle.addEventListener('click', () => { state.surveillance = !state.surveillance; updateSurveillance(); });
+elements.exitSurveillance.addEventListener('click', () => { state.surveillance = false; updateSurveillance(); });
+elements.thumbnailSize.addEventListener('change', event => {
+  state.thumbnailSize = event.target.value in THUMBNAIL_SIZES ? event.target.value : 'medium';
+  if (state.mode === 'playback' && state.reviewStart) renderThumbnailPage(0).catch(() => {});
+});
 elements.audioSource.addEventListener('change', event => {
   focusCamera(event.target.value);
   updateAudioSources();
@@ -1601,6 +1825,7 @@ elements.thumbnailInterval.addEventListener('change', () => {
 elements.customInterval.addEventListener('change', () => renderThumbnailPage(0).catch(() => {}));
 elements.thumbnailPrev.addEventListener('click', () => renderThumbnailPage(state.thumbnailPage - 1).catch(() => {}));
 elements.thumbnailNext.addEventListener('click', () => renderThumbnailPage(state.thumbnailPage + 1).catch(() => {}));
+document.addEventListener('fullscreenchange', () => { if (state.surveillance && !document.fullscreenElement) { state.surveillance = false; updateSurveillance(); } });
 document.addEventListener('keydown', event => {
   if (event.key === '/' && !['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) { event.preventDefault(); elements.cameraSearch.focus(); }
   if (event.key === 'Escape' && document.activeElement === elements.cameraSearch) { elements.cameraSearch.value = ''; drawCameraList(); elements.cameraSearch.blur(); }
