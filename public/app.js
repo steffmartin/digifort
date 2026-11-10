@@ -85,9 +85,12 @@ function setupMosaics(initial = 'auto') {
 function applyMosaic() {
   const grid = elements.viewerGrid;
   const mosaic = getMosaic();
+  const cameraCount = grid.querySelectorAll('.camera-tile').length;
+  const autoColumns = Math.ceil(Math.sqrt(Math.max(cameraCount, 1)));
+  const autoRows = Math.ceil(Math.max(cameraCount, 1) / autoColumns);
   grid.dataset.mosaic = mosaic.id;
-  grid.style.setProperty('--mosaic-columns', mosaic.columns || 'auto-fit');
-  grid.style.setProperty('--mosaic-min', mosaic.columns ? '0px' : 'min(400px, 100%)');
+  grid.style.setProperty('--mosaic-columns', mosaic.columns || autoColumns);
+  grid.style.setProperty('--mosaic-rows', mosaic.columns || autoRows);
   drawMosaicPreview(mosaic);
   grid.querySelectorAll('.camera-tile').forEach((tile, index) => {
     const slot = mosaic.slots?.[index];
@@ -292,6 +295,9 @@ elements.contextMenu.addEventListener('keydown', event => {
 document.addEventListener('pointerdown', event => {
   if (!elements.contextMenu.contains(event.target)) closeContextMenu();
   if (!elements.displayControl.contains(event.target)) closeDisplayMenu();
+});
+document.addEventListener('contextmenu', event => {
+  if (!event.target.closest('.camera-tile, .camera-row')) event.preventDefault();
 });
 
 function toast(message, kind = 'info') {
