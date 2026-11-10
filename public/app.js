@@ -59,6 +59,7 @@ const elements = {
 
 // The current thumbnail grid starts at 150px wide; request half, current, and double size.
 const THUMBNAIL_SIZES = { small: [75, 51], medium: [150, 102], large: [300, 205] };
+const THUMBNAILS_PER_PAGE = 20;
 const MOSAICS = [
   { id: 'auto', name: 'Grade automática', columns: 0, capacity: Infinity, previewCapacity: 8 },
   { id: '2x2', name: '2 × 2 · 4 câmeras', columns: 2, capacity: 4 },
@@ -1769,10 +1770,10 @@ async function renderThumbnailPage(page) {
   const interval = getThumbnailInterval() * 1000;
   if (end <= state.reviewStart) return;
   const total = Math.floor((end - state.reviewStart) / interval) + 1;
-  const pages = Math.max(1, Math.ceil(total / 24));
+  const pages = Math.max(1, Math.ceil(total / THUMBNAILS_PER_PAGE));
   state.thumbnailPage = Math.max(0, Math.min(page, pages - 1));
-  const offset = state.thumbnailPage * 24;
-  const pageItems = Array.from({ length: Math.min(24, total - offset) }, (_, index) => state.reviewStart + (offset + index) * interval);
+  const offset = state.thumbnailPage * THUMBNAILS_PER_PAGE;
+  const pageItems = Array.from({ length: Math.min(THUMBNAILS_PER_PAGE, total - offset) }, (_, index) => state.reviewStart + (offset + index) * interval);
   clearThumbnails();
   const requestId = state.thumbnailRequestId;
   state.thumbnails = pageItems;
