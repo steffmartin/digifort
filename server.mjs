@@ -285,13 +285,14 @@ function mediaTarget(config, filename, screenshot) {
   return { folder, finalPath: path.join(folder, filename), partPath: path.join(folder, `${filename}.part`) };
 }
 
-async function waitForStreamOpen(stream) {
-  await Promise.race([once(stream, 'open'), once(stream, 'error').then(([error]) => Promise.reject(error))]);
-}
-
 async function writeRequestToStream(req, stream) {
   for await (const chunk of req) {
-    if (!stream.write(chunk)) await Promise.race([once(stream, 'drain'), once(stream, 'error').then(([error]) => Promise.reject(error))]);
+    await new Promise((resolve, reject) => {
+      stream.write(chunk, error => {
+        if (error) reject(error);
+        else resolve();
+      });
+    });
   }
 }
 
@@ -321,7 +322,7 @@ async function handleMediaPost(req, res, url) {
       if (mediaWriters.has(key) || await fs.stat(partPath).then(() => true, () => false) || await fs.stat(finalPath).then(() => true, () => false)) throw new Error('Já existe uma gravação com esse nome.');
       const stream = createWriteStream(partPath, { flags: 'wx' });
       stream.on('error', () => { mediaWriters.delete(key); void fs.unlink(partPath).catch(() => {}); });
-      try { await waitForStreamOpen(stream); } catch (error) { throw new Error(`Não foi possível criar o arquivo de gravação: ${error.code || 'erro de escrita'}.`); }
+      try { await once(stream, 'open'); } catch (error) { throw new Error(`Não foi possível criar o arquivo de gravação: ${error.code || 'erro de escrita'}.`); }
       mediaWriters.set(key, { stream, partPath, finalPath });
       return sendJson(res, 201, { filename });
     }
