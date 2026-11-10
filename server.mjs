@@ -71,7 +71,10 @@ async function getConfig(id) {
   for (const [camera, profile] of Object.entries(initialCameras)) {
     if (!camera.trim() || !['Visualization', 'Recording'].includes(profile)) throw new Error('Cada câmera inicial precisa ter um nome e o perfil Visualization ou Recording.');
   }
-  const parsed = { id, name, serverAddress: serverAddress.replace(/\/+$/, ''), userAgent: userAgent.trim(), username, password, useBasicAuth, timeZone, initialCameras };
+  const mosaicIds = new Set(['auto', '2x2', '3x3-six', '4x4-eight', '3x3', '4x4-ten', '4x4-thirteen-a', '4x4-thirteen-b', '4x4-center', '4x4', '5x5']);
+  const initialMosaic = value.initialMosaic ?? 'auto';
+  if (typeof initialMosaic !== 'string' || !mosaicIds.has(initialMosaic)) throw new Error('initialMosaic deve corresponder a um mosaico disponível.');
+  const parsed = { id, name, serverAddress: serverAddress.replace(/\/+$/, ''), userAgent: userAgent.trim(), username, password, useBasicAuth, timeZone, initialCameras, initialMosaic };
   configs.set(id, parsed);
   return parsed;
 }
@@ -269,7 +272,7 @@ function safeErrorCategory(error) {
   const transport = message.match(/^Falha de transporte na etapa ([a-zA-Z0-9_]+) \(([A-Z0-9_]+)\)\.?$/);
   if (transport) return `transport:${transport[1]}:${transport[2]}`;
   if (/arquivo de configuração não contém JSON válido/i.test(message)) return 'invalid-config-json';
-  if (/configuração|fuso|initialCameras/i.test(message)) return 'invalid-config';
+  if (/configuração|fuso|initialCameras|initialMosaic/i.test(message)) return 'invalid-config';
   if (/servidor Digifort não aceitou/i.test(message)) return 'upstream-rejected';
   if (error?.name === 'AbortError' || error?.name === 'TimeoutError') return 'request-timeout';
   return 'request-failed';
@@ -383,7 +386,7 @@ async function handleApi(req, res, url) {
     if (url.pathname === '/api/server') {
       const config = await getConfig(id);
       activateServer(id);
-      return sendJson(res, 200, { id, name: config.name, timeZone: config.timeZone, initialCameras: config.initialCameras });
+      return sendJson(res, 200, { id, name: config.name, timeZone: config.timeZone, initialCameras: config.initialCameras, initialMosaic: config.initialMosaic });
     }
     if (activeServerId !== id) throw new Error('Selecione novamente o servidor antes de continuar.');
     const config = await getConfig(id);
@@ -420,9 +423,12 @@ async function handleApi(req, res, url) {
       return res.end();
     }
     if (url.pathname === '/api/snapshot') {
+      const snapshotSizes = { '75x51': ['75', '51'], '150x102': ['150', '102'], '300x205': ['300', '205'], '352x240': ['352', '240'] };
+      const requested = `${queryValue(url, 'width') || '352'}x${queryValue(url, 'height') || '240'}`;
+      const [width, height] = snapshotSizes[requested] || snapshotSizes['352x240'];
       const response = await apiFetch(id, config, 'Cameras/Playback/GetSnapshot', {
         Camera: queryValue(url, 'camera'), Date: queryValue(url, 'date'), Time: queryValue(url, 'time'),
-        Width: '352', Height: '240', KeepAspectRatio: 'TRUE', Quality: '55', ResponseFormat: 'Text'
+        Width: width, Height: height, KeepAspectRatio: 'TRUE', Quality: '55', ResponseFormat: 'Text'
       }, controller.signal);
       const contentType = response.headers.get('content-type') || '';
       if (!response.ok || !contentType.toLowerCase().includes('image/jpeg')) throw new Error('Não há imagem gravada nesse instante.');
@@ -467,7 +473,7 @@ async function handleApi(req, res, url) {
     const message = error?.message && !/password|authdata|authsession|nonce|http[s]?:\/\//i.test(error.message)
       ? error.message
       : 'Não foi possível concluir a solicitação. Revise a conexão e a configuração local.';
-    const status = /configuração|fuso|initialCameras|parâmetro|perfil/i.test(message) ? 400 : 502;
+    const status = /configuração|fuso|initialCameras|initialMosaic|parâmetro|perfil/i.test(message) ? 400 : 502;
     process.stderr.write(`[api:error] ${req.method} ${url.pathname} ${status} ${safeErrorCategory(error)}\n`);
     sendJson(res, status, { error: message });
   }

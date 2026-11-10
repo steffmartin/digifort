@@ -71,14 +71,26 @@
             </div>
             <div class="command-divider" aria-hidden="true"></div>
             <div class="review-fields" id="reviewFields" hidden>
-              <label class="field-label" for="startDateTime">Início (obrigatório)</label>
-              <input id="startDateTime" type="datetime-local" step="1" aria-describedby="reviewTimeZone" />
-              <label class="field-label" for="endDateTime">Fim (opcional)</label>
-              <input id="endDateTime" type="datetime-local" step="1" aria-describedby="reviewTimeZone" />
+              <label class="field-label" for="startDateTime">Início no fuso do servidor</label>
+              <input id="startDateTime" type="datetime-local" step="1" aria-describedby="serverTimeZone" />
+              <label class="field-label" for="endDateTime">Fim no fuso do servidor</label>
+              <input id="endDateTime" type="datetime-local" step="1" aria-describedby="serverTimeZone" />
               <button id="playReview" class="button-primary" type="button">Reproduzir</button>
-              <span id="reviewTimeZone" class="review-time-zone">Horário do servidor: —</span>
             </div>
             <div class="topbar-spacer"></div>
+            <label class="mosaic-control" for="mosaicSelect"><span class="mosaic-preview" id="mosaicPreview" aria-hidden="true"></span><select id="mosaicSelect" aria-label="Composição da grade de câmeras"></select></label>
+            <div class="display-control" id="displayControl">
+              <button class="overlay-toggle" id="overlayToggle" type="button" aria-pressed="false">Mostrar tudo</button>
+              <button class="display-menu-toggle" id="displayMenuToggle" type="button" aria-label="Opções de exibição" aria-haspopup="menu" aria-expanded="false" aria-controls="displayMenu"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5.5 7.5 4.5 4.5 4.5-4.5"></path></svg></button>
+              <div class="display-menu" id="displayMenu" role="menu" aria-label="Opções de exibição" hidden>
+                <button class="display-menu-item" id="toggleOverlayVisibility" type="button" role="menuitemcheckbox" aria-checked="false">Mostrar dados</button>
+                <button class="display-menu-item" id="toggleTimelineVisibility" type="button" role="menuitemcheckbox" aria-checked="true">Ocultar timeline</button>
+                <button class="display-menu-item" id="toggleThumbnailVisibility" type="button" role="menuitemcheckbox" aria-checked="true">Ocultar miniatura</button>
+              </div>
+            </div>
+            <button class="icon-button surveillance-toggle" id="surveillanceToggle" type="button" aria-pressed="false" aria-label="Ativar modo vigilância" title="Modo vigilância">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5"></path></svg>
+            </button>
             <div class="audio-control-wrap">
               <label class="field-label" for="audioSource">Áudio de</label>
               <select id="audioSource" disabled aria-label="Fonte do áudio">
@@ -89,20 +101,11 @@
                 <span>Ativar áudio</span>
               </button>
             </div>
+            <button class="icon-button stop-all-button" id="stopAll" type="button" title="Parar todas as câmeras" aria-label="Parar todas as câmeras" aria-pressed="false" data-state="active" disabled>
+              <svg viewBox="0 0 20 20" aria-hidden="true"><path class="pause-icon" d="M6 5v10M14 5v10"></path><path class="play-icon" d="M7 4.5v11l9-5.5-9-5.5Z"></path></svg>
+            </button>
           </section>
-
-          <section class="viewer-heading" aria-live="polite">
-            <div>
-              <h2 id="viewTitle">Monitoramento</h2>
-              <p id="viewSubtitle">Escolha uma câmera para começar.</p>
-            </div>
-            <div class="viewer-tools">
-              <span class="tile-count" id="tileCount">0 abertas</span>
-              <button class="icon-button" id="stopAll" type="button" title="Parar todas as câmeras" aria-label="Parar todas as câmeras" aria-pressed="false" data-state="active" disabled>
-                <svg viewBox="0 0 20 20" aria-hidden="true"><rect class="stop-icon" x="5" y="5" width="10" height="10" rx="1"></rect><path class="play-icon" d="M7 4.5v11l9-5.5-9-5.5Z"></path></svg>
-              </button>
-            </div>
-          </section>
+          <p class="visually-hidden" id="viewSubtitle" aria-live="polite">Escolha uma câmera para começar.</p>
 
           <section id="viewerGrid" class="viewer-grid" aria-label="Grade de câmeras">
             <div class="empty-monitor" id="emptyMonitor">
@@ -115,8 +118,7 @@
           <section id="reviewPanel" class="review-panel" hidden>
             <div class="timeline-heading">
               <div>
-                <span class="eyebrow">GRAVADO</span>
-                <h3 id="timelineCameraLabel">Timeline</h3>
+                <span class="eyebrow" id="timelineCameraLabel">Gravado</span>
               </div>
               <div class="timeline-legend"><span><i class="legend-video"></i>Vídeo</span><span><i class="legend-audio"></i>Áudio</span></div>
             </div>
@@ -133,8 +135,10 @@
 
           <section id="thumbnailPanel" class="thumbnail-panel" hidden>
             <div class="thumbnail-heading">
-              <div><span class="eyebrow">QUADROS DE REFERÊNCIA</span><h3>Miniaturas</h3></div>
+              <div><span class="eyebrow">Miniaturas de gravação</span></div>
               <div class="thumbnail-controls">
+                <label for="thumbnailSize">Tamanho</label>
+                <select id="thumbnailSize" aria-label="Tamanho das miniaturas"><option value="small">Pequeno</option><option value="medium" selected>Médio</option><option value="large">Grande</option></select>
                 <label for="thumbnailInterval">A cada</label>
                 <select id="thumbnailInterval">
                   <option value="30">30 s</option><option value="60">1 min</option><option value="300" selected>5 min</option><option value="900">15 min</option><option value="custom">Personalizado</option>
@@ -148,15 +152,10 @@
             <div id="thumbnailGrid" class="thumbnail-grid"></div>
             <div id="thumbnailStatus" class="thumbnail-status">As miniaturas usam imagens pontuais das gravações.</div>
           </section>
-
-          <footer class="statusbar">
-            <span><span class="status-live-dot" id="statusLiveDot"></span><span id="modeStatus">Ao vivo</span></span>
-            <span id="focusedLabel">Nenhuma câmera em foco</span>
-            <span class="statusbar-spacer"></span>
-            <span id="codecStatus">Decoder aguardando stream</span>
-          </footer>
         </main>
       </div>
+      <button id="exitSurveillance" class="exit-surveillance" type="button" hidden>Sair do modo vigilância · Esc</button>
+      <div id="contextMenu" class="context-menu" role="menu" hidden></div>
       <div class="toast-region" id="toastRegion" aria-live="polite" aria-atomic="true"></div>
     </div>
   </body>
