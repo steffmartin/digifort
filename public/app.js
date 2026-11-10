@@ -1855,7 +1855,8 @@ elements.mosaicSelect.addEventListener('change', event => {
   const next = getMosaic(event.target.value);
   if (state.tiles.size > next.capacity) {
     elements.mosaicSelect.value = state.mosaic;
-    toast(`Esse mosaico comporta até ${next.capacity} câmeras. Feche algumas câmeras antes de selecioná-lo.`, 'error');
+    const camerasToClose = state.tiles.size - next.capacity;
+    toast(`Esse mosaico comporta até ${next.capacity} câmeras. Feche ${camerasToClose} ${camerasToClose === 1 ? 'câmera' : 'câmeras'} para selecioná-lo.`, 'error');
     return;
   }
   state.mosaic = next.id; applyMosaic();
