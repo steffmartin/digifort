@@ -297,7 +297,7 @@ document.addEventListener('pointerdown', event => {
   if (!elements.displayControl.contains(event.target)) closeDisplayMenu();
 });
 document.addEventListener('contextmenu', event => {
-  if (!event.target.closest('.camera-tile, .camera-row')) event.preventDefault();
+  if (!event.target.closest?.('.camera-tile, .camera-row')) event.preventDefault();
 });
 
 function toast(message, kind = 'info') {
@@ -630,10 +630,14 @@ async function closeCamera(cameraName) {
   const player = state.tiles.get(cameraName);
   if (!player) return;
   const oldAudioSource = state.audioSource;
+  const wasFocused = state.focused === cameraName;
   player.stop();
   state.tiles.delete(cameraName);
   player.tile.remove();
-  if (state.focused === cameraName) state.focused = state.tiles.keys().next().value || '';
+  if (wasFocused) {
+    state.focused = state.tiles.keys().next().value || '';
+    state.tiles.get(state.focused)?.tile.classList.add('is-focused');
+  }
   if (state.audioSource === cameraName) state.audioSource = state.focused;
   if (!state.tiles.size) {
     elements.emptyMonitor.hidden = false;
@@ -645,6 +649,15 @@ async function closeCamera(cameraName) {
   drawCameraList();
   updateViewHeader();
   if (state.audioEnabled && oldAudioSource !== state.audioSource) void audioSourceChanged(oldAudioSource, state.audioSource);
+  if (wasFocused && state.mode === 'playback' && state.reviewStart) {
+    if (state.focused) reloadFocusedReview(state.focused);
+    else {
+      clearTimeline();
+      clearThumbnails();
+      if (state.timelineVisible) elements.timelineStatus.textContent = 'Abra uma câmera para carregar a timeline.';
+      if (state.thumbnailsVisible) elements.thumbnailStatus.textContent = 'Abra uma câmera para carregar miniaturas.';
+    }
+  }
 }
 
 async function closeAllTiles() {
@@ -1583,6 +1596,7 @@ function clearTimeline() {
   state.timelineCamera = '';
   state.timelineStart = null;
   state.timelineEnd = null;
+  elements.timelineCameraLabel.textContent = 'Gravado';
   elements.videoLane.replaceChildren();
   elements.audioLane.replaceChildren();
   elements.timelineRuler.replaceChildren();
