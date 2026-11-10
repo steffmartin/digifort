@@ -61,7 +61,7 @@ const elements = {
 const THUMBNAIL_SIZES = { small: [75, 51], medium: [150, 102], large: [300, 205] };
 const MOSAICS = [
   { id: 'auto', name: 'Grade automática', columns: 0, capacity: Infinity, previewCapacity: 8 },
-  { id: '2x2', name: '2 × 2', columns: 2, capacity: 4 },
+  { id: '2x2', name: '2 × 2 · 4 câmeras', columns: 2, capacity: 4 },
   { id: '3x3-six', name: '3 × 3 · 6 câmeras', columns: 3, capacity: 6, slots: [[1,1,2,2],[1,3,1,1],[2,3,1,1],[3,1,1,1],[3,2,1,1],[3,3,1,1]] },
   { id: '4x4-eight', name: '4 × 4 · 8 câmeras', columns: 4, capacity: 8, slots: [[1,1,3,3],[1,4,1,1],[2,4,1,1],[3,4,1,1],[4,1,1,1],[4,2,1,1],[4,3,1,1],[4,4,1,1]] },
   { id: '3x3', name: '3 × 3 · 9 câmeras', columns: 3, capacity: 9 },

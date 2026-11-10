@@ -64,6 +64,22 @@ O player usa `GetCameras`, `GetMediaStream`, `Playback/GetMediaStream`, `GetTime
 
 No teste atual, `/api/server` responde `200`, mas a chamada Node a `Cameras/GetCameras` falha com `FETCH_ERROR` antes de receber uma resposta HTTP. O usuário observou `200` ao abrir essa rota diretamente no navegador com autenticação tradicional. A causa ainda está sendo investigada; acompanhe a [issue de handoff](https://github.com/steffmartin/digifort/issues/1).
 
-A chave opcional `initialMosaic` em `config/<servidor>.config` define o mosaico inicial. Use `auto`, `2x2`, `3x3-six`, `4x4-eight`, `3x3`, `4x4-ten`, `4x4-thirteen-a`, `4x4-thirteen-b`, `4x4-center`, `4x4` ou `5x5`. Sem a chave, o player usa a grade automática. A escolha feita na interface dura apenas até a sessão terminar.
+A chave opcional `initialMosaic` em `config/<servidor>.config` define o mosaico inicial. Use um dos IDs abaixo; o nome à direita é o exibido no seletor:
+
+| ID | Grade |
+| --- | --- |
+| `auto` | Grade automática |
+| `2x2` | 2 × 2 · 4 câmeras |
+| `3x3-six` | 3 × 3 · 6 câmeras |
+| `4x4-eight` | 4 × 4 · 8 câmeras |
+| `3x3` | 3 × 3 · 9 câmeras |
+| `4x4-ten` | 4 × 4 · 10 câmeras |
+| `4x4-thirteen-a` | 4 × 4 · 13 câmeras A |
+| `4x4-thirteen-b` | 4 × 4 · 13 câmeras B |
+| `4x4-center` | 4 × 4 · 13 câmeras C |
+| `4x4` | 4 × 4 · 16 câmeras |
+| `5x5` | 5 × 5 · 25 câmeras |
+
+Sem a chave, o player usa a grade automática. A escolha feita na interface dura apenas até a sessão terminar.
 
 A visibilidade das informações sobrepostas, timeline e miniaturas e o tamanho das miniaturas são escolhas da sessão: cada página inicia com informações ocultas, timeline e miniaturas visíveis e tamanho médio. Timeline e miniaturas seguem a câmera em foco; painéis ocultos não fazem chamadas às APIs.
