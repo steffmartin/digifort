@@ -82,7 +82,15 @@
             </div>
             <div class="topbar-spacer"></div>
             <label class="mosaic-control" for="mosaicSelect"><span class="mosaic-preview" id="mosaicPreview" aria-hidden="true"></span><select id="mosaicSelect" aria-label="Composição da grade de câmeras"></select></label>
-            <button class="overlay-toggle" id="overlayToggle" type="button" aria-pressed="true">Ocultar dados</button>
+            <div class="display-control" id="displayControl">
+              <button class="overlay-toggle" id="overlayToggle" type="button" aria-pressed="false">Mostrar tudo</button>
+              <button class="display-menu-toggle" id="displayMenuToggle" type="button" aria-label="Opções de exibição" aria-haspopup="menu" aria-expanded="false" aria-controls="displayMenu"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5.5 7.5 4.5 4.5 4.5-4.5"></path></svg></button>
+              <div class="display-menu" id="displayMenu" role="menu" aria-label="Opções de exibição" hidden>
+                <button class="display-menu-item" id="toggleOverlayVisibility" type="button" role="menuitemcheckbox" aria-checked="false">Mostrar dados</button>
+                <button class="display-menu-item" id="toggleTimelineVisibility" type="button" role="menuitemcheckbox" aria-checked="true">Ocultar timeline</button>
+                <button class="display-menu-item" id="toggleThumbnailVisibility" type="button" role="menuitemcheckbox" aria-checked="true">Ocultar miniatura</button>
+              </div>
+            </div>
             <button class="icon-button surveillance-toggle" id="surveillanceToggle" type="button" aria-pressed="false" aria-label="Ativar modo vigilância" title="Modo vigilância">◉</button>
             <div class="audio-control-wrap">
               <label class="field-label" for="audioSource">Áudio de</label>

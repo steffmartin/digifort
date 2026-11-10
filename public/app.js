@@ -30,7 +30,7 @@ const state = {
   servers: [], serverId: '', server: null, cameras: [], tiles: new Map(),
   cameraStatuses: new Map(), statusTimer: null, statusRequestId: 0, statusRefreshing: false,
   mode: 'live', focused: '', audioSource: '', audioEnabled: false,
-  allStopped: false, mosaic: 'auto', overlaysVisible: true, surveillance: false,
+  allStopped: false, mosaic: 'auto', overlaysVisible: false, timelineVisible: true, thumbnailsVisible: true, surveillance: false,
   audioContext: null, reviewEpoch: null, reviewStart: null, reviewEnd: null,
   timeline: [], timelineStart: null, timelineEnd: null, timelineCamera: '',
   timelineRequestId: 0, timelineController: null,
@@ -50,7 +50,9 @@ const elements = {
   timelinePlayhead: $('#timelinePlayhead'), timelineStatus: $('#timelineStatus'),
   thumbnailPanel: $('#thumbnailPanel'), thumbnailGrid: $('#thumbnailGrid'), thumbnailStatus: $('#thumbnailStatus'),
   thumbnailInterval: $('#thumbnailInterval'), customInterval: $('#customInterval'), thumbnailPrev: $('#thumbnailPrev'),
-  mosaicSelect: $('#mosaicSelect'), mosaicPreview: $('#mosaicPreview'), overlayToggle: $('#overlayToggle'), surveillanceToggle: $('#surveillanceToggle'), exitSurveillance: $('#exitSurveillance'), contextMenu: $('#contextMenu'), thumbnailSize: $('#thumbnailSize'),
+  mosaicSelect: $('#mosaicSelect'), mosaicPreview: $('#mosaicPreview'), overlayToggle: $('#overlayToggle'), displayControl: $('#displayControl'), displayMenuToggle: $('#displayMenuToggle'), displayMenu: $('#displayMenu'),
+  toggleOverlayVisibility: $('#toggleOverlayVisibility'), toggleTimelineVisibility: $('#toggleTimelineVisibility'), toggleThumbnailVisibility: $('#toggleThumbnailVisibility'),
+  surveillanceToggle: $('#surveillanceToggle'), exitSurveillance: $('#exitSurveillance'), contextMenu: $('#contextMenu'), thumbnailSize: $('#thumbnailSize'),
   thumbnailNext: $('#thumbnailNext'), thumbnailPageLabel: $('#thumbnailPageLabel'),
   toastRegion: $('#toastRegion')
 };
@@ -108,8 +110,48 @@ function drawMosaicPreview(mosaic) {
 
 function updateOverlayState() {
   elements.viewerGrid.classList.toggle('overlays-hidden', !state.overlaysVisible);
-  elements.overlayToggle.setAttribute('aria-pressed', String(state.overlaysVisible));
-  elements.overlayToggle.textContent = state.overlaysVisible ? 'Ocultar dados' : 'Mostrar dados';
+  elements.reviewPanel.hidden = state.mode !== 'playback' || !state.timelineVisible;
+  elements.thumbnailPanel.hidden = state.mode !== 'playback' || !state.thumbnailsVisible;
+  const allVisible = state.overlaysVisible && state.timelineVisible && state.thumbnailsVisible;
+  elements.overlayToggle.setAttribute('aria-pressed', String(allVisible));
+  elements.overlayToggle.textContent = allVisible ? 'Ocultar tudo' : 'Mostrar tudo';
+  elements.toggleOverlayVisibility.setAttribute('aria-checked', String(state.overlaysVisible));
+  elements.toggleOverlayVisibility.textContent = `${state.overlaysVisible ? 'Ocultar' : 'Mostrar'} dados`;
+  elements.toggleTimelineVisibility.setAttribute('aria-checked', String(state.timelineVisible));
+  elements.toggleTimelineVisibility.textContent = `${state.timelineVisible ? 'Ocultar' : 'Mostrar'} timeline`;
+  elements.toggleThumbnailVisibility.setAttribute('aria-checked', String(state.thumbnailsVisible));
+  elements.toggleThumbnailVisibility.textContent = `${state.thumbnailsVisible ? 'Ocultar' : 'Mostrar'} miniatura`;
+  if (state.mode === 'playback' && state.reviewStart && state.timelineVisible) drawTimeline();
+}
+
+function setDisplayVisibility({ overlays = state.overlaysVisible, timeline = state.timelineVisible, thumbnails = state.thumbnailsVisible } = {}) {
+  const wasTimelineVisible = state.timelineVisible;
+  const wereThumbnailsVisible = state.thumbnailsVisible;
+  state.overlaysVisible = overlays;
+  state.timelineVisible = timeline;
+  state.thumbnailsVisible = thumbnails;
+  if (wasTimelineVisible && !timeline) {
+    clearTimeline();
+    elements.timelineStatus.textContent = 'Timeline ocultada.';
+  }
+  if (wereThumbnailsVisible && !thumbnails) clearThumbnails();
+  updateOverlayState();
+  if (state.mode === 'playback' && state.reviewStart) {
+    if (!wasTimelineVisible && timeline) loadFocusedTimeline(state.focused || state.tiles.keys().next().value);
+    if (!wereThumbnailsVisible && thumbnails) renderThumbnailPage(0).catch(() => {});
+  }
+}
+
+function closeDisplayMenu(restoreFocus = false) {
+  elements.displayMenu.hidden = true;
+  elements.displayMenuToggle.setAttribute('aria-expanded', 'false');
+  if (restoreFocus) elements.displayMenuToggle.focus();
+}
+
+function openDisplayMenu() {
+  elements.displayMenu.hidden = false;
+  elements.displayMenuToggle.setAttribute('aria-expanded', 'true');
+  elements.displayMenu.querySelector('[role="menuitemcheckbox"]')?.focus();
 }
 
 function reorderTiles() {
@@ -156,7 +198,16 @@ function createContextBranch(label, scope) {
   trigger.append(document.createTextNode(label));
   const arrow = document.createElement('span'); arrow.setAttribute('aria-hidden', 'true'); arrow.textContent = '›'; trigger.append(arrow);
   const submenu = createPlaybackMenu(scope); submenu.hidden = true; wrapper.append(trigger, submenu);
-  const show = () => { submenu.hidden = false; trigger.setAttribute('aria-expanded', 'true'); positionSubmenu(wrapper, submenu); };
+  const show = () => {
+    for (const sibling of elements.contextMenu.querySelectorAll('.context-branch')) {
+      if (sibling === wrapper) continue;
+      sibling.querySelector('.context-submenu').hidden = true;
+      sibling.querySelector('[aria-haspopup="menu"]').setAttribute('aria-expanded', 'false');
+    }
+    submenu.hidden = false;
+    trigger.setAttribute('aria-expanded', 'true');
+    positionSubmenu(wrapper, submenu);
+  };
   trigger.addEventListener('click', () => { show(); submenu.querySelector('[role="menuitem"]')?.focus(); });
   wrapper.addEventListener('mouseenter', show);
   wrapper.addEventListener('focusin', show);
@@ -237,7 +288,10 @@ elements.contextMenu.addEventListener('keydown', event => {
   if (event.key === 'Escape') { event.preventDefault(); closeContextMenu(true); }
 });
 
-document.addEventListener('pointerdown', event => { if (!elements.contextMenu.contains(event.target)) closeContextMenu(); });
+document.addEventListener('pointerdown', event => {
+  if (!elements.contextMenu.contains(event.target)) closeContextMenu();
+  if (!elements.displayControl.contains(event.target)) closeDisplayMenu();
+});
 
 function toast(message, kind = 'info') {
   const node = document.createElement('div');
@@ -602,6 +656,7 @@ async function closeAllTiles() {
 
 function focusCamera(cameraName) {
   if (!state.tiles.has(cameraName)) return;
+  const previousFocus = state.focused;
   state.focused = cameraName;
   const oldSource = state.audioSource;
   state.audioSource = cameraName;
@@ -612,6 +667,7 @@ function focusCamera(cameraName) {
   updateAudioSources(cameraName);
   updateViewHeader();
   if (state.audioEnabled && oldSource !== state.audioSource) void audioSourceChanged(oldSource, state.audioSource);
+  if (previousFocus !== cameraName && state.mode === 'playback' && state.reviewStart) reloadFocusedReview(cameraName);
 }
 
 function updateAudioSources(preferredSource = '') {
@@ -657,8 +713,7 @@ function setMode(mode) {
   elements.reviewMode.classList.toggle('is-active', wasPlayback);
   elements.reviewMode.setAttribute('aria-pressed', String(wasPlayback));
   elements.reviewFields.hidden = !wasPlayback;
-  elements.reviewPanel.hidden = !wasPlayback;
-  elements.thumbnailPanel.hidden = !wasPlayback;
+  updateOverlayState();
   if (wasPlayback) {
     setDefaultReviewTimes();
     state.reviewStart = null;
@@ -703,14 +758,24 @@ function startReview() {
   } catch (error) {
     return toast(error.message || 'Confira o período selecionado.', 'error');
   }
+  for (const player of state.tiles.values()) player.restart();
+  const timelineCamera = state.focused || state.tiles.keys().next().value;
+  reloadFocusedReview(timelineCamera);
+}
+
+function loadFocusedTimeline(camera) {
+  if (!camera || state.mode !== 'playback' || !state.reviewStart || !state.timelineVisible) return;
   clearTimeline();
   state.timelineStart = state.reviewStart;
   state.timelineEnd = state.reviewEnd ?? Date.now();
   drawTimeline();
-  for (const player of state.tiles.values()) player.restart();
-  const timelineCamera = state.focused || state.tiles.keys().next().value;
-  void loadTimeline(timelineCamera);
-  renderThumbnailPage(0).catch(() => {});
+  void loadTimeline(camera);
+}
+
+function reloadFocusedReview(camera) {
+  if (!camera || state.mode !== 'playback' || !state.reviewStart) return;
+  if (state.timelineVisible) loadFocusedTimeline(camera);
+  if (state.thumbnailsVisible) renderThumbnailPage(0).catch(() => {});
 }
 
 function seekReview(epoch) {
@@ -1534,7 +1599,7 @@ function parseTimelinePart(part) {
 }
 
 async function loadTimeline(camera) {
-  if (state.mode !== 'playback' || !state.server || !state.tiles.size || !state.reviewStart) return;
+  if (state.mode !== 'playback' || !state.timelineVisible || !state.server || !state.tiles.size || !state.reviewStart) return;
   if (!camera) return;
   const requestId = state.timelineRequestId;
   const startEpoch = state.reviewStart;
@@ -1675,7 +1740,7 @@ function getThumbnailInterval() {
 }
 
 async function renderThumbnailPage(page) {
-  if (!state.server || !state.reviewStart || !state.tiles.size) return;
+  if (!state.thumbnailsVisible || !state.server || !state.reviewStart || !state.tiles.size) return;
   const camera = state.focused || state.tiles.keys().next().value;
   const [requestedWidth] = THUMBNAIL_SIZES[state.thumbnailSize] || THUMBNAIL_SIZES.medium;
   elements.thumbnailGrid.style.setProperty('--thumbnail-card-width', `${requestedWidth}px`);
@@ -1794,7 +1859,23 @@ elements.mosaicSelect.addEventListener('change', event => {
   }
   state.mosaic = next.id; applyMosaic();
 });
-elements.overlayToggle.addEventListener('click', () => { state.overlaysVisible = !state.overlaysVisible; updateOverlayState(); });
+elements.overlayToggle.addEventListener('click', () => {
+  const showAll = !(state.overlaysVisible && state.timelineVisible && state.thumbnailsVisible);
+  setDisplayVisibility({ overlays: showAll, timeline: showAll, thumbnails: showAll });
+});
+elements.displayMenuToggle.addEventListener('click', () => elements.displayMenu.hidden ? openDisplayMenu() : closeDisplayMenu());
+elements.toggleOverlayVisibility.addEventListener('click', () => { setDisplayVisibility({ overlays: !state.overlaysVisible }); closeDisplayMenu(true); });
+elements.toggleTimelineVisibility.addEventListener('click', () => { setDisplayVisibility({ timeline: !state.timelineVisible }); closeDisplayMenu(true); });
+elements.toggleThumbnailVisibility.addEventListener('click', () => { setDisplayVisibility({ thumbnails: !state.thumbnailsVisible }); closeDisplayMenu(true); });
+elements.displayMenu.addEventListener('keydown', event => {
+  const items = [...elements.displayMenu.querySelectorAll('[role="menuitemcheckbox"]')];
+  const index = items.indexOf(event.target.closest('[role="menuitemcheckbox"]'));
+  if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+    event.preventDefault();
+    items[(index + (event.key === 'ArrowDown' ? 1 : items.length - 1)) % items.length]?.focus();
+  }
+  if (event.key === 'Escape') { event.preventDefault(); closeDisplayMenu(true); }
+});
 elements.surveillanceToggle.addEventListener('click', () => { state.surveillance = !state.surveillance; updateSurveillance(); });
 elements.exitSurveillance.addEventListener('click', () => { state.surveillance = false; updateSurveillance(); });
 elements.thumbnailSize.addEventListener('change', event => {
@@ -1831,6 +1912,7 @@ document.addEventListener('keydown', event => {
   if (event.key === 'Escape' && document.activeElement === elements.cameraSearch) { elements.cameraSearch.value = ''; drawCameraList(); elements.cameraSearch.blur(); }
 });
 
+updateOverlayState();
 clockTick();
 window.setInterval(clockTick, 1000);
 initializeServers();

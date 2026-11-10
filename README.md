@@ -66,4 +66,4 @@ No teste atual, `/api/server` responde `200`, mas a chamada Node a `Cameras/GetC
 
 A chave opcional `initialMosaic` em `config/<servidor>.config` define o mosaico inicial. Use `auto`, `2x2`, `3x3-six`, `4x4-eight`, `3x3`, `4x4-ten`, `4x4-thirteen-a`, `4x4-thirteen-b`, `4x4-center`, `4x4` ou `5x5`. Sem a chave, o player usa a grade automática. A escolha feita na interface dura apenas até a sessão terminar.
 
-A visibilidade das informações sobrepostas e o tamanho das miniaturas também são escolhas da sessão: cada página inicia com as informações visíveis e miniaturas médias.
+A visibilidade das informações sobrepostas, timeline e miniaturas e o tamanho das miniaturas são escolhas da sessão: cada página inicia com informações ocultas, timeline e miniaturas visíveis e tamanho médio. Timeline e miniaturas seguem a câmera em foco; painéis ocultos não fazem chamadas às APIs.
