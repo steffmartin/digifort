@@ -60,9 +60,6 @@
 
         <main class="monitor-area">
           <section class="command-bar" aria-label="Controles do player">
-            <button class="icon-button stop-all-button" id="stopAll" type="button" title="Parar todas as câmeras" aria-label="Parar todas as câmeras" aria-pressed="false" data-state="active" disabled>
-              <svg viewBox="0 0 20 20" aria-hidden="true"><rect class="stop-icon" x="5" y="5" width="10" height="10" rx="1"></rect><path class="play-icon" d="M7 4.5v11l9-5.5-9-5.5Z"></path></svg>
-            </button>
             <div class="mode-switch" role="group" aria-label="Modo de reprodução">
               <button class="mode-button is-active" id="liveMode" type="button" aria-pressed="true">
                 <span class="mode-live-mark" aria-hidden="true"></span>Ao vivo
@@ -91,7 +88,9 @@
                 <button class="display-menu-item" id="toggleThumbnailVisibility" type="button" role="menuitemcheckbox" aria-checked="true">Ocultar miniatura</button>
               </div>
             </div>
-            <button class="icon-button surveillance-toggle" id="surveillanceToggle" type="button" aria-pressed="false" aria-label="Ativar modo vigilância" title="Modo vigilância">◉</button>
+            <button class="icon-button surveillance-toggle" id="surveillanceToggle" type="button" aria-pressed="false" aria-label="Ativar modo vigilância" title="Modo vigilância">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3h13v17h-9"></path><path d="M2.5 12.5h8v8h-8z"></path><path d="m12.5 11.5 8-8m-5 0h5v5"></path></svg>
+            </button>
             <div class="audio-control-wrap">
               <label class="field-label" for="audioSource">Áudio de</label>
               <select id="audioSource" disabled aria-label="Fonte do áudio">
@@ -102,6 +101,9 @@
                 <span>Ativar áudio</span>
               </button>
             </div>
+            <button class="icon-button stop-all-button" id="stopAll" type="button" title="Parar todas as câmeras" aria-label="Parar todas as câmeras" aria-pressed="false" data-state="active" disabled>
+              <svg viewBox="0 0 20 20" aria-hidden="true"><path class="pause-icon" d="M6 5v10M14 5v10"></path><path class="play-icon" d="M7 4.5v11l9-5.5-9-5.5Z"></path></svg>
+            </button>
           </section>
           <p class="visually-hidden" id="viewSubtitle" aria-live="polite">Escolha uma câmera para começar.</p>
 

@@ -60,14 +60,14 @@ const elements = {
 // The current thumbnail grid starts at 150px wide; request half, current, and double size.
 const THUMBNAIL_SIZES = { small: [75, 51], medium: [150, 102], large: [300, 205] };
 const MOSAICS = [
-  { id: 'auto', name: 'Padrão do sistema', columns: 0, capacity: Infinity },
+  { id: 'auto', name: 'Grade automática', columns: 0, capacity: Infinity, previewCapacity: 8 },
   { id: '2x2', name: '2 × 2', columns: 2, capacity: 4 },
   { id: '3x3-six', name: '3 × 3 · 6 câmeras', columns: 3, capacity: 6, slots: [[1,1,2,2],[1,3,1,1],[2,3,1,1],[3,1,1,1],[3,2,1,1],[3,3,1,1]] },
-  { id: '4x4-eight', name: '4 × 4 · 8 câmeras', columns: 4, capacity: 8, slots: [[1,1,2,2],[1,3,1,1],[1,4,1,1],[2,3,1,1],[2,4,1,1],[3,1,1,1],[4,1,1,1],[3,3,2,2]] },
+  { id: '4x4-eight', name: '4 × 4 · 8 câmeras', columns: 4, capacity: 8, slots: [[1,1,3,3],[1,4,1,1],[2,4,1,1],[3,4,1,1],[4,1,1,1],[4,2,1,1],[4,3,1,1],[4,4,1,1]] },
   { id: '3x3', name: '3 × 3 · 9 câmeras', columns: 3, capacity: 9 },
-  { id: '4x4-ten', name: '4 × 4 · 10 câmeras', columns: 4, capacity: 10, slots: [[1,1,2,2],[1,3,1,1],[1,4,1,1],[2,3,1,1],[2,4,1,1],[3,1,1,1],[3,2,1,1],[3,3,2,2],[4,1,1,1],[4,2,1,1]] },
-  { id: '4x4-thirteen-a', name: '4 × 4 · 13 câmeras A', columns: 4, capacity: 13, slots: [[1,1,1,2],[1,3,1,2],[2,1,1,2],[2,3,1,1],[2,4,1,1],[3,1,1,1],[3,2,1,1],[3,3,1,1],[3,4,1,1],[4,1,1,1],[4,2,1,1],[4,3,1,1],[4,4,1,1]] },
-  { id: '4x4-thirteen-b', name: '4 × 4 · 13 câmeras B', columns: 4, capacity: 13, slots: [[1,1,2,1],[1,2,2,1],[1,3,2,1],[1,4,1,1],[2,4,1,1],[3,1,1,1],[3,2,1,1],[3,3,1,1],[3,4,1,1],[4,1,1,1],[4,2,1,1],[4,3,1,1],[4,4,1,1]] },
+  { id: '4x4-ten', name: '4 × 4 · 10 câmeras', columns: 4, capacity: 10, slots: [[1,1,2,2],[1,3,2,2],[3,1,1,1],[3,2,1,1],[3,3,1,1],[3,4,1,1],[4,1,1,1],[4,2,1,1],[4,3,1,1],[4,4,1,1]] },
+  { id: '4x4-thirteen-a', name: '4 × 4 · 13 câmeras A', columns: 4, capacity: 13, slots: [[1,1,2,2],[1,3,1,1],[1,4,1,1],[2,3,1,1],[2,4,1,1],[3,1,1,1],[3,2,1,1],[3,3,1,1],[3,4,1,1],[4,1,1,1],[4,2,1,1],[4,3,1,1],[4,4,1,1]] },
+  { id: '4x4-thirteen-b', name: '4 × 4 · 13 câmeras B', columns: 4, capacity: 13, slots: [[1,2,2,2],[1,1,1,1],[1,4,1,1],[2,1,1,1],[2,4,1,1],[3,1,1,1],[3,2,1,1],[3,3,1,1],[3,4,1,1],[4,1,1,1],[4,2,1,1],[4,3,1,1],[4,4,1,1]] },
   { id: '4x4-center', name: '4 × 4 · 13 câmeras central', columns: 4, capacity: 13, slots: [[2,2,2,2],[1,1,1,1],[1,2,1,1],[1,3,1,1],[1,4,1,1],[2,1,1,1],[2,4,1,1],[3,1,1,1],[3,4,1,1],[4,1,1,1],[4,2,1,1],[4,3,1,1],[4,4,1,1]] },
   { id: '4x4', name: '4 × 4 · 16 câmeras', columns: 4, capacity: 16 },
   { id: '5x5', name: '5 × 5 · 25 câmeras', columns: 5, capacity: 25 }
@@ -98,10 +98,11 @@ function applyMosaic() {
 
 function drawMosaicPreview(mosaic) {
   const size = mosaic.columns || 3;
+  const previewCapacity = mosaic.previewCapacity ?? mosaic.capacity;
   elements.mosaicPreview.replaceChildren();
   elements.mosaicPreview.style.setProperty('--preview-columns', size);
   elements.mosaicPreview.style.setProperty('--preview-rows', mosaic.columns || 3);
-  for (let index = 0; index < Math.min(mosaic.capacity, 25); index += 1) {
+  for (let index = 0; index < Math.min(previewCapacity, 25); index += 1) {
     const cell = document.createElement('i');
     cell.style.gridArea = mosaic.slots?.[index] ? `${mosaic.slots[index][0]} / ${mosaic.slots[index][1]} / span ${mosaic.slots[index][2]} / span ${mosaic.slots[index][3]}` : '';
     elements.mosaicPreview.append(cell);
@@ -1906,7 +1907,6 @@ elements.thumbnailInterval.addEventListener('change', () => {
 elements.customInterval.addEventListener('change', () => renderThumbnailPage(0).catch(() => {}));
 elements.thumbnailPrev.addEventListener('click', () => renderThumbnailPage(state.thumbnailPage - 1).catch(() => {}));
 elements.thumbnailNext.addEventListener('click', () => renderThumbnailPage(state.thumbnailPage + 1).catch(() => {}));
-document.addEventListener('fullscreenchange', () => { if (state.surveillance && !document.fullscreenElement) { state.surveillance = false; updateSurveillance(); } });
 document.addEventListener('keydown', event => {
   if (event.key === '/' && !['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) { event.preventDefault(); elements.cameraSearch.focus(); }
   if (event.key === 'Escape' && document.activeElement === elements.cameraSearch) { elements.cameraSearch.value = ''; drawCameraList(); elements.cameraSearch.blur(); }
