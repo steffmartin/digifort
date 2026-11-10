@@ -3,18 +3,23 @@ import { createServer } from 'node:http';
 import { createReadStream, createWriteStream, promises as fs } from 'node:fs';
 import path from 'node:path';
 import { once } from 'node:events';
+import { createInterface } from 'node:readline';
 import { pipeline } from 'node:stream/promises';
+import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
-const CONFIG_DIR = path.join(ROOT, 'config');
+const CONFIG_DIR = path.resolve(process.env.DIGIFORT_CONFIG_DIR || path.join(ROOT, 'config'));
 const PUBLIC_DIR = path.join(ROOT, 'public');
 const HOST = '127.0.0.1';
 const PORT = Number(process.env.PORT || 4177);
+const launcher = process.argv.includes('--launcher');
 const configs = new Map();
 const authStates = new Map();
 const authPromises = new Map();
 const mediaWriters = new Map();
+const mediaRequests = new Set();
+let shuttingDown = false;
 let activeServerId = '';
 let authGeneration = 0;
 
@@ -33,9 +38,8 @@ function parseTimeZone(zone) {
   }
 }
 
-async function getConfig(id) {
-  if (!safeId(id) || id === 'example') throw new Error('Configuração de servidor inválida.');
-  if (configs.has(id)) return configs.get(id);
+async function readConfig(id) {
+  if (!safeId(id) || id.toLowerCase() === 'example') throw new Error('Configuração de servidor inválida.');
   const configPath = path.resolve(CONFIG_DIR, `${id}.config`);
   if (!configPath.startsWith(`${CONFIG_DIR}${path.sep}`)) throw new Error('Configuração de servidor inválida.');
   let source;
@@ -55,11 +59,19 @@ async function getConfig(id) {
     const column = safePosition - beforeError.lastIndexOf('\n');
     throw new Error(`O arquivo de configuração não contém JSON válido (linha ${line}, coluna ${column}). Salve como JSON UTF-8 sem BOM e revise aspas e vírgulas.`);
   }
-  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('A configuração deve ser um objeto JSON.');
-  const { serverAddress, userAgent, username, password, timeZone, initialCameras } = value;
-  const name = typeof value.name === 'string' && value.name.trim()
+  return value;
+}
+
+function configName(id, value) {
+  return typeof value?.name === 'string' && value.name.trim()
     ? value.name.trim().replace(/\s+/g, ' ').slice(0, 120)
     : id;
+}
+
+function parseConfig(id, value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('A configuração deve ser um objeto JSON.');
+  const { serverAddress, userAgent, username, password, timeZone, initialCameras } = value;
+  const name = configName(id, value);
   const useBasicAuth = value.useBasicAuth ?? false;
   if (typeof serverAddress !== 'string' || !/^https?:\/\//i.test(serverAddress)) throw new Error('A configuração precisa de um endereço HTTP ou HTTPS válido.');
   let parsedAddress;
@@ -83,7 +95,12 @@ async function getConfig(id) {
   const mediaFolder = value.mediaFolder?.trim() || '';
   const screenshotFolder = value.screenshotFolder?.trim() || mediaFolder;
   const videoFolder = value.videoFolder?.trim() || mediaFolder;
-  const parsed = { id, name, serverAddress: serverAddress.replace(/\/+$/, ''), userAgent: userAgent.trim(), username, password, useBasicAuth, timeZone, initialCameras, initialMosaic, screenshotFolder, videoFolder };
+  return { id, name, serverAddress: serverAddress.replace(/\/+$/, ''), userAgent: userAgent.trim(), username, password, useBasicAuth, timeZone, initialCameras, initialMosaic, screenshotFolder, videoFolder };
+}
+
+async function getConfig(id) {
+  if (configs.has(id)) return configs.get(id);
+  const parsed = parseConfig(id, await readConfig(id));
   configs.set(id, parsed);
   return parsed;
 }
@@ -101,15 +118,14 @@ async function serverOptions() {
     .filter(safeId)
     .sort((a, b) => a.localeCompare(b, 'pt-BR'));
   return Promise.all(ids.map(async id => {
+    let name = id;
     try {
-      const source = await fs.readFile(path.join(CONFIG_DIR, `${id}.config`), 'utf8');
-      const value = JSON.parse(source);
-      const name = typeof value?.name === 'string' && value.name.trim()
-        ? value.name.trim().replace(/\s+/g, ' ').slice(0, 120)
-        : id;
-      return { id, name };
+      const value = await readConfig(id);
+      name = configName(id, value);
+      parseConfig(id, value);
+      return { id, name, ready: true };
     } catch {
-      return { id, name: id };
+      return { id, name, ready: false };
     }
   }));
 }
@@ -296,6 +312,28 @@ async function writeRequestToStream(req, stream) {
   }
 }
 
+async function finishRecording(writer, recover = false) {
+  const { stream, partPath, finalPath, completedBytes } = writer;
+  try {
+    if (!stream.closed) {
+      const closed = once(stream, 'close');
+      stream.end();
+      await closed;
+    }
+    if (recover) {
+      if (completedBytes === 0) {
+        await fs.unlink(partPath);
+        return;
+      }
+      await fs.truncate(partPath, completedBytes);
+    }
+    await fs.rename(partPath, finalPath);
+  } catch (error) {
+    await fs.unlink(partPath).catch(() => {});
+    throw error;
+  }
+}
+
 async function handleMediaPost(req, res, url) {
   try {
     if (req.method !== 'POST') return sendJson(res, 405, { error: 'Método não disponível.' });
@@ -323,13 +361,14 @@ async function handleMediaPost(req, res, url) {
       const stream = createWriteStream(partPath, { flags: 'wx' });
       stream.on('error', () => { mediaWriters.delete(key); void fs.unlink(partPath).catch(() => {}); });
       try { await once(stream, 'open'); } catch (error) { throw new Error(`Não foi possível criar o arquivo de gravação: ${error.code || 'erro de escrita'}.`); }
-      mediaWriters.set(key, { stream, partPath, finalPath });
+      mediaWriters.set(key, { stream, partPath, finalPath, completedBytes: 0 });
       return sendJson(res, 201, { filename });
     }
     const writer = mediaWriters.get(key);
     if (!writer) throw new Error('A gravação local não está aberta.');
     if (action === 'chunk') {
       await writeRequestToStream(req, writer.stream);
+      writer.completedBytes = writer.stream.bytesWritten;
       return sendJson(res, 200, { accepted: true });
     }
     if (action === 'abort') {
@@ -342,9 +381,7 @@ async function handleMediaPost(req, res, url) {
     }
     if (action !== 'finish') throw new Error('Ação de gravação inválida.');
     mediaWriters.delete(key);
-    writer.stream.end();
-    await once(writer.stream, 'close');
-    await fs.rename(writer.partPath, writer.finalPath);
+    await finishRecording(writer);
     return sendJson(res, 201, { filename });
   } catch (error) {
     const message = error?.message && !/password|authdata|authsession|nonce/i.test(error.message) ? error.message : 'Não foi possível salvar a mídia local.';
@@ -463,10 +500,21 @@ async function handleApi(req, res, url) {
     if (!res.writableEnded) controller.abort();
   });
   try {
-    if (req.method === 'POST' && ['/api/media-file', '/api/media-recording'].includes(url.pathname)) return await handleMediaPost(req, res, url);
+    if (req.method === 'POST' && ['/api/media-file', '/api/media-recording'].includes(url.pathname)) {
+      const pending = handleMediaPost(req, res, url);
+      mediaRequests.add(pending);
+      try { return await pending; } finally { mediaRequests.delete(pending); }
+    }
+    if (launcher && req.method === 'POST' && ['/api/config-folder', '/api/close-app'].includes(url.pathname)) {
+      if (req.headers.origin !== `http://${HOST}:${PORT}` || req.headers.host !== `${HOST}:${PORT}`) {
+        return sendJson(res, 403, { error: 'Solicitação de outra origem.' });
+      }
+      const command = url.pathname === '/api/config-folder' ? 'DIGIFORT_OPEN_CONFIG' : 'DIGIFORT_CLOSE_APP';
+      return res.once('finish', () => process.stdout.write(`${command}\n`)).writeHead(204).end();
+    }
     if (req.method !== 'GET') return sendJson(res, 405, { error: 'Método não disponível.' });
     if (url.pathname === '/api/servers') {
-      return sendJson(res, 200, { servers: await serverOptions() });
+      return sendJson(res, 200, { servers: await serverOptions(), configDirectory: CONFIG_DIR, canOpenConfigFolder: launcher });
     }
     const id = queryValue(url, 'server');
     if (url.pathname === '/api/server') {
@@ -597,6 +645,7 @@ function staticFile(res, pathname) {
 }
 
 const server = createServer((req, res) => {
+  if (shuttingDown) return sendJson(res, 503, { error: 'Encerrando o Digifort Monitor.' });
   const url = new URL(req.url, `http://${HOST}:${PORT}`);
   if (url.pathname === '/favicon.ico') {
     res.writeHead(204).end();
@@ -609,8 +658,32 @@ const server = createServer((req, res) => {
   staticFile(res, url.pathname);
 });
 
+server.once('error', error => {
+  if (launcher && error.code === 'EADDRINUSE') process.stdout.write('DIGIFORT_PORT_IN_USE\n');
+  process.stderr.write(`Falha ao escutar em ${HOST}:${PORT} (${error.code || 'erro de inicialização'}).\n`);
+  process.exitCode = 1;
+  process.stdin.destroy();
+});
+
 server.listen(PORT, HOST, () => {
+  if (launcher) process.stdout.write('DIGIFORT_READY\n');
   process.stdout.write(`Player local disponível em http://${HOST}:${PORT}\n`);
 });
 
-for (const state of authStates.values()) if (state.timer) clearInterval(state.timer);
+if (launcher) {
+  const control = createInterface({ input: process.stdin, terminal: false });
+  const shutdown = async () => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    server.close();
+    // Give a pending media upload a brief chance to drain before closing streams.
+    const pendingMedia = Promise.allSettled(mediaRequests);
+    await Promise.race([pendingMedia, delay(750)]);
+    server.closeAllConnections();
+    await pendingMedia;
+    await Promise.allSettled([...mediaWriters.values()].map(writer => finishRecording(writer, true)));
+    process.exit(process.exitCode || 0);
+  };
+  control.on('line', line => { if (line === 'shutdown') void shutdown(); });
+  control.on('close', () => { if (server.listening) void shutdown(); });
+}

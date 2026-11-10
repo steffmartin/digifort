@@ -145,7 +145,7 @@
           "Authentication"
         ],
         "summary": "Update Auth Session",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 34. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 34. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
         "operationId": "Interface_UpdateAuthSession_get",
         "parameters": [
           {
@@ -257,7 +257,7 @@
           "Version"
         ],
         "summary": "Get APIVersion",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 41. The manual block has no operation-specific argument table; only the common authentication/response-format parameters are modeled. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 41. The manual block has no operation-specific argument table; only the common authentication/response-format parameters are modeled. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
         "operationId": "Interface_GetAPIVersion_get",
         "parameters": [
           {
@@ -411,7 +411,7 @@
           "Server"
         ],
         "summary": "Get Machine Code",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 42. The manual block has no operation-specific argument table; only the common authentication/response-format parameters are modeled. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 42. The manual block has no operation-specific argument table; only the common authentication/response-format parameters are modeled. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
         "operationId": "Interface_Server_GetMachineCode_get",
         "parameters": [
           {
@@ -529,7 +529,7 @@
           "Server"
         ],
         "summary": "Get Info",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 44. The manual block has no operation-specific argument table; only the common authentication/response-format parameters are modeled. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 44. The manual block has no operation-specific argument table; only the common authentication/response-format parameters are modeled. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
         "operationId": "Interface_Server_GetInfo_get",
         "parameters": [
           {
@@ -723,7 +723,7 @@
           "Server"
         ],
         "summary": "Get Licenses",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 45. The manual block has no operation-specific argument table; only the common authentication/response-format parameters are modeled. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 45. The manual block has no operation-specific argument table; only the common authentication/response-format parameters are modeled. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available.",
         "operationId": "Interface_Server_GetLicenses_get",
         "parameters": [
           {
@@ -841,7 +841,7 @@
           "Server"
         ],
         "summary": "Get Usage",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 49. The manual block has no operation-specific argument table; only the common authentication/response-format parameters are modeled. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 49. The manual block has no operation-specific argument table; only the common authentication/response-format parameters are modeled. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
         "operationId": "Interface_Server_GetUsage_get",
         "parameters": [
           {
@@ -984,7 +984,7 @@
           "Server"
         ],
         "summary": "Get Master Slave Status",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 51. The manual block has no operation-specific argument table; only the common authentication/response-format parameters are modeled. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 51. The manual block has no operation-specific argument table; only the common authentication/response-format parameters are modeled. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available.",
         "operationId": "Interface_Server_GetMasterSlaveStatus_get",
         "parameters": [
           {
@@ -1082,7 +1082,7 @@
           "Cameras"
         ],
         "summary": "Get Cameras",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 53. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 53. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available.",
         "operationId": "Interface_Cameras_GetCameras_get",
         "parameters": [
           {
@@ -1256,7 +1256,7 @@
           "Cameras"
         ],
         "summary": "Get Groups",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 57. The manual block has no operation-specific argument table; only the common authentication/response-format parameters are modeled. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 57. The manual block has no operation-specific argument table; only the common authentication/response-format parameters are modeled. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available.",
         "operationId": "Interface_Cameras_GetGroups_get",
         "parameters": [
           {
@@ -1354,7 +1354,7 @@
           "Cameras"
         ],
         "summary": "Get Status",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 59. 4 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 59. 4 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available.",
         "operationId": "Interface_Cameras_GetStatus_get",
         "parameters": [
           {
@@ -1534,7 +1534,7 @@
           "Cameras"
         ],
         "summary": "Activation",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 63. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 63. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_Cameras_Activation_get",
         "parameters": [
           {
@@ -1633,7 +1633,7 @@
           "Cameras"
         ],
         "summary": "Get Snapshot",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 64. 7 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 64. 7 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_Cameras_GetSnapshot_get",
         "parameters": [
           {
@@ -1787,7 +1787,7 @@
           "Cameras"
         ],
         "summary": "Get Media Stream",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 66. 6 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 66. 6 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_Cameras_GetMediaStream_get",
         "parameters": [
           {
@@ -1938,7 +1938,7 @@
           "Cameras"
         ],
         "summary": "Get JPEGStream",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 71. 9 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 71. 9 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_Cameras_GetJPEGStream_get",
         "parameters": [
           {
@@ -2112,7 +2112,7 @@
           "Cameras"
         ],
         "summary": "Get Audio Stream",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 73. 5 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 73. 5 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_Cameras_GetAudioStream_get",
         "parameters": [
           {
@@ -2250,7 +2250,7 @@
           "Cameras"
         ],
         "summary": "Send Audio Stream",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 4. 1 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open. The request body is raw mono PCM at 8 kHz and 16 bits/sample with Content-Type audio/basic; see manual pages 75–76.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 4. 1 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open. The request body is raw mono PCM at 8 kHz and 16 bits/sample with Content-Type audio/basic; see manual pages 75–76.",
         "operationId": "Interface_Cameras_SendAudioStream_post",
         "parameters": [
           {
@@ -2347,7 +2347,7 @@
           "Cameras"
         ],
         "summary": "Get Snapshot",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 77. 8 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 77. 8 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_Cameras_Playback_GetSnapshot_get",
         "parameters": [
           {
@@ -2510,7 +2510,7 @@
           "Cameras"
         ],
         "summary": "Get Media Stream",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 79. 8 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 79. 8 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_Cameras_Playback_GetMediaStream_get",
         "parameters": [
           {
@@ -2679,7 +2679,7 @@
           "Cameras"
         ],
         "summary": "Get JPEGStream",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 82. 12 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 82. 12 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_Cameras_Playback_GetJPEGStream_get",
         "parameters": [
           {
@@ -2887,7 +2887,7 @@
           "Cameras"
         ],
         "summary": "Get Timeline Data",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 86. 9 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 86. 9 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_Cameras_Playback_GetTimelineData_get",
         "parameters": [
           {
@@ -3060,7 +3060,7 @@
           "Cameras"
         ],
         "summary": "Start Export",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 90. 15 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 90. 15 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_Cameras_Playback_StartExport_get",
         "parameters": [
           {
@@ -3296,7 +3296,7 @@
           "Cameras"
         ],
         "summary": "Get Exported File",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 96. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 96. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_Cameras_Playback_GetExportedFile_get",
         "parameters": [
           {
@@ -3397,7 +3397,7 @@
           "Cameras"
         ],
         "summary": "Close Export",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 97. 1 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 97. 1 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_Cameras_Playback_CloseExport_get",
         "parameters": [
           {
@@ -3482,7 +3482,7 @@
           "Cameras"
         ],
         "summary": "Simple",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 98. 4 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 98. 4 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_Cameras_PTZ_Simple_get",
         "parameters": [
           {
@@ -3610,7 +3610,7 @@
           "Cameras"
         ],
         "summary": "Relative",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 99. 5 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 99. 5 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_Cameras_PTZ_Relative_get",
         "parameters": [
           {
@@ -3737,7 +3737,7 @@
           "Cameras"
         ],
         "summary": "Absolute",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 101. 5 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 101. 5 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_Cameras_PTZ_Absolute_get",
         "parameters": [
           {
@@ -3864,7 +3864,7 @@
           "Cameras"
         ],
         "summary": "Area Zoom",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 102. 9 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 102. 9 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_Cameras_PTZ_AreaZoom_get",
         "parameters": [
           {
@@ -4021,7 +4021,7 @@
           "Cameras"
         ],
         "summary": "Simultaneous",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 103. 5 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 103. 5 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_Cameras_PTZ_Simultaneous_get",
         "parameters": [
           {
@@ -4142,7 +4142,7 @@
           "Cameras"
         ],
         "summary": "Continuous",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 105. 7 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 105. 7 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_Cameras_PTZ_Continuous_get",
         "parameters": [
           {
@@ -4281,7 +4281,7 @@
           "Cameras"
         ],
         "summary": "Auto Focus",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 106. 3 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 106. 3 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_Cameras_PTZ_AutoFocus_get",
         "parameters": [
           {
@@ -4387,7 +4387,7 @@
           "Cameras"
         ],
         "summary": "Auto Iris",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 107. 3 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 107. 3 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_Cameras_PTZ_AutoIris_get",
         "parameters": [
           {
@@ -4493,7 +4493,7 @@
           "Cameras"
         ],
         "summary": "Menu Control",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 108. 3 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 108. 3 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_Cameras_PTZ_MenuControl_get",
         "parameters": [
           {
@@ -4605,7 +4605,7 @@
           "Cameras"
         ],
         "summary": "Get Presets",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 109. 1 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 109. 1 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
         "operationId": "Interface_Cameras_PTZ_GetPresets_get",
         "parameters": [
           {
@@ -4750,7 +4750,7 @@
           "Cameras"
         ],
         "summary": "Call Preset",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 111. 4 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 111. 4 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_Cameras_PTZ_CallPreset_get",
         "parameters": [
           {
@@ -4862,7 +4862,7 @@
           "Cameras"
         ],
         "summary": "Set Preset",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 112. 4 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 112. 4 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_Cameras_PTZ_SetPreset_get",
         "parameters": [
           {
@@ -4974,7 +4974,7 @@
           "Cameras"
         ],
         "summary": "Call Pattern",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 113. 4 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 113. 4 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_Cameras_PTZ_CallPattern_get",
         "parameters": [
           {
@@ -5086,7 +5086,7 @@
           "Cameras"
         ],
         "summary": "Wiper",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 114. 3 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 114. 3 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_Cameras_PTZ_Wiper_get",
         "parameters": [
           {
@@ -5192,7 +5192,7 @@
           "Cameras"
         ],
         "summary": "Get Auxiliaries",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 115. 1 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 115. 1 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
         "operationId": "Interface_Cameras_PTZ_GetAuxiliaries_get",
         "parameters": [
           {
@@ -5333,7 +5333,7 @@
           "Cameras"
         ],
         "summary": "Auxiliary",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 117. 4 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 117. 4 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_Cameras_PTZ_Auxiliary_get",
         "parameters": [
           {
@@ -5448,7 +5448,7 @@
           "Cameras"
         ],
         "summary": "Get Patrols",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 117. 1 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 117. 1 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
         "operationId": "Interface_Cameras_PTZ_GetPatrols_get",
         "parameters": [
           {
@@ -5599,7 +5599,7 @@
           "Cameras"
         ],
         "summary": "Get Patrol Status",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 119. 1 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 119. 1 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
         "operationId": "Interface_Cameras_PTZ_GetPatrolStatus_get",
         "parameters": [
           {
@@ -5743,7 +5743,7 @@
           "Cameras"
         ],
         "summary": "Patrol",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 121. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 121. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_Cameras_PTZ_Patrol_get",
         "parameters": [
           {
@@ -5842,7 +5842,7 @@
           "Cameras"
         ],
         "summary": "Get Supported Commands",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 122. 1 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 122. 1 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
         "operationId": "Interface_Cameras_PTZ_GetSupportedCommands_get",
         "parameters": [
           {
@@ -6077,7 +6077,7 @@
           "Cameras"
         ],
         "summary": "Get Status",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 125. 3 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 125. 3 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
         "operationId": "Interface_Cameras_PTZ_GetStatus_get",
         "parameters": [
           {
@@ -6242,8 +6242,8 @@
                               },
                               "Usage": {
                                 "InUse": false,
-                                "User": "admin",
-                                "IP": "192.168.0.2"
+                                "User": "usuario-exemplo-1",
+                                "IP": "192.0.2.1"
                               },
                               "Lock": {
                                 "Locked": false,
@@ -6379,7 +6379,7 @@
           "Cameras"
         ],
         "summary": "Get Input Events",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 130. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 130. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available.",
         "operationId": "Interface_Cameras_IO_GetInputEvents_get",
         "parameters": [
           {
@@ -6501,7 +6501,7 @@
           "Cameras"
         ],
         "summary": "Get Input Port Status",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 133. 1 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 133. 1 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
         "operationId": "Interface_Cameras_IO_GetInputPortStatus_get",
         "parameters": [
           {
@@ -6638,7 +6638,7 @@
           "Cameras"
         ],
         "summary": "Get Input Event Status",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 136. 1 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 136. 1 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
         "operationId": "Interface_Cameras_IO_GetInputEventStatus_get",
         "parameters": [
           {
@@ -6779,7 +6779,7 @@
           "Cameras"
         ],
         "summary": "Get Output Port Status",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 137. 1 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 137. 1 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
         "operationId": "Interface_Cameras_IO_GetOutputPortStatus_get",
         "parameters": [
           {
@@ -6916,7 +6916,7 @@
           "Cameras"
         ],
         "summary": "Get Output Actions",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 140. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 140. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
         "operationId": "Interface_Cameras_IO_GetOutputActions_get",
         "parameters": [
           {
@@ -7057,7 +7057,7 @@
           "Cameras"
         ],
         "summary": "Trigger Output Action",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 141. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 141. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_Cameras_IO_TriggerOutputAction_get",
         "parameters": [
           {
@@ -7151,7 +7151,7 @@
           "Cameras"
         ],
         "summary": "Get Virtual Port Status",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 142. 1 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 142. 1 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
         "operationId": "Interface_Cameras_IO_GetVirtualPortStatus_get",
         "parameters": [
           {
@@ -7288,7 +7288,7 @@
           "Cameras"
         ],
         "summary": "Set Virtual Port Status",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 144. 3 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 144. 3 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_Cameras_IO_SetVirtualPortStatus_get",
         "parameters": [
           {
@@ -7393,7 +7393,7 @@
           "Cameras"
         ],
         "summary": "Notify",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 145. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 145. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_Cameras_MotionDetection_Notify_get",
         "parameters": [
           {
@@ -7491,7 +7491,7 @@
           "Cameras"
         ],
         "summary": "Get Manual Events",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 146. 3 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 146. 3 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available.",
         "operationId": "Interface_Cameras_ManualEvents_GetManualEvents_get",
         "parameters": [
           {
@@ -7615,7 +7615,7 @@
           "Cameras"
         ],
         "summary": "Trigger Manual Event",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 150. 10 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 150. 10 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_Cameras_ManualEvents_TriggerManualEvent_get",
         "parameters": [
           {
@@ -7787,7 +7787,7 @@
           "Cameras"
         ],
         "summary": "Add",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 153. 8 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 153. 8 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_Cameras_Bookmarks_Add_get",
         "parameters": [
           {
@@ -7952,7 +7952,7 @@
           "Cameras"
         ],
         "summary": "Search",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 154. 9 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 154. 9 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
         "operationId": "Interface_Cameras_Bookmarks_Search_get",
         "parameters": [
           {
@@ -8149,7 +8149,7 @@
                               "StartDate": "2014-06-03T10:10:01.302Z",
                               "EndDate": "2014-06-03T10:10:01.302Z",
                               "Remarks": "",
-                              "User": "admin",
+                              "User": "usuario-exemplo-1",
                               "Cameras": "Camera1"
                             },
                             {
@@ -8158,7 +8158,7 @@
                               "StartDate": "2014-03-07T15:58:34.450Z",
                               "EndDate": "2014-03-07T15:58:34.450Z",
                               "Remarks": "",
-                              "User": "admin",
+                              "User": "usuario-exemplo-1",
                               "Cameras": "Camera1,Camera2"
                             }
                           ]
@@ -8196,7 +8196,7 @@
           "Cameras"
         ],
         "summary": "Set Privacy Mode",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 157. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 157. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_Cameras_PrivacyMode_SetPrivacyMode_get",
         "parameters": [
           {
@@ -8293,7 +8293,7 @@
           "Cameras"
         ],
         "summary": "Get Status",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 158. 1 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 158. 1 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
         "operationId": "Interface_Cameras_PrivacyMode_GetStatus_get",
         "parameters": [
           {
@@ -8411,7 +8411,7 @@
           "Cameras"
         ],
         "summary": "Notify Event",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 159. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 159. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_Cameras_Recording_NotifyEvent_get",
         "parameters": [
           {
@@ -8508,7 +8508,7 @@
           "Cameras"
         ],
         "summary": "Search",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 160. 6 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 160. 6 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
         "operationId": "Interface_Cameras_Recording_Locks_Search_get",
         "parameters": [
           {
@@ -8656,7 +8656,7 @@
                               "Description": "Suspect of Robbery",
                               "StartDate": "2019-10-08T19:48:06.000Z",
                               "EndDate": "2019-10-08T19:50:00.000Z",
-                              "User": "admin"
+                              "User": "usuario-exemplo-1"
                             },
                             {
                               "LockID": "CB40BCD8-671D-432E-939B-6E3191805A62",
@@ -8664,7 +8664,7 @@
                               "Description": "Car Crash",
                               "StartDate": "2019-10-08T19:48:38.000Z",
                               "EndDate": "2019-10-08T19:55:00.000Z",
-                              "User": "admin"
+                              "User": "usuario-exemplo-1"
                             }
                           ]
                         }
@@ -8701,7 +8701,7 @@
           "Cameras"
         ],
         "summary": "Add",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 163. 7 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 163. 7 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_Cameras_Recording_Locks_Add_get",
         "parameters": [
           {
@@ -8845,7 +8845,7 @@
           "Cameras"
         ],
         "summary": "Create Download Job",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 164. 5 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 164. 5 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_Cameras_EdgeRecording_CreateDownloadJob_get",
         "parameters": [
           {
@@ -8970,7 +8970,7 @@
           "IODevices"
         ],
         "summary": "Get IODevices",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 165. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 165. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
         "operationId": "Interface_IODevices_GetIODevices_get",
         "parameters": [
           {
@@ -9167,7 +9167,7 @@
           "IODevices"
         ],
         "summary": "Get Status",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 168. 4 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 168. 4 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
         "operationId": "Interface_IODevices_GetStatus_get",
         "parameters": [
           {
@@ -9355,7 +9355,7 @@
           "IODevices"
         ],
         "summary": "Activation",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 170. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 170. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_IODevices_Activation_get",
         "parameters": [
           {
@@ -9454,7 +9454,7 @@
           "IODevices"
         ],
         "summary": "Get Input Events",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 171. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 171. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available.",
         "operationId": "Interface_IODevices_IO_GetInputEvents_get",
         "parameters": [
           {
@@ -9576,7 +9576,7 @@
           "IODevices"
         ],
         "summary": "Get Input Port Status",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 174. 1 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 174. 1 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
         "operationId": "Interface_IODevices_IO_GetInputPortStatus_get",
         "parameters": [
           {
@@ -9713,7 +9713,7 @@
           "IODevices"
         ],
         "summary": "Get Input Event Status",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 177. 1 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 177. 1 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
         "operationId": "Interface_IODevices_IO_GetInputEventStatus_get",
         "parameters": [
           {
@@ -9854,7 +9854,7 @@
           "IODevices"
         ],
         "summary": "Get Output Port Status",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 178. 1 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 178. 1 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
         "operationId": "Interface_IODevices_IO_GetOutputPortStatus_get",
         "parameters": [
           {
@@ -9991,7 +9991,7 @@
           "IODevices"
         ],
         "summary": "Get Output Actions",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 181. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 181. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
         "operationId": "Interface_IODevices_IO_GetOutputActions_get",
         "parameters": [
           {
@@ -10132,7 +10132,7 @@
           "IODevices"
         ],
         "summary": "Trigger Output Action",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 182. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 182. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_IODevices_IO_TriggerOutputAction_get",
         "parameters": [
           {
@@ -10226,7 +10226,7 @@
           "IODevices"
         ],
         "summary": "Get Virtual Port Status",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 183. 1 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 183. 1 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
         "operationId": "Interface_IODevices_IO_GetVirtualPortStatus_get",
         "parameters": [
           {
@@ -10363,7 +10363,7 @@
           "IODevices"
         ],
         "summary": "Set Virtual Port Status",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 185. 3 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 185. 3 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_IODevices_IO_SetVirtualPortStatus_get",
         "parameters": [
           {
@@ -10468,7 +10468,7 @@
           "Users"
         ],
         "summary": "Get Users",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 186. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 186. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
         "operationId": "Interface_Users_GetUsers_get",
         "parameters": [
           {
@@ -10610,7 +10610,7 @@
                         "Data": {
                           "Users": [
                             {
-                              "Name": "admin",
+                              "Name": "usuario-exemplo-1",
                               "Description": "System administration account",
                               "Memo": "",
                               "Groups": "Administrators",
@@ -10629,7 +10629,7 @@
                               }
                             },
                             {
-                              "Name": "Guest",
+                              "Name": "usuario-exemplo-2",
                               "Description": "Guest user",
                               "Memo": "VXNlciB3aXRoIHJlc3RyaWN0ZWQgYWNjZXNz==",
                               "Groups": "Restricted,Guests",
@@ -10764,7 +10764,7 @@
           "Users"
         ],
         "summary": "Get Groups",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 191. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 191. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
         "operationId": "Interface_Users_GetGroups_get",
         "parameters": [
           {
@@ -11049,7 +11049,7 @@
           "Users"
         ],
         "summary": "Get Connections",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 196. 4 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 196. 4 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
         "operationId": "Interface_Users_GetConnections_get",
         "parameters": [
           {
@@ -11186,15 +11186,15 @@
                         "Data": {
                           "Connections": [
                             {
-                              "Username": "videowall",
-                              "IP": "192.168.0.10",
+                              "Username": "usuario-exemplo-3",
+                              "IP": "192.0.2.2",
                               "ConnectionTime": 1683046,
                               "ConnectionType": "SURVEILLANCE_CLIENT",
                               "Details": ""
                             },
                             {
-                              "Username": "videowall",
-                              "IP": "192.168.0.10",
+                              "Username": "usuario-exemplo-3",
+                              "IP": "192.0.2.2",
                               "ConnectionTime": 1682987,
                               "ConnectionType": "CAMERA_LIVE",
                               "Details": "Camera1"
@@ -11266,7 +11266,7 @@
           "Users"
         ],
         "summary": "Block",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 199. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 199. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_Users_Block_get",
         "parameters": [
           {
@@ -11365,7 +11365,7 @@
           "ScreenStyles"
         ],
         "summary": "Get Screen Styles",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 200. The manual block has no operation-specific argument table; only the common authentication/response-format parameters are modeled. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 200. The manual block has no operation-specific argument table; only the common authentication/response-format parameters are modeled. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
         "operationId": "Interface_ScreenStyles_GetScreenStyles_get",
         "parameters": [
           {
@@ -11504,7 +11504,7 @@
           "ScreenStyles"
         ],
         "summary": "Get Screen Style Image",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 203. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 203. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_ScreenStyles_GetScreenStyleImage_get",
         "parameters": [
           {
@@ -11607,7 +11607,7 @@
           "ScreenViews"
         ],
         "summary": "Get User Screen Views",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 204. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 204. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
         "operationId": "Interface_ScreenViews_GetUserScreenViews_get",
         "parameters": [
           {
@@ -11762,7 +11762,7 @@
           "ScreenViews"
         ],
         "summary": "Get Public Screen Views",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 207. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 207. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
         "operationId": "Interface_ScreenViews_GetPublicScreenViews_get",
         "parameters": [
           {
@@ -11917,7 +11917,7 @@
           "ScreenViews"
         ],
         "summary": "Read User Screen View",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 209. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 209. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available.",
         "operationId": "Interface_ScreenViews_ReadUserScreenView_get",
         "parameters": [
           {
@@ -12038,7 +12038,7 @@
           "ScreenViews"
         ],
         "summary": "Read Public Screen View",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 212. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 212. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available.",
         "operationId": "Interface_ScreenViews_ReadPublicScreenView_get",
         "parameters": [
           {
@@ -12159,7 +12159,7 @@
           "Maps"
         ],
         "summary": "Get Maps",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 215. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 215. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
         "operationId": "Interface_Maps_GetMaps_get",
         "parameters": [
           {
@@ -12345,7 +12345,7 @@
           "Maps"
         ],
         "summary": "Activation",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 218. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 218. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_Maps_Activation_get",
         "parameters": [
           {
@@ -12444,7 +12444,7 @@
           "OperationalMaps"
         ],
         "summary": "Get Operational Maps",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 219. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 219. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
         "operationId": "Interface_OperationalMaps_GetOperationalMaps_get",
         "parameters": [
           {
@@ -12606,7 +12606,7 @@
           "OperationalMaps"
         ],
         "summary": "Activation",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 221. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 221. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_OperationalMaps_Activation_get",
         "parameters": [
           {
@@ -12705,7 +12705,7 @@
           "GlobalEvents"
         ],
         "summary": "Get Global Events",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 223. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 223. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available.",
         "operationId": "Interface_GlobalEvents_GetGlobalEvents_get",
         "parameters": [
           {
@@ -12838,7 +12838,7 @@
           "GlobalEvents"
         ],
         "summary": "Trigger Global Event",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 226. 11 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 226. 11 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_GlobalEvents_TriggerGlobalEvent_get",
         "parameters": [
           {
@@ -13019,7 +13019,7 @@
           "GlobalEvents"
         ],
         "summary": "Get Event Actions",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 229. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 229. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_GlobalEvents_GetEventActions_get",
         "parameters": [
           {
@@ -13128,7 +13128,7 @@
           "GlobalEvents"
         ],
         "summary": "Activation",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 230. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 230. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_GlobalEvents_Activation_get",
         "parameters": [
           {
@@ -13227,7 +13227,7 @@
           "ScheduledEvents"
         ],
         "summary": "Get Scheduled Events",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 231. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 231. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available.",
         "operationId": "Interface_ScheduledEvents_GetScheduledEvents_get",
         "parameters": [
           {
@@ -13360,7 +13360,7 @@
           "ScheduledEvents"
         ],
         "summary": "Activation",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 235. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 235. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_ScheduledEvents_Activation_get",
         "parameters": [
           {
@@ -13459,7 +13459,7 @@
           "VirtualMatrix"
         ],
         "summary": "Get Active Monitors",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 237. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 237. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
         "operationId": "Interface_VirtualMatrix_GetActiveMonitors_get",
         "parameters": [
           {
@@ -13581,7 +13581,7 @@
                             {
                               "MonitorID": "Monitor 1",
                               "ClientID": "AF209016277C36811CFDC95AD0D921A7",
-                              "ClientAddress": "192.168.0.2",
+                              "ClientAddress": "192.0.2.1",
                               "ClientUser": "admin",
                               "CurrentObjectType": 1,
                               "CurrentObjectName": "Camera 1",
@@ -13591,7 +13591,7 @@
                             {
                               "MonitorID": "Monitor 2",
                               "ClientID": "ABF3928474CFE7E7FCABC89DBCA98378",
-                              "ClientAddress": "192.168.0.3",
+                              "ClientAddress": "192.0.2.3",
                               "ClientUser": "admin",
                               "CurrentObjectType": 16,
                               "CurrentObjectName": "View1",
@@ -13707,7 +13707,7 @@
           "VirtualMatrix"
         ],
         "summary": "Get Seen Monitors",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 241. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 241. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
         "operationId": "Interface_VirtualMatrix_GetSeenMonitors_get",
         "parameters": [
           {
@@ -13812,13 +13812,13 @@
                             {
                               "MonitorID": "Monitor 1",
                               "ClientID": "AF209016277C36811CFDC95AD0D921A7",
-                              "ClientAddress": "192.168.0.2",
+                              "ClientAddress": "192.0.2.1",
                               "ClientUser": "admin"
                             },
                             {
                               "MonitorID": "Monitor 2",
                               "ClientID": "ABF3928474CFE7E7FCABC89DBCA98378",
-                              "ClientAddress": "192.168.0.3",
+                              "ClientAddress": "192.0.2.3",
                               "ClientUser": "admin"
                             }
                           ]
@@ -13883,7 +13883,7 @@
           "VirtualMatrix"
         ],
         "summary": "Load Screen Style",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 244. 3 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 244. 3 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_VirtualMatrix_LoadScreenStyle_get",
         "parameters": [
           {
@@ -13989,7 +13989,7 @@
           "VirtualMatrix"
         ],
         "summary": "Show Object",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 245. 4 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 245. 4 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_VirtualMatrix_ShowObject_get",
         "parameters": [
           {
@@ -14106,7 +14106,7 @@
           "VirtualMatrix"
         ],
         "summary": "Show User Screen View",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 246. 3 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 246. 3 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_VirtualMatrix_ShowUserScreenView_get",
         "parameters": [
           {
@@ -14209,7 +14209,7 @@
           "VirtualMatrix"
         ],
         "summary": "Show Public Screen View",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 247. 3 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 247. 3 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_VirtualMatrix_ShowPublicScreenView_get",
         "parameters": [
           {
@@ -14312,7 +14312,7 @@
           "VirtualMatrix"
         ],
         "summary": "Start Media Playback",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 248. 7 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 248. 7 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_VirtualMatrix_StartMediaPlayback_get",
         "parameters": [
           {
@@ -14455,7 +14455,7 @@
           "Events"
         ],
         "summary": "Search",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 249. 5 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 249. 5 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available.",
         "operationId": "Interface_Events_Search_get",
         "parameters": [
           {
@@ -14662,7 +14662,7 @@
           "Events"
         ],
         "summary": "Monitor",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 254. 1 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 254. 1 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
         "operationId": "Interface_Events_Monitor_get",
         "parameters": [
           {
@@ -14805,7 +14805,7 @@
           "LPR"
         ],
         "summary": "Get LPRConfigurations",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 258. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 258. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
         "operationId": "Interface_LPR_GetLPRConfigurations_get",
         "parameters": [
           {
@@ -14980,7 +14980,7 @@
           "LPR"
         ],
         "summary": "Get Status",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 260. 4 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 260. 4 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
         "operationId": "Interface_LPR_GetStatus_get",
         "parameters": [
           {
@@ -15187,7 +15187,7 @@
           "LPR"
         ],
         "summary": "Get Surrounding Cameras",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 264. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 264. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
         "operationId": "Interface_LPR_GetSurroundingCameras_get",
         "parameters": [
           {
@@ -15334,7 +15334,7 @@
           "LPR"
         ],
         "summary": "Activation",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 266. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 266. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_LPR_Activation_get",
         "parameters": [
           {
@@ -15433,7 +15433,7 @@
           "LPR"
         ],
         "summary": "Search",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 267. 19 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 267. 19 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available.",
         "operationId": "Interface_LPR_Search_get",
         "parameters": [
           {
@@ -15691,7 +15691,7 @@
           "LPR"
         ],
         "summary": "Get Record Data",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 268. 1 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open. Return fields use the shared LPR Record Details section on manual pages 282–288.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 268. 1 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open. Return fields use the shared LPR Record Details section on manual pages 282–288.",
         "operationId": "Interface_LPR_GetRecordData_get",
         "parameters": [
           {
@@ -15756,7 +15756,7 @@
           "LPR"
         ],
         "summary": "Get Record Image",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 269. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 269. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_LPR_GetRecordImage_get",
         "parameters": [
           {
@@ -15860,7 +15860,7 @@
           "LPR"
         ],
         "summary": "Get Last Record Data",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 270. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open. Return fields use the shared LPR Record Details section on manual pages 282–288.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 270. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open. Return fields use the shared LPR Record Details section on manual pages 282–288.",
         "operationId": "Interface_LPR_GetLastRecordData_get",
         "parameters": [
           {
@@ -15934,7 +15934,7 @@
           "LPR"
         ],
         "summary": "Get Last Record Image",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 271. 3 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 271. 3 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_LPR_GetLastRecordImage_get",
         "parameters": [
           {
@@ -16046,7 +16046,7 @@
           "LPR"
         ],
         "summary": "External Sensor Control",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 272. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 272. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_LPR_ExternalSensorControl_get",
         "parameters": [
           {
@@ -16144,7 +16144,7 @@
           "LPR"
         ],
         "summary": "Monitor Events",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 273. 5 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 273. 5 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_LPR_MonitorEvents_get",
         "parameters": [
           {
@@ -16273,7 +16273,7 @@
           "LPR"
         ],
         "summary": "Process Image",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 4. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open. Return fields use the shared LPR Record Details section on manual pages 282–288.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 4. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open. Return fields use the shared LPR Record Details section on manual pages 282–288.",
         "operationId": "Interface_LPR_ProcessImage_post",
         "parameters": [
           {
@@ -16347,7 +16347,7 @@
           "LPR"
         ],
         "summary": "Query Plate",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 281. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open. Return fields use the shared LPR Record Details section on manual pages 282–288.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 281. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open. Return fields use the shared LPR Record Details section on manual pages 282–288.",
         "operationId": "Interface_LPR_QueryPlate_get",
         "parameters": [
           {
@@ -16421,7 +16421,7 @@
           "Analytics"
         ],
         "summary": "Get Analytics Configurations",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 289. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 289. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
         "operationId": "Interface_Analytics_GetAnalyticsConfigurations_get",
         "parameters": [
           {
@@ -16596,7 +16596,7 @@
           "Analytics"
         ],
         "summary": "Get Status",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 291. 4 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 291. 4 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
         "operationId": "Interface_Analytics_GetStatus_get",
         "parameters": [
           {
@@ -16801,7 +16801,7 @@
           "Analytics"
         ],
         "summary": "Activation",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 295. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 295. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_Analytics_Activation_get",
         "parameters": [
           {
@@ -16897,7 +16897,7 @@
           "Analytics"
         ],
         "summary": "Get Counters",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 296. 1 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 296. 1 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
         "operationId": "Interface_Analytics_GetCounters_get",
         "parameters": [
           {
@@ -17048,7 +17048,7 @@
           "Analytics"
         ],
         "summary": "Reset Counter",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 298. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 298. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_Analytics_ResetCounter_get",
         "parameters": [
           {
@@ -17142,7 +17142,7 @@
           "Analytics"
         ],
         "summary": "Search",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 298. 9 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 298. 9 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available.",
         "operationId": "Interface_Analytics_Search_get",
         "parameters": [
           {
@@ -17345,7 +17345,7 @@
           "Analytics"
         ],
         "summary": "Get Metadata",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 303. 1 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 303. 1 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
         "operationId": "Interface_Analytics_GetMetadata_get",
         "parameters": [
           {
@@ -17472,7 +17472,7 @@
           "WebPages"
         ],
         "summary": "Get Web Pages",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 305. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 305. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
         "operationId": "Interface_WebPages_GetWebPages_get",
         "parameters": [
           {
@@ -17644,7 +17644,7 @@
           "Audit"
         ],
         "summary": "Search",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 307. 7 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 307. 7 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
         "operationId": "Interface_Audit_Search_get",
         "parameters": [
           {
@@ -17812,8 +17812,8 @@
                           "AuditRecords": [
                             {
                               "DateTime": "2018-03-12 10:00:00.017",
-                              "User": "admin",
-                              "IP": "192.168.0.10",
+                              "User": "usuario-exemplo-1",
+                              "IP": "192.0.2.2",
                               "Event": "ERROR",
                               "ObjectType": "RTSP_INTERFACE",
                               "ObjectName": "87",
@@ -17823,8 +17823,8 @@
                             },
                             {
                               "DateTime": "2018-03-12 10:00:00.332",
-                              "User": "operator",
-                              "IP": "192.168.0.11",
+                              "User": "usuario-exemplo-4",
+                              "IP": "192.0.2.4",
                               "Event": "VIEWED",
                               "ObjectType": "CAMERA",
                               "ObjectName": "75",
@@ -17919,7 +17919,7 @@
           "Audit"
         ],
         "summary": "Monitor",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 312. 1 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 312. 1 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_Audit_Monitor_get",
         "parameters": [
           {
@@ -18004,7 +18004,7 @@
           "Failover"
         ],
         "summary": "Get Failover Monitors",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 319. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 319. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
         "operationId": "Interface_Failover_GetFailoverMonitors_get",
         "parameters": [
           {
@@ -18113,14 +18113,14 @@
                               "Name": "Monitor1",
                               "Description": "Failover Monitor 1",
                               "Active": true,
-                              "Address": "192.168.0.1",
+                              "Address": "192.0.2.5",
                               "Port": 8600
                             },
                             {
                               "Name": "Monitor2",
                               "Description": "Failover Monitor 2",
                               "Active": false,
-                              "Address": "192.168.0.2",
+                              "Address": "192.0.2.1",
                               "Port": 8600
                             }
                           ]
@@ -18190,7 +18190,7 @@
           "Failover"
         ],
         "summary": "Get Status",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 322. 4 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 322. 4 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
         "operationId": "Interface_Failover_GetStatus_get",
         "parameters": [
           {
@@ -18400,7 +18400,7 @@
           "Failover"
         ],
         "summary": "Activation",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 325. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 325. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The manual describes a default response or does not provide a complete response-field table; the data shape is left open.",
         "operationId": "Interface_Failover_Activation_get",
         "parameters": [
           {
@@ -18496,7 +18496,7 @@
           "DeviceModels"
         ],
         "summary": "Get Media Device Models",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 326. 3 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 326. 3 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available.",
         "operationId": "Interface_DeviceModels_MediaDevices_GetMediaDeviceModels_get",
         "parameters": [
           {
@@ -18727,7 +18727,7 @@
           "DeviceModels"
         ],
         "summary": "Get Media Device Data",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 330. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 330. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available.",
         "operationId": "Interface_DeviceModels_MediaDevices_GetMediaDeviceData_get",
         "parameters": [
           {
@@ -18938,7 +18938,7 @@
           "DeviceModels"
         ],
         "summary": "Get IODevice Models",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 334. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 334. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available.",
         "operationId": "Interface_DeviceModels_IODevices_GetIODeviceModels_get",
         "parameters": [
           {
@@ -19078,7 +19078,7 @@
           "DeviceModels"
         ],
         "summary": "Get IODevice Data",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 335. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 335. 2 operation-specific query argument(s) are transcribed below, including required markers and documented types/values. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available.",
         "operationId": "Interface_DeviceModels_IODevices_GetIODeviceData_get",
         "parameters": [
           {
@@ -19218,7 +19218,7 @@
           "RTSP"
         ],
         "summary": "Get Config",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 337. The manual block has no operation-specific argument table; only the common authentication/response-format parameters are modeled. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 337. The manual block has no operation-specific argument table; only the common authentication/response-format parameters are modeled. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
         "operationId": "Interface_RTSP_GetConfig_get",
         "parameters": [
           {
@@ -19354,7 +19354,7 @@
           "RTSP"
         ],
         "summary": "Get Status",
-        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: api/API Reference.pdf, manual page 338. The manual block has no operation-specific argument table; only the common authentication/response-format parameters are modeled. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
+        "description": "Digifort HTTP API 1.9.0 for Digifort 7.3.0. Source: docs/api/API Reference.pdf, manual page 338. The manual block has no operation-specific argument table; only the common authentication/response-format parameters are modeled. The typed canonical return fields listed by the manual are preserved in x-digifort-output-fields; exact nesting is shown only when a JSON example is available. JSON response shape and illustrative example are transcribed from this manual section; examples may omit optional or additional fields.",
         "operationId": "Interface_RTSP_GetStatus_get",
         "parameters": [
           {

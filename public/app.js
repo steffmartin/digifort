@@ -27,7 +27,7 @@ function getG726Config(headers, type) {
 }
 
 const state = {
-  servers: [], serverId: '', server: null, cameras: [], tiles: new Map(),
+  servers: [], serverId: '', server: null, cameras: [], tiles: new Map(), desktopWindow: false,
   cameraStatuses: new Map(), statusTimer: null, statusRequestId: 0, statusRefreshing: false,
   mode: 'live', focused: '', audioSource: '', audioEnabled: false,
   allStopped: false, mosaic: 'auto', overlaysVisible: false, timelineVisible: true, thumbnailsVisible: true, surveillance: false,
@@ -56,6 +56,8 @@ const elements = {
   surveillanceToggle: $('#surveillanceToggle'), exitSurveillance: $('#exitSurveillance'), contextMenu: $('#contextMenu'), thumbnailSize: $('#thumbnailSize'),
   thumbnailNext: $('#thumbnailNext'), thumbnailPageLabel: $('#thumbnailPageLabel'),
   recordDialog: $('#recordDialog'), recordForm: $('#recordForm'), recordFormat: $('#recordFormat'), recordFormatHelp: $('#recordFormatHelp'), recordConfirm: $('#recordConfirm'),
+  configDialog: $('#configDialog'), configDialogMessage: $('#configDialogMessage'), configDialogPath: $('#configDialogPath'),
+  openConfigFolder: $('#openConfigFolder'), reloadConfigs: $('#reloadConfigs'), closeConfigApp: $('#closeConfigApp'),
   toastRegion: $('#toastRegion')
 };
 
@@ -630,27 +632,41 @@ async function initializeServers() {
   setConnection('idle', 'Procurando servidores');
   try {
     const result = await apiJson('/api/servers');
+    state.desktopWindow = Boolean(result.canOpenConfigFolder);
     state.servers = (result.servers || []).map(server => typeof server === 'string'
       ? { id: server, name: server }
-      : { id: server.id, name: server.name || server.id });
+      : { id: server.id, name: server.name || server.id, ready: server.ready });
+    const readyServers = state.servers.filter(server => server.ready !== false);
     elements.serverSelect.replaceChildren();
+    if (!readyServers.length) {
+      elements.configDialogMessage.textContent = state.servers.length
+        ? 'Revise os campos do seu arquivo .config para conectar ao servidor. Depois, verifique novamente.'
+        : 'Para visualizar as câmeras, salve um arquivo de configuração na pasta abaixo e verifique novamente.';
+      elements.configDialogPath.textContent = result.configDirectory || 'config/';
+      elements.openConfigFolder.hidden = !state.desktopWindow;
+      if (!elements.configDialog.open) elements.configDialog.showModal();
+    } else if (elements.configDialog.open) {
+      elements.configDialog.close();
+    }
     if (!state.servers.length) {
       const option = new Option('Nenhuma configuração encontrada', '');
       elements.serverSelect.add(option);
       elements.serverSelect.disabled = true;
-      elements.cameraListEmpty.textContent = 'Crie um arquivo config/<servidor>.config a partir de config/example.config.';
+      elements.cameraListEmpty.textContent = 'Adicione um arquivo de configuração para conectar ao servidor.';
       elements.cameraListEmpty.hidden = false;
       setConnection('idle', 'Aguardando configuração');
       return;
     }
     elements.serverSelect.disabled = false;
-    if (state.servers.length > 1) {
+    if (state.servers.length > 1 || !readyServers.length) {
       elements.serverSelect.add(new Option('Escolha um servidor…', ''));
     }
-    for (const server of state.servers) elements.serverSelect.add(new Option(server.name, server.id));
-    if (state.servers.length === 1) {
-      elements.serverSelect.value = state.servers[0].id;
-      await selectServer(state.servers[0].id);
+    for (const server of state.servers) {
+      elements.serverSelect.add(new Option(server.ready === false ? `${server.name} (revisar configuração)` : server.name, server.id));
+    }
+    if (readyServers.length === 1) {
+      elements.serverSelect.value = readyServers[0].id;
+      await selectServer(readyServers[0].id);
     } else {
       setConnection('idle', 'Escolha um servidor');
       elements.cameraListEmpty.textContent = 'Selecione um servidor para carregar as câmeras.';
@@ -662,6 +678,42 @@ async function initializeServers() {
     elements.cameraListEmpty.hidden = false;
   }
 }
+
+elements.reloadConfigs.addEventListener('click', async () => {
+  elements.reloadConfigs.disabled = true;
+  try { await initializeServers(); } finally { elements.reloadConfigs.disabled = false; }
+});
+
+elements.openConfigFolder.addEventListener('click', async () => {
+  try {
+    const response = await fetch('/api/config-folder', { method: 'POST' });
+    if (!response.ok) throw new Error();
+  } catch {
+    elements.configDialogMessage.textContent = 'Não foi possível abrir a pasta. Abra o caminho abaixo no Explorador de Arquivos.';
+  }
+});
+
+async function closeAppFromConfigDialog() {
+  if (elements.closeConfigApp.disabled) return;
+  if (!state.desktopWindow) {
+    window.location.replace('about:blank');
+    return;
+  }
+  elements.closeConfigApp.disabled = true;
+  try {
+    const response = await fetch('/api/close-app', { method: 'POST' });
+    if (!response.ok) throw new Error();
+  } catch {
+    elements.configDialogMessage.textContent = 'Não foi possível fechar automaticamente. Feche a janela do Digifort Monitor.';
+    elements.closeConfigApp.disabled = false;
+  }
+}
+
+elements.closeConfigApp.addEventListener('click', closeAppFromConfigDialog);
+elements.configDialog.addEventListener('cancel', event => {
+  event.preventDefault();
+  void closeAppFromConfigDialog();
+});
 
 async function selectServer(id) {
   if (!id) return;

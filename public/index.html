@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#101719" />
     <title>Digifort · Monitor</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/styles.css" />
     <script type="module" src="/app.js"></script>
   </head>
@@ -169,6 +170,19 @@
           <div class="record-dialog-actions">
             <button class="record-cancel" value="cancel">Cancelar</button>
             <button class="record-confirm" id="recordConfirm" value="start">Iniciar gravação</button>
+          </div>
+        </form>
+      </dialog>
+      <dialog class="record-dialog config-dialog" id="configDialog" aria-labelledby="configDialogTitle" aria-describedby="configDialogMessage">
+        <form method="dialog">
+          <h2 id="configDialogTitle">Configure um servidor Digifort</h2>
+          <p id="configDialogMessage"></p>
+          <code id="configDialogPath"></code>
+          <p>Use <code>example.config</code> como modelo e salve a sua configuração como <code>&lt;servidor&gt;.config</code>.</p>
+          <div class="record-dialog-actions">
+            <button id="closeConfigApp" type="button">Fechar</button>
+            <button id="openConfigFolder" type="button" hidden>Abrir pasta de configurações</button>
+            <button class="config-retry" id="reloadConfigs" type="button">Verificar novamente</button>
           </div>
         </form>
       </dialog>

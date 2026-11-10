@@ -2,7 +2,7 @@
 
 ## Source and version
 
-The local source is `API Reference.pdf`: Digifort HTTP API 1.9.0 for Digifort 7.3.0, Rev. A (copyright 2002–2020). The PDF and this specification are stored together in this directory.
+The local source is [API Reference.pdf](API%20Reference.pdf), Digifort HTTP API 1.9.0 for Digifort 7.3.0, Rev. A (copyright 2002–2020). The PDF and this specification are stored together in this directory.
 
 ## Existing collection search
 
@@ -11,7 +11,7 @@ Before manual transcription, public sources were searched for a ready API 1.9.0 
 - [GitHub repositories: Digifort API 1.9.0 collection](https://github.com/search?q=Digifort+API+1.9.0+collection&type=repositories)
 - [GitHub repositories: Digifort HTTP API Postman](https://github.com/search?q=%22Digifort+HTTP+API%22+Postman&type=repositories)
 - [Postman public search: Digifort API 1.9.0](https://www.postman.com/search?q=Digifort%20API%201.9.0)
-- [Digifort portal Swagger UI](https://portal.digiforte.com.br/swagger/index.html), which currently cannot load `/swagger/api/swagger.json` (Not Found).
+- [Digifort portal Swagger UI](https://portal.digiforte.com.br/swagger/index.html), which returned Not Found for `/swagger/api/swagger.json` during the original search.
 
 No ready specification or collection could be confirmed as matching the manual's version.
 
@@ -33,6 +33,7 @@ Where available, the definition includes JSON response shapes/examples from 51 m
 
 - The manual does not state a scalar type for every query argument. For those fields, the schema lists documented valid values when available and leaves the type unspecified.
 - JSON examples are illustrative; OpenAPI schemas allow additional properties where the example may not list every field.
+- The transcribed examples use generic account names and documentation-only IP addresses. The vendor PDF remains the source for the original examples.
 - Some manual blocks provide only a default-response note or a table of text/XML parameter names without a complete JSON nesting/casing description. Those responses are marked as incomplete, and the typed canonical table fields remain in `x-digifort-output-fields`.
 - The LPR `Coordinates_Left` table labels the field `String`, while the JSON example shows a number. Its schema accepts either and documents the discrepancy.
 - The manual provides the audio upload format (mono PCM, 8 kHz, 16 bits/sample) but does not describe an audio upload response body beyond the default API response.

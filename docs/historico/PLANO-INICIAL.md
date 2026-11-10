@@ -1,6 +1,8 @@
-# Plano de desenvolvimento — Player Digifort
+# Plano inicial de desenvolvimento do Digifort Monitor
 
-**Status:** integração H.265 no cliente e correções de layout/tela cheia concluídas; validação de streams reais e revisão no servidor pendentes; investigação de áudio via `GetAudioStream` aberta; bug de transporte em `Cameras/GetCameras` aberto para investigação.
+Registro histórico da implementação inicial. Os estados e parâmetros abaixo refletem aquela etapa. Consulte [Continuidade](../CONTINUIDADE.md) e o [guia de uso](../USO.md) para o comportamento vigente.
+
+**Status à época:** integração H.265 no cliente e correções de layout/tela cheia concluídas. Validação de streams reais, revisão no servidor, investigação de áudio via `GetAudioStream` e falha de transporte em `Cameras/GetCameras` ainda pendentes.
 **Objetivo:** criar um player local moderno para vídeo e áudio de câmeras Digifort usando somente as APIs de leitura documentadas e os fluxos multipart de mídia.
 
 ## Goals

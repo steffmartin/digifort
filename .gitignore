@@ -1,38 +1,40 @@
 # Configurações locais podem conter credenciais.
 /config/*
+*.config
 !/config/example.config
 /config.json
-/*.config
+
+# Preferências, perfis e artefatos locais do Digifort para Windows
+ChromeProfile/
+window-placement.txt
+/DigifortMonitor.exe
+/Digifort-Monitor-Setup-*.exe
+/SHA256SUMS.txt
+build/
+dist/
+
+# IDEs e arquivos de trabalho locais
 .idea/
+.vs/
 /legacy/
 /.playwright-mcp/
 
-# Node.js: dependências, caches e saídas geradas
-/node_modules/
-**/node_modules/
+# Dependências, caches e outras saídas de ferramentas
+node_modules/
 /.npm/
 /.yarn/cache/
 /.pnpm-store/
-/.cache/
-**/.cache/
+.cache/
 /.next/
 /.nuxt/
 /.output/
 /.turbo/
 /.parcel-cache/
 /.vite/
-/coverage/
-**/coverage/
-/dist/
-**/dist/
-/build/
-**/build/
-/target/
-**/target/
-/tmp/
-**/tmp/
-/temp/
-**/temp/
+coverage/
+target/
+tmp/
+temp/
 *.tsbuildinfo
 npm-debug.log*
 yarn-debug.log*
@@ -56,4 +58,4 @@ desktop.ini
 /.env
 /.env.*
 !/.env.example
-/http-client.private.env.json
+http-client.private.env.json
