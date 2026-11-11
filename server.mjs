@@ -512,6 +512,45 @@ async function handleApi(req, res, url) {
       const command = url.pathname === '/api/config-folder' ? 'DIGIFORT_OPEN_CONFIG' : 'DIGIFORT_CLOSE_APP';
       return res.once('finish', () => process.stdout.write(`${command}\n`)).writeHead(204).end();
     }
+    if (url.pathname === '/api/config') {
+      if (req.headers.host !== `${HOST}:${PORT}` || (req.method !== 'GET' && req.headers.origin !== `http://${HOST}:${PORT}`)) return sendJson(res, 403, { error: 'Solicitação de outra origem.' });
+      const id = queryValue(url, 'server');
+      if (!safeId(id) || id.toLowerCase() === 'example') throw new Error('Identificador de configuração inválido.');
+      const configPath = path.join(CONFIG_DIR, `${id}.config`);
+      if (req.method === 'GET') {
+        const value = await readConfig(id);
+        const fields = Object.fromEntries(['name', 'serverAddress', 'userAgent', 'username', 'timeZone', 'mediaFolder', 'screenshotFolder', 'videoFolder', 'initialMosaic', 'useBasicAuth', 'initialCameras'].filter(key => Object.hasOwn(value, key)).map(key => [key, value[key]]));
+        return sendJson(res, 200, { fields, hasPassword: typeof value.password === 'string' });
+      }
+      if (req.method === 'DELETE') {
+        await fs.unlink(configPath);
+        configs.delete(id);
+        if (activeServerId === id) activateServer('');
+        return sendJson(res, 200, { ok: true });
+      }
+      if (req.method === 'PUT' || req.method === 'POST') {
+        let body = '';
+        for await (const chunk of req) {
+          body += chunk;
+          if (body.length > 65536) throw new Error('Configuração muito grande.');
+        }
+        let fields;
+        try { fields = JSON.parse(body); } catch { throw new Error('Configuração JSON inválida.'); }
+        if (!fields || typeof fields !== 'object' || Array.isArray(fields)) throw new Error('Configuração inválida.');
+        let previous = {};
+        if (req.method === 'PUT') previous = await readConfig(id);
+        const value = { ...previous, ...fields };
+        if (!Object.hasOwn(fields, 'password')) value.password = previous.password;
+        parseConfig(id, value);
+        await fs.mkdir(CONFIG_DIR, { recursive: true });
+        if (req.method === 'POST') await fs.writeFile(configPath, JSON.stringify(value, null, 2) + '\n', { flag: 'wx' });
+        else await fs.writeFile(configPath, JSON.stringify(value, null, 2) + '\n');
+        configs.delete(id);
+        if (activeServerId === id) activateServer('');
+        return sendJson(res, 200, { ok: true });
+      }
+      return sendJson(res, 405, { error: 'Método não disponível.' });
+    }
     if (req.method !== 'GET') return sendJson(res, 405, { error: 'Método não disponível.' });
     if (url.pathname === '/api/servers') {
       return sendJson(res, 200, { servers: await serverOptions(), configDirectory: CONFIG_DIR, canOpenConfigFolder: launcher });

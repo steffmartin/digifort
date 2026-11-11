@@ -63,8 +63,10 @@ Source: "{#StageDir}\example.config"; DestDir: "{#UserDataDir}\config"; Flags: o
 
 [Icons]
 Name: "{group}\Digifort Monitor"; Filename: "{app}\DigifortMonitor.exe"
-Name: "{group}\Pasta de configurações"; Filename: "{app}\DigifortMonitor.exe"; Parameters: "--config-folder"
 Name: "{userdesktop}\Digifort Monitor"; Filename: "{app}\DigifortMonitor.exe"; Tasks: desktopicon
+
+[InstallDelete]
+Type: files; Name: "{group}\Pasta de configurações.lnk"
 
 [Run]
 Filename: "{app}\DigifortMonitor.exe"; Description: "Abrir o Digifort Monitor"; Flags: nowait postinstall skipifsilent
