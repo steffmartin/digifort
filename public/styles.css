@@ -106,10 +106,6 @@ button:focus-visible, input:focus-visible, select:focus-visible, [role="button"]
 .button-primary:hover { background: #f0c17f; }
 .audio-control-wrap { display: inline-flex; align-items: center; gap: 8px; }
 .audio-control-wrap select { max-width: 150px; border: 0; background: transparent; font-size: 10px; }
-.audio-toggle { min-height: 32px; display: inline-flex; align-items: center; gap: 7px; padding: 0 11px; border: 1px solid #315f58; background: #152321; color: var(--live); font-size: 10px; }
-.audio-toggle[aria-pressed="true"] { background: var(--live); color: var(--ink-deep); }
-.audio-toggle svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.5; }
-.audio-toggle .speaker-icon path:first-child { fill: currentColor; }
 
 .icon-button { width: 29px; height: 29px; display: inline-grid; place-items: center; border: 1px solid var(--line); background: transparent; color: var(--muted); font-size: 18px; line-height: 1; }
 .icon-button:hover:not(:disabled) { background: var(--panel-raised); color: var(--text); }
@@ -117,8 +113,13 @@ button:focus-visible, input:focus-visible, select:focus-visible, [role="button"]
 #stopAll .play-icon { display: none; fill: currentColor; stroke: none; }
 #stopAll[data-state="stopped"] .pause-icon { display: none; }
 #stopAll[data-state="stopped"] .play-icon { display: block; }
-.stop-all-button { flex: 0 0 auto; color: var(--muted); }
-.stop-all-button:not(:disabled):hover { color: var(--review); border-color: var(--review); }
+.audio-toggle, .stop-all-button { flex: 0 0 auto; color: var(--muted); }
+.audio-toggle[aria-pressed="true"], .stop-all-button[data-state="active"]:not(:disabled) { border-color: #315f58; background: #152321; color: var(--live); }
+.audio-toggle:hover:not(:disabled), .stop-all-button:hover:not(:disabled) { border-color: var(--live); background: #243d38; color: var(--text); }
+.audio-toggle .speaker-body { fill: currentColor; }
+.audio-toggle .speaker-waves { display: none; }
+.audio-toggle[aria-pressed="true"] .speaker-waves { display: block; }
+.audio-toggle[aria-pressed="true"] .speaker-muted { display: none; }
 .mosaic-control { min-width: 0; display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 9px; }
 .mosaic-control select { max-width: 155px; height: 31px; border: 1px solid var(--line); background: #111b1d; font-size: 10px; }
 .mosaic-preview { width: 22px; height: 22px; flex: 0 0 22px; display: grid; grid-template-columns: repeat(var(--preview-columns, 3), 1fr); grid-template-rows: repeat(var(--preview-rows, 3), 1fr); gap: 1px; }

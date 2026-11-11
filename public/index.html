@@ -70,9 +70,6 @@
                 Gravado
               </button>
             </div>
-            <button class="icon-button stop-all-button" id="stopAll" type="button" title="Parar todas as câmeras" aria-label="Parar todas as câmeras" aria-pressed="false" data-state="active" disabled>
-              <svg viewBox="0 0 20 20" aria-hidden="true"><path class="pause-icon" d="M6 5v10M14 5v10"></path><path class="play-icon" d="M7 4.5v11l9-5.5-9-5.5Z"></path></svg>
-            </button>
             <div class="command-divider" aria-hidden="true"></div>
             <div class="review-fields" id="reviewFields" hidden>
               <label class="field-label" for="startDateTime">Início no fuso do servidor</label>
@@ -83,13 +80,15 @@
             </div>
             <div class="topbar-spacer"></div>
             <div class="audio-control-wrap">
-              <label class="field-label" for="audioSource">Áudio de</label>
+              <label class="field-label" for="audioSource">Em foco:</label>
               <select id="audioSource" disabled aria-label="Fonte do áudio">
                 <option value="">Nenhuma câmera aberta</option>
               </select>
-              <button id="audioToggle" class="audio-toggle" type="button" aria-pressed="false" disabled>
-                <svg class="speaker-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 8v4h3l4 3V5L6 8H3Z"></path><path d="M13 7.2a4 4 0 0 1 0 5.6M15 5a7 7 0 0 1 0 10"></path></svg>
-                <span>Ativar áudio</span>
+              <button id="audioToggle" class="icon-button audio-toggle" type="button" aria-label="Ativar áudio" title="Ativar áudio" aria-pressed="false" disabled>
+                <svg class="speaker-icon" viewBox="0 0 20 20" aria-hidden="true"><path class="speaker-body" d="M3 8v4h3l4 3V5L6 8H3Z"></path><path class="speaker-waves" d="M13 7.2a4 4 0 0 1 0 5.6M15 5a7 7 0 0 1 0 10"></path><path class="speaker-muted" d="m13 8 4 4m0-4-4 4"></path></svg>
+              </button>
+              <button class="icon-button stop-all-button" id="stopAll" type="button" title="Parar todas as câmeras" aria-label="Parar todas as câmeras" aria-pressed="false" data-state="active" disabled>
+                <svg viewBox="0 0 20 20" aria-hidden="true"><path class="pause-icon" d="M6 5v10M14 5v10"></path><path class="play-icon" d="M7 4.5v11l9-5.5-9-5.5Z"></path></svg>
               </button>
             </div>
             <div class="command-divider" aria-hidden="true"></div>

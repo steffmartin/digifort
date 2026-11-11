@@ -1088,7 +1088,8 @@ function updateAudioSources(preferredSource = '') {
     elements.audioSource.disabled = true;
     elements.audioToggle.disabled = true;
     elements.audioToggle.setAttribute('aria-pressed', 'false');
-    elements.audioToggle.querySelector('span').textContent = 'Ativar áudio';
+    elements.audioToggle.setAttribute('aria-label', 'Ativar áudio');
+    elements.audioToggle.title = 'Ativar áudio';
     return;
   }
   for (const name of state.tiles.keys()) elements.audioSource.add(new Option(name, name));
@@ -1097,7 +1098,9 @@ function updateAudioSources(preferredSource = '') {
   elements.audioSource.disabled = false;
   elements.audioToggle.disabled = false;
   elements.audioToggle.setAttribute('aria-pressed', String(state.audioEnabled));
-  elements.audioToggle.querySelector('span').textContent = state.audioEnabled ? 'Áudio ativo' : 'Ativar áudio';
+  const audioAction = state.audioEnabled ? 'Desativar áudio' : 'Ativar áudio';
+  elements.audioToggle.setAttribute('aria-label', audioAction);
+  elements.audioToggle.title = audioAction;
   for (const [name, player] of state.tiles) player.tile.querySelector('.tile-focus-button').classList.toggle('is-audio', name === state.audioSource && state.audioEnabled);
 }
 
