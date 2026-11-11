@@ -59,3 +59,9 @@ Abra **Revisão**, informe o início e, se desejar, o fim no fuso do servidor. C
 Use o menu de contexto de um quadro para capturar um PNG sem sobreposições ou iniciar, pausar, retomar e finalizar uma gravação local. O vídeo registra os quadros reproduzidos e pode incluir o áudio decodificado quando estiver ativo. O seletor oferece MP4 ou MPG/MPEG conforme o suporte de `MediaRecorder`. O Digifort Monitor salva os arquivos na pasta de mídia configurada. Os nomes usam o fuso do servidor, a hora atual no modo ao vivo ou a posição da reprodução na revisão.
 
 Finalize a gravação para salvar o arquivo completo. Se fechar o aplicativo durante uma gravação, o servidor tenta recuperar os blocos recebidos por inteiro. A desinstalação preserva as capturas e gravações.
+
+## Atalhos de teclado
+
+Abra **Atalhos de teclado** no rodapé da lista de câmeras para consultar os comandos. Os atalhos ficam suspensos durante a edição de campos e enquanto um diálogo está aberto. Espaço mantém a ativação normal quando um botão está em foco.
+
+Para revisar a câmera em foco, use `Ctrl+1` a `Ctrl+0`; acrescente `Shift` para revisar todas. A ordem é 30 segundos, 1 minuto, 30 minutos, 1 hora, 6 horas, 12 horas, 1 dia, 2 dias, 3 dias e 1 semana. Como no menu de contexto, revisar apenas a câmera em foco fecha as demais e seleciona a grade automática. Em uma aba normal do navegador, `Ctrl+1` a `Ctrl+9` podem trocar de guia e `Ctrl+0` pode redefinir o zoom; use o modo aplicativo ou o menu de contexto.
