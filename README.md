@@ -10,7 +10,7 @@ O Digifort Monitor é um cliente local não oficial para visualizar câmeras de 
 
 ## Baixar e começar
 
-No Windows 11 x64, instale o Google Chrome ou um Chromium compatível e execute `Digifort-Monitor-Setup-1.0.0.exe`. O pacote inclui o Node.js. Consulte as [releases do GitHub](https://github.com/steffmartin/digifort/releases) para verificar a disponibilidade do download ou siga o [build do instalador](docs/DISTRIBUICAO.md#build-da-versão-100) para gerar o pacote localmente. Compare o SHA-256 do instalador com `SHA256SUMS.txt` antes de executar o arquivo baixado.
+No Windows 11 x64, o instalador gerado pelo código atual inclui o Node.js e pode usar Google Chrome, Chromium compatível ou Microsoft Edge já instalado. Consulte as [notas de cada release](https://github.com/steffmartin/digifort/releases) para os requisitos do pacote publicado ou siga o [build do instalador](docs/DISTRIBUICAO.md#build-da-versão-100) para gerar o pacote localmente. Compare o SHA-256 do instalador com `SHA256SUMS.txt` antes de executar o arquivo baixado.
 
 Durante a instalação, escolha importar um `.config`, preencher os dados de um servidor ou configurar depois. Abra **Digifort Monitor** no menu Iniciar. O atalho **Pasta de configurações** abre `%LOCALAPPDATA%\Digifort Monitor\config`. O [guia de uso](docs/USO.md) explica como conectar um servidor e usar o player.
 

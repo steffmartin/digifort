@@ -6,6 +6,7 @@
 
 # Preferências, perfis e artefatos locais do Digifort para Windows
 ChromeProfile/
+EdgeProfile/
 window-placement.txt
 /DigifortMonitor.exe
 /Digifort-Monitor-Setup-*.exe

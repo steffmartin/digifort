@@ -22,7 +22,7 @@ Gere o instalador a partir do commit da versão. Use a tag `v1.0.0` e as [notas 
 
 ## Instalação e execução
 
-O instalador roda por usuário em `%LOCALAPPDATA%\Programs\Digifort Monitor` e funciona offline. O Google Chrome ou Chromium é um pré-requisito instalado separadamente. O instalador e o inicializador procuram os executáveis nas pastas padrão, nas entradas App Paths do Windows e no `PATH`. O Chrome tem preferência. A disponibilidade de H.264, AAC e HEVC depende do navegador e, para HEVC, da configuração do sistema.
+O instalador roda por usuário em `%LOCALAPPDATA%\Programs\Digifort Monitor` e funciona offline. O instalador e o inicializador procuram Google Chrome, Chromium e Microsoft Edge, nessa ordem, nas pastas padrão, nas entradas App Paths do Windows e no `PATH`. O Edge usa um perfil dedicado separado, com sincronização desativada. A disponibilidade de H.264, AAC e HEVC depende do navegador e, para HEVC, da configuração do sistema.
 
 O atalho inicia o executável gráfico e o Node distribuído no pacote. A janela em modo aplicativo abre quando o Node confirma que está escutando em `127.0.0.1:4177`. Se a porta estiver ocupada, o Digifort exibe um aviso. O inicializador acompanha a janela e usa objetos de trabalho do Windows para encerrar a árvore de processos que iniciou. Ao fechar durante uma gravação, o servidor tenta finalizar os blocos recebidos por completo. Uma gravação sem blocos completos é descartada.
 

@@ -19,7 +19,7 @@ internal static class Launcher
     private const string InstanceName = @"Local\DigifortMonitor.Launcher";
     private const string WindowProperty = "DigifortMonitor.AppWindow";
     private const string Url = "http://127.0.0.1:4177/";
-    private const string BrowserRequired = "Instale o Google Chrome ou um Chromium compatível e tente novamente.";
+    private const string BrowserRequired = "Instale o Google Chrome, o Microsoft Edge ou um Chromium compatível e tente novamente.";
 
     [STAThread]
     private static int Main(string[] args)
@@ -74,7 +74,8 @@ internal static class Launcher
             throw new InvalidOperationException(source ? "Instale o Node.js 20 ou superior para executar a partir do código-fonte." : "O runtime Node.js está ausente. Reinstale o Digifort Monitor.");
 
         Directory.CreateDirectory(config);
-        string profile = Path.GetFullPath(Path.Combine(data, "ChromeProfile"));
+        bool isEdge = String.Equals(Path.GetFileName(browserPath), "msedge.exe", StringComparison.OrdinalIgnoreCase);
+        string profile = Path.GetFullPath(Path.Combine(data, isEdge ? "EdgeProfile" : "ChromeProfile"));
         Directory.CreateDirectory(profile);
         var info = new ProcessStartInfo(nodePath, Quote(Path.Combine(root, "server.mjs")) + " --launcher");
         info.WorkingDirectory = root;
@@ -133,6 +134,7 @@ internal static class Launcher
 
                 string browserArgs = "--app=" + Url + " --user-data-dir=" + Quote(profile) +
                     " --no-first-run --no-default-browser-check --disable-background-mode --disable-session-crashed-bubble";
+                if (isEdge) browserArgs += " --disable-sync";
                 using (var browserJob = new ProcessJob())
                 using (var browser = browserJob.Start(browserPath, browserArgs))
                 {
@@ -244,7 +246,9 @@ internal static class Launcher
             string candidate = FindInFolders(folders, relative);
             if (candidate != null) return candidate;
         }
-        return FindRegistered("chromium.exe") ?? FindOnPath("chromium.exe");
+        return FindRegistered("chromium.exe") ?? FindOnPath("chromium.exe") ??
+            FindInFolders(folders, @"Microsoft\Edge\Application\msedge.exe") ??
+            FindRegistered("msedge.exe") ?? FindOnPath("msedge.exe");
     }
 
     private static string FindInFolders(string[] folders, string relative)

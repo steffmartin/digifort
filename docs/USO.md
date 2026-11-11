@@ -2,7 +2,7 @@
 
 ## Instalar e abrir
 
-No Windows 11 x64, instale o Google Chrome ou um Chromium compatível e execute o instalador. No assistente, importe um `.config`, preencha os dados do primeiro servidor ou escolha **Pular por enquanto**. O preenchimento parcial pode ser salvo para completar depois. Na página **Preferências do servidor**, configure o mosaico inicial e as câmeras que devem abrir ao conectar.
+No Windows 11 x64, execute o instalador com Google Chrome, Chromium compatível ou Microsoft Edge já instalado. Consulte as notas da release para confirmar os navegadores aceitos pelo pacote baixado. No assistente, importe um `.config`, preencha os dados do primeiro servidor ou escolha **Pular por enquanto**. O preenchimento parcial pode ser salvo para completar depois. Na página **Preferências do servidor**, configure o mosaico inicial e as câmeras que devem abrir ao conectar.
 
 Abra **Digifort Monitor** no menu Iniciar ou pelo atalho na área de trabalho, se selecionado na instalação. Fechar a janela encerra o servidor local. Na próxima abertura, o aplicativo restaura a posição, o tamanho e o estado de maximização da janela. Consulte [Distribuição](DISTRIBUICAO.md) para verificar o pacote, atualizar ou desinstalar.
 

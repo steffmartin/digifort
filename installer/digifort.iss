@@ -108,7 +108,7 @@ begin
   ExtractTemporaryFile('BrowserCheck.exe');
   Result := Exec(ExpandConstant('{tmp}\BrowserCheck.exe'), '--check-browser', '', SW_HIDE, ewWaitUntilTerminated, ProbeExit) and (ProbeExit = 0);
   if not Result then
-    SuppressibleMsgBox('O Digifort Monitor precisa do Google Chrome ou de um Chromium compatível. Instale o navegador e execute este instalador novamente.', mbCriticalError, MB_OK, IDOK);
+    SuppressibleMsgBox('O Digifort Monitor precisa do Google Chrome, do Microsoft Edge ou de um Chromium compatível. Instale um deles e execute este instalador novamente.', mbCriticalError, MB_OK, IDOK);
 end;
 
 procedure AddLabel(Page: TWizardPage; Caption: String; X, Y: Integer);
