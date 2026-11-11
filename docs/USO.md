@@ -34,21 +34,17 @@ Para ouvir áudio, escolha uma câmera aberta em **Áudio de** e ative **Áudio*
 
 ### Mosaico inicial
 
-Use um dos valores abaixo em `initialMosaic`. Se estiver ausente, o aplicativo usa a grade automática. A alteração pelo seletor vale para a sessão atual.
+Use um dos valores abaixo em `initialMosaic`. Se estiver ausente ou for desconhecido, inclusive para grades removidas, o aplicativo usa a grade automática silenciosamente. A alteração pelo seletor vale para a sessão atual.
 
 | ID | Grade |
 | --- | --- |
 | `auto` | Grade automática |
-| `2x2` | 2 × 2 · 4 câmeras |
 | `3x3-six` | 3 × 3 · 6 câmeras |
 | `4x4-eight` | 4 × 4 · 8 câmeras |
-| `3x3` | 3 × 3 · 9 câmeras |
 | `4x4-ten` | 4 × 4 · 10 câmeras |
 | `4x4-thirteen-a` | 4 × 4 · 13 câmeras A |
 | `4x4-thirteen-b` | 4 × 4 · 13 câmeras B |
 | `4x4-center` | 4 × 4 · 13 câmeras C |
-| `4x4` | 4 × 4 · 16 câmeras |
-| `5x5` | 5 × 5 · 25 câmeras |
 
 ## Revisar gravações
 

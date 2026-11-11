@@ -70,6 +70,9 @@
                 Gravado
               </button>
             </div>
+            <button class="icon-button stop-all-button" id="stopAll" type="button" title="Parar todas as câmeras" aria-label="Parar todas as câmeras" aria-pressed="false" data-state="active" disabled>
+              <svg viewBox="0 0 20 20" aria-hidden="true"><path class="pause-icon" d="M6 5v10M14 5v10"></path><path class="play-icon" d="M7 4.5v11l9-5.5-9-5.5Z"></path></svg>
+            </button>
             <div class="command-divider" aria-hidden="true"></div>
             <div class="review-fields" id="reviewFields" hidden>
               <label class="field-label" for="startDateTime">Início no fuso do servidor</label>
@@ -79,19 +82,6 @@
               <button id="playReview" class="button-primary" type="button">Reproduzir</button>
             </div>
             <div class="topbar-spacer"></div>
-            <label class="mosaic-control" for="mosaicSelect"><span class="mosaic-preview" id="mosaicPreview" aria-hidden="true"></span><select id="mosaicSelect" aria-label="Composição da grade de câmeras"></select></label>
-            <div class="display-control" id="displayControl">
-              <button class="overlay-toggle" id="overlayToggle" type="button" aria-pressed="false">Mostrar tudo</button>
-              <button class="display-menu-toggle" id="displayMenuToggle" type="button" aria-label="Opções de exibição" aria-haspopup="menu" aria-expanded="false" aria-controls="displayMenu"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5.5 7.5 4.5 4.5 4.5-4.5"></path></svg></button>
-              <div class="display-menu" id="displayMenu" role="menu" aria-label="Opções de exibição" hidden>
-                <button class="display-menu-item" id="toggleOverlayVisibility" type="button" role="menuitemcheckbox" aria-checked="false">Mostrar dados</button>
-                <button class="display-menu-item" id="toggleTimelineVisibility" type="button" role="menuitemcheckbox" aria-checked="true">Ocultar timeline</button>
-                <button class="display-menu-item" id="toggleThumbnailVisibility" type="button" role="menuitemcheckbox" aria-checked="true">Ocultar miniatura</button>
-              </div>
-            </div>
-            <button class="icon-button surveillance-toggle" id="surveillanceToggle" type="button" aria-pressed="false" aria-label="Ativar modo vigilância" title="Modo vigilância">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5"></path></svg>
-            </button>
             <div class="audio-control-wrap">
               <label class="field-label" for="audioSource">Áudio de</label>
               <select id="audioSource" disabled aria-label="Fonte do áudio">
@@ -102,8 +92,19 @@
                 <span>Ativar áudio</span>
               </button>
             </div>
-            <button class="icon-button stop-all-button" id="stopAll" type="button" title="Parar todas as câmeras" aria-label="Parar todas as câmeras" aria-pressed="false" data-state="active" disabled>
-              <svg viewBox="0 0 20 20" aria-hidden="true"><path class="pause-icon" d="M6 5v10M14 5v10"></path><path class="play-icon" d="M7 4.5v11l9-5.5-9-5.5Z"></path></svg>
+            <div class="command-divider" aria-hidden="true"></div>
+            <label class="mosaic-control" for="mosaicSelect"><span class="mosaic-preview" id="mosaicPreview" aria-hidden="true"></span><select id="mosaicSelect" aria-label="Composição da grade de câmeras"></select></label>
+            <div class="display-control" id="displayControl">
+              <button class="overlay-toggle" id="overlayToggle" type="button" aria-pressed="false">Mostrar tudo</button>
+              <button class="display-menu-toggle" id="displayMenuToggle" type="button" title="Opções de exibição" aria-label="Opções de exibição" aria-haspopup="menu" aria-expanded="false" aria-controls="displayMenu"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5.5 7.5 4.5 4.5 4.5-4.5"></path></svg></button>
+              <div class="display-menu" id="displayMenu" role="menu" aria-label="Opções de exibição" hidden>
+                <button class="display-menu-item" id="toggleOverlayVisibility" type="button" role="menuitemcheckbox" aria-checked="false">Mostrar dados</button>
+                <button class="display-menu-item" id="toggleTimelineVisibility" type="button" role="menuitemcheckbox" aria-checked="true">Ocultar timeline</button>
+                <button class="display-menu-item" id="toggleThumbnailVisibility" type="button" role="menuitemcheckbox" aria-checked="true">Ocultar miniatura</button>
+              </div>
+            </div>
+            <button class="icon-button surveillance-toggle" id="surveillanceToggle" type="button" aria-pressed="false" aria-label="Ativar modo vigilância" title="Modo vigilância">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5"></path></svg>
             </button>
           </section>
           <p class="visually-hidden" id="viewSubtitle" aria-live="polite">Escolha uma câmera para começar.</p>
