@@ -56,8 +56,7 @@ const elements = {
   surveillanceToggle: $('#surveillanceToggle'), exitSurveillance: $('#exitSurveillance'), contextMenu: $('#contextMenu'), thumbnailSize: $('#thumbnailSize'),
   thumbnailNext: $('#thumbnailNext'), thumbnailPageLabel: $('#thumbnailPageLabel'),
   recordDialog: $('#recordDialog'), recordForm: $('#recordForm'), recordFormat: $('#recordFormat'), recordFormatHelp: $('#recordFormatHelp'), recordConfirm: $('#recordConfirm'),
-  configDialog: $('#configDialog'), configDialogMessage: $('#configDialogMessage'), configDialogPath: $('#configDialogPath'),
-  openConfigFolder: $('#openConfigFolder'), reloadConfigs: $('#reloadConfigs'), closeConfigApp: $('#closeConfigApp'),
+  configDialog: $('#configDialog'), configDialogMessage: $('#configDialogMessage'), closeConfigApp: $('#closeConfigApp'),
   toastRegion: $('#toastRegion')
 };
 
@@ -643,16 +642,7 @@ async function initializeServers() {
       : { id: server.id, name: server.name || server.id, ready: server.ready });
     const readyServers = state.servers.filter(server => server.ready !== false);
     elements.serverSelect.replaceChildren();
-    if (!readyServers.length) {
-      elements.configDialogMessage.textContent = state.servers.length
-        ? 'Revise os campos do seu arquivo .config para conectar ao servidor. Depois, verifique novamente.'
-        : 'Para visualizar as câmeras, salve um arquivo de configuração na pasta abaixo e verifique novamente.';
-      elements.configDialogPath.textContent = result.configDirectory || 'config/';
-      elements.openConfigFolder.hidden = !state.desktopWindow;
-      if (!elements.configDialog.open) elements.configDialog.showModal();
-    } else if (elements.configDialog.open) {
-      elements.configDialog.close();
-    }
+    if (!readyServers.length && !elements.configDialog.open) await openConfigDialog();
     if (!state.servers.length) {
       const option = new Option('Nenhuma configuração encontrada', '');
       elements.serverSelect.add(option);
@@ -684,41 +674,144 @@ async function initializeServers() {
   }
 }
 
-elements.reloadConfigs.addEventListener('click', async () => {
-  elements.reloadConfigs.disabled = true;
-  try { await initializeServers(); } finally { elements.reloadConfigs.disabled = false; }
-});
+const configForm = $('#configForm');
+const configChoice = $('#configChoice');
+let configPausedStreams = false;
+let configChangedActive = false;
 
-elements.openConfigFolder.addEventListener('click', async () => {
-  try {
-    const response = await fetch('/api/config-folder', { method: 'POST' });
-    if (!response.ok) throw new Error();
-  } catch {
-    elements.configDialogMessage.textContent = 'Não foi possível abrir a pasta. Abra o caminho abaixo no Explorador de Arquivos.';
-  }
-});
-
-async function closeAppFromConfigDialog() {
-  if (elements.closeConfigApp.disabled) return;
-  if (!state.desktopWindow) {
-    window.location.replace('about:blank');
-    return;
-  }
-  elements.closeConfigApp.disabled = true;
-  try {
-    const response = await fetch('/api/close-app', { method: 'POST' });
-    if (!response.ok) throw new Error();
-  } catch {
-    elements.configDialogMessage.textContent = 'Não foi possível fechar automaticamente. Feche a janela do Digifort Monitor.';
-    elements.closeConfigApp.disabled = false;
-  }
+function refreshConfigChoices(selected = '') {
+  configChoice.replaceChildren(new Option('Nova configuração', ''), ...state.servers.map(server => new Option(server.name, server.id)));
+  configChoice.value = selected;
 }
 
-elements.closeConfigApp.addEventListener('click', closeAppFromConfigDialog);
-elements.configDialog.addEventListener('cancel', event => {
-  event.preventDefault();
-  void closeAppFromConfigDialog();
+async function loadConfigForm(id) {
+  configForm.reset();
+  configChoice.value = id;
+  configForm.elements.initialMosaic.replaceChildren(...MOSAICS.map(item => new Option(item.name, item.id)));
+  configForm.elements.id.readOnly = Boolean(id);
+  $('#deleteConfig').hidden = !id;
+  $('#passwordHint').textContent = id ? 'Deixe em branco para manter a senha atual.' : '';
+  configForm.elements.password.required = !id;
+  configForm.elements.password.type = 'password';
+  $('#toggleConfigPassword').setAttribute('aria-label', 'Mostrar senha');
+  elements.configDialogMessage.textContent = '';
+  if (!id) return;
+  try {
+    const { fields, hasPassword } = await apiJson(`/api/config?${query({ server: id })}`);
+    for (const name of ['name', 'serverAddress', 'userAgent', 'username', 'timeZone', 'mediaFolder', 'screenshotFolder', 'videoFolder', 'initialMosaic']) {
+      if (typeof fields[name] === 'string') configForm.elements[name].value = fields[name];
+    }
+    configForm.elements.id.value = id;
+    configForm.elements.useBasicAuth.checked = fields.useBasicAuth === true;
+    configForm.elements.initialCameras.value = Object.entries(fields.initialCameras || {}).map(([name, profile]) => `${name} | ${profile}`).join('\n');
+    configForm.elements.password.required = !hasPassword;
+  } catch (error) { elements.configDialogMessage.textContent = error.message; }
+}
+
+async function openConfigDialog() {
+  if (elements.configDialog.open) return;
+  configPausedStreams = !state.allStopped && state.tiles.size > 0;
+  if (configPausedStreams) await toggleAllStreams();
+  configChangedActive = false;
+  refreshConfigChoices(state.serverId);
+  await loadConfigForm(configChoice.value);
+  elements.configDialog.showModal();
+}
+$('#manageConfigs').addEventListener('click', openConfigDialog);
+configChoice.addEventListener('change', () => loadConfigForm(configChoice.value));
+$('#toggleConfigPassword').addEventListener('click', event => {
+  const input = configForm.elements.password;
+  input.type = input.type === 'password' ? 'text' : 'password';
+  const label = input.type === 'password' ? 'Mostrar senha' : 'Ocultar senha';
+  event.currentTarget.setAttribute('aria-label', label);
+  event.currentTarget.title = label;
 });
+
+async function configRequest(method, id, fields) {
+  const response = await fetch(`/api/config?${query({ server: id })}`, {
+    method, headers: fields ? { 'Content-Type': 'application/json' } : {}, body: fields ? JSON.stringify(fields) : undefined
+  });
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.error || 'Não foi possível salvar a configuração.');
+}
+
+async function saveConfig() {
+  if (!configForm.reportValidity()) return;
+  $('#saveConfig').disabled = true;
+  const f = configForm.elements;
+  const id = f.id.value.trim();
+  const initialCameras = Object.create(null);
+  for (const line of f.initialCameras.value.split('\n').filter(line => line.trim())) {
+    const parts = line.split('|').map(part => part.trim());
+    if (parts.length !== 2 || !parts[0] || !['Visualization', 'Recording'].includes(parts[1]) || Object.hasOwn(initialCameras, parts[0])) {
+      elements.configDialogMessage.textContent = 'Informe cada câmera uma vez, no formato nome | Visualization ou nome | Recording.';
+      $('#saveConfig').disabled = false; return;
+    }
+    initialCameras[parts[0]] = parts[1];
+  }
+  const fields = { name: f.name.value, serverAddress: f.serverAddress.value, userAgent: f.userAgent.value, username: f.username.value, timeZone: f.timeZone.value, mediaFolder: f.mediaFolder.value, screenshotFolder: f.screenshotFolder.value, videoFolder: f.videoFolder.value, initialMosaic: f.initialMosaic.value, useBasicAuth: f.useBasicAuth.checked, initialCameras };
+  if (f.password.value || !configChoice.value) fields.password = f.password.value;
+  f.password.value = '';
+  try {
+    await configRequest(configChoice.value ? 'PUT' : 'POST', id, fields);
+    if (id === state.serverId) configChangedActive = true;
+    const result = await apiJson('/api/servers'); state.servers = result.servers;
+    refreshConfigChoices(id); await loadConfigForm(id);
+    elements.configDialogMessage.textContent = 'Configuração salva.';
+  } catch (error) {
+    if (Object.hasOwn(fields, 'password')) f.password.value = fields.password;
+    elements.configDialogMessage.textContent = error.message;
+  } finally { $('#saveConfig').disabled = false; }
+}
+$('#saveConfig').addEventListener('click', saveConfig);
+configForm.addEventListener('submit', event => event.preventDefault());
+configForm.addEventListener('keydown', event => {
+  if (event.key === 'Enter' && !event.isComposing && event.target.tagName !== 'TEXTAREA' && event.target.tagName !== 'BUTTON') {
+    event.preventDefault();
+    if (!$('#saveConfig').disabled) void saveConfig();
+  }
+});
+$('#deleteConfig').addEventListener('click', async () => {
+  const id = configChoice.value;
+  if (!id || !window.confirm('Excluir esta configuração?')) return;
+  try {
+    await configRequest('DELETE', id);
+    if (id === state.serverId) configChangedActive = true;
+    const result = await apiJson('/api/servers'); state.servers = result.servers;
+    refreshConfigChoices(); await loadConfigForm('');
+    elements.configDialogMessage.textContent = 'Configuração excluída.';
+  } catch (error) { elements.configDialogMessage.textContent = error.message; }
+});
+async function closeConfigDialog() {
+  if (!state.servers.some(server => server.ready !== false)) {
+    if (state.desktopWindow) await fetch('/api/close-app', { method: 'POST' });
+    else window.location.replace('about:blank');
+    return;
+  }
+  elements.configDialog.close();
+  const oldId = state.serverId;
+  if (configChangedActive || !oldId) {
+    if (oldId && !state.servers.some(server => server.id === oldId && server.ready)) {
+      if (state.statusTimer) window.clearInterval(state.statusTimer);
+      state.statusTimer = null; state.statusRequestId += 1;
+      clearTimeline(); clearThumbnails(); await closeAllTiles();
+      state.server = null; state.cameras = []; state.cameraStatuses.clear();
+      drawCameraList();
+    }
+    state.serverId = '';
+    await initializeServers();
+    if (oldId && state.servers.some(server => server.id === oldId && server.ready) && state.serverId !== oldId) {
+      elements.serverSelect.value = oldId; await selectServer(oldId);
+    }
+  } else {
+    const result = await apiJson('/api/servers'); state.servers = result.servers;
+    elements.serverSelect.replaceChildren(new Option('Escolha um servidor…', ''), ...state.servers.map(server => new Option(server.name, server.id)));
+    elements.serverSelect.value = oldId;
+    if (configPausedStreams) await toggleAllStreams();
+  }
+}
+elements.closeConfigApp.addEventListener('click', closeConfigDialog);
+elements.configDialog.addEventListener('cancel', event => { event.preventDefault(); void closeConfigDialog(); });
 
 async function selectServer(id) {
   if (!id) return;

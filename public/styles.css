@@ -25,7 +25,7 @@ select option:checked { background-color: #2b4847; color: var(--text); }
 select option:disabled, select optgroup:disabled { color: var(--dim); }
 button { cursor: pointer; }
 button:disabled, select:disabled, input:disabled { cursor: not-allowed; opacity: .46; }
-button:focus-visible, input:focus-visible, select:focus-visible, [role="button"]:focus-visible { outline: 2px solid var(--live); outline-offset: 2px; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, [role="button"]:focus-visible { outline: 2px solid var(--live); outline-offset: 2px; }
 [hidden] { display: none !important; }
 
 .app-shell { width: 100%; height: 100dvh; min-height: 0; display: flex; flex-direction: column; overflow: hidden; background: var(--ink); }
@@ -306,3 +306,21 @@ button:focus-visible, input:focus-visible, select:focus-visible, [role="button"]
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
   .thumbnail-card .thumbnail-spinner { animation: none; }
 }
+
+#manageConfigs { flex: 0 0 auto; width: 34px; height: 34px; margin-left: -14px; border: 0; background: transparent; color: var(--text); font-size: 18px; }
+.config-dialog { width: min(700px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow: auto; }
+.config-dialog form { gap: 12px; }
+.config-dialog label { display: grid; gap: 5px; }
+.config-dialog input, .config-dialog textarea, .config-dialog select { width: 100%; min-width: 0; padding: 7px; border: 1px solid var(--line); background: #111b1d; color: var(--text); font: inherit; }
+.config-dialog input:not([type="checkbox"]), .config-dialog select { height: 35px; }
+.config-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px 14px; }
+.config-grid > label { grid-row: span 3; grid-template-rows: subgrid; padding-bottom: 5px; }
+.config-grid > label > input:not([type="checkbox"]), .config-grid > label > select, .config-grid > label > .password-field, .config-grid > label > textarea { grid-row: 2; }
+.config-grid > label > small { grid-row: 3; }
+.config-wide { grid-column: 1 / -1; }
+.config-dialog .config-check { display: flex; align-items: center; }
+.config-dialog .config-check input { width: auto; }
+.password-field { display: flex; }
+.password-field button { background: #111b1d; color: var(--text); border: 1px solid var(--line); cursor: pointer; }
+@media (max-width: 760px) { #manageConfigs { margin-left: -6px; } }
+@media (max-width: 580px) { .config-grid { grid-template-columns: 1fr; } .config-wide { grid-column: auto; } }

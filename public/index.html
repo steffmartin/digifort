@@ -27,6 +27,7 @@
           <span class="state-dot" aria-hidden="true"></span>
           <span id="connectionLabel">Sem conexão</span>
         </div>
+        <button id="manageConfigs" type="button" aria-label="Gerenciar configurações" title="Gerenciar configurações">⚙</button>
         <div class="topbar-spacer"></div>
         <div class="clock-block">
           <span id="clockTime" class="clock-time">--:--:--</span>
@@ -173,16 +174,30 @@
           </div>
         </form>
       </dialog>
-      <dialog class="record-dialog config-dialog" id="configDialog" aria-labelledby="configDialogTitle" aria-describedby="configDialogMessage">
-        <form method="dialog">
-          <h2 id="configDialogTitle">Configure um servidor Digifort</h2>
-          <p id="configDialogMessage"></p>
-          <code id="configDialogPath"></code>
-          <p>Use <code>example.config</code> como modelo e salve a sua configuração como <code>&lt;servidor&gt;.config</code>.</p>
+      <dialog class="record-dialog config-dialog" id="configDialog" aria-labelledby="configDialogTitle">
+        <form id="configForm" autocomplete="off">
+          <h2 id="configDialogTitle">Configurações de servidor</h2>
+          <p id="configDialogMessage" role="status"></p>
+          <label>Configuração <select id="configChoice"></select></label>
+          <div class="config-grid">
+            <label>Identificador do arquivo <input name="id" required pattern="[a-zA-Z0-9_.-]{1,120}" placeholder="servidor" /></label>
+            <label>Nome <input name="name" required /></label>
+            <label>Endereço HTTP ou HTTPS <input name="serverAddress" type="url" required placeholder="http://servidor:8601" /></label>
+            <label>User-Agent <input name="userAgent" required value="custom" /></label>
+            <label>Usuário <input name="username" required autocomplete="off" /></label>
+            <label>Senha <span class="password-field"><input name="password" type="password" autocomplete="new-password" /><button id="toggleConfigPassword" type="button" aria-label="Mostrar senha" title="Mostrar senha">◉</button></span><small id="passwordHint"></small></label>
+            <label>Fuso horário IANA <input name="timeZone" required value="America/Sao_Paulo" /></label>
+            <label>Mosaico inicial <select name="initialMosaic" id="configMosaic"></select></label>
+            <label>Pasta de mídia <input name="mediaFolder" /></label>
+            <label>Pasta de screenshots <input name="screenshotFolder" /></label>
+            <label>Pasta de vídeos <input name="videoFolder" /></label>
+            <label class="config-check"><input name="useBasicAuth" type="checkbox" /> Usar autenticação básica</label>
+            <label class="config-wide">Câmeras iniciais (uma por linha: nome | Visualization ou Recording)<textarea name="initialCameras" rows="3"></textarea></label>
+          </div>
           <div class="record-dialog-actions">
+            <button id="deleteConfig" type="button">Excluir</button>
             <button id="closeConfigApp" type="button">Fechar</button>
-            <button id="openConfigFolder" type="button" hidden>Abrir pasta de configurações</button>
-            <button class="config-retry" id="reloadConfigs" type="button">Verificar novamente</button>
+            <button class="config-retry" id="saveConfig" type="button">Salvar</button>
           </div>
         </form>
       </dialog>
