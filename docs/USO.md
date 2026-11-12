@@ -6,6 +6,8 @@ No Windows x64, execute o instalador com Google Chrome, Chromium compatível ou 
 
 Abra **Digifort Monitor** no menu Iniciar ou pelo atalho na área de trabalho, se selecionado na instalação. Fechar a janela encerra o servidor local. Na próxima abertura, o aplicativo restaura a posição, o tamanho e o estado de maximização da janela. Consulte [Distribuição](DISTRIBUICAO.md) para verificar o pacote, atualizar ou desinstalar.
 
+Ao iniciar, o aplicativo verifica se há uma release mais recente. No aviso, **Baixar** abre a página da release, **Ignorar esta versão** impede novos avisos para ela e **Cancelar** fecha o aviso. Uma versão posterior pode gerar um novo aviso. A consulta é silenciosa quando falha e não instala atualizações.
+
 ## Configurar um servidor
 
 Use o botão de configurações ao lado do estado de conexão para criar, editar ou excluir servidores. Os arquivos ficam em `%LOCALAPPDATA%\Digifort Monitor\config` na versão instalada e em `config/` na versão executada a partir do código-fonte. O aplicativo exclui [example.config](../config/example.config) da lista de servidores.
@@ -31,13 +33,13 @@ Mantenha os arquivos reais na pasta local de configurações e use somente dados
 
 ## Monitorar ao vivo
 
-Selecione **Ao vivo**, busque uma câmera na lateral e clique nela para abrir o vídeo na grade. Câmeras adicionadas manualmente começam com o perfil `Visualization`. Use os controles do quadro para trocar o perfil e o menu de contexto para iniciar uma captura. Abra uma câmera em tela cheia com duplo clique ou `F`. Use `Esc` para voltar à grade ou sair do modo vigilância.
+Selecione **Ao vivo**, busque uma câmera na lateral e clique nela para abrir o vídeo na grade. Câmeras adicionadas manualmente começam com o perfil `Visualization`. No menu de contexto do quadro, escolha o perfil, defina a câmera em foco, feche-a ou inicie uma captura. Abra uma câmera em tela cheia com duplo clique ou `F`. Use `Esc` para voltar à grade ou sair do modo vigilância.
 
 Selecione uma câmera no quadro ou em **Em foco:**. A câmera em foco determina a fonte do áudio. Para ouvir, ative o botão de áudio ao lado do seletor; ao mudar o foco, o áudio ativo acompanha a nova câmera. O player aceita AAC, G.711 e G.726 conforme o fluxo recebido. H.264 e H.265/HEVC são decodificados com WebCodecs e dependem do perfil aceito pelo navegador.
 
 ### Mosaico inicial
 
-Use um dos valores abaixo em `initialMosaic`. Se estiver ausente ou for desconhecido, inclusive para grades removidas, o aplicativo usa a grade automática silenciosamente. Se a capacidade da grade inicial exceder `maxCams`, também usa a grade automática. A alteração pelo seletor vale para a sessão atual.
+Use um dos valores abaixo em `initialMosaic`. Se estiver ausente ou for desconhecido, inclusive para grades removidas, o aplicativo usa a grade automática silenciosamente. Se a capacidade da grade inicial exceder `maxCams`, também usa a grade automática. A alteração pelo seletor vale para a sessão atual. O botão **Restaurar grade configurada** ou `Ctrl+Alt+R` reconecta o servidor e restaura o mosaico e as câmeras iniciais; gravações locais em andamento são finalizadas.
 
 | ID | Grade |
 | --- | --- |
@@ -51,7 +53,9 @@ Use um dos valores abaixo em `initialMosaic`. Se estiver ausente ou for desconhe
 
 ## Revisar gravações
 
-Abra **Revisão**, informe o início e, se desejar, o fim no fuso do servidor. Clique em **Reproduzir**. A timeline mostra os intervalos de vídeo e áudio de cada câmera aberta. Clique em uma faixa para navegar em todas as câmeras. Use a roda do mouse sobre a timeline para ajustar o zoom no ponto indicado e arraste para navegar quando houver zoom. Para abrir miniaturas, clique com o botão direito no quadro da câmera e escolha **Esta câmera > Miniaturas**, o tamanho e o intervalo. As miniaturas começam no tamanho grande. Use as setas esquerda e direita para mudar de página ou `Ctrl+Shift+Alt+1` a `Ctrl+Shift+Alt+0` para abri-las na câmera em foco, com intervalos de 5 segundos a 5 horas na ordem do menu. As transmissões pausam enquanto as miniaturas ocupam a grade; clique em uma imagem para retomar todas a partir daquele instante ou use **Voltar às câmeras**. Use **Opções de exibição** para controlar dados sobrepostos e timeline.
+Abra **Revisão**, informe o início e, se desejar, o fim no fuso do servidor. Os campos aceitam edição direta ou seleção no calendário; escolha a hora e clique em **Confirmar**. O fim deve ser posterior ao início para reproduzir. Clique em **Reproduzir**. A timeline mostra os intervalos de vídeo e áudio de cada câmera aberta. Sem fim informado, o limite da timeline é fixado no instante em que a revisão começa; para incluir gravações posteriores, clique novamente em **Reproduzir**. Clique em uma faixa para navegar em todas as câmeras. Use a roda do mouse sobre a timeline para ajustar o zoom no ponto indicado e arraste para navegar quando houver zoom.
+
+Para abrir miniaturas, clique com o botão direito no quadro da câmera e escolha **Esta câmera > Miniaturas**, o tamanho e o intervalo. As miniaturas começam no tamanho grande. Use as setas esquerda e direita para mudar de página ou `Ctrl+Shift+Alt+1` a `Ctrl+Shift+Alt+0` para abri-las na câmera em foco, com intervalos de 5 segundos a 5 horas na ordem do menu. As imagens carregadas são reutilizadas ao navegar entre páginas durante a sessão de miniaturas; o cache é descartado ao sair dela ou alterar parâmetros relevantes. As transmissões pausam enquanto as miniaturas ocupam a grade; clique em uma imagem para retomar todas a partir daquele instante ou use **Voltar às câmeras**. Use **Opções de exibição** para controlar dados sobrepostos e timeline.
 
 ## Salvar capturas e gravações
 

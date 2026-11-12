@@ -31,11 +31,11 @@ const state = {
   cameraStatuses: new Map(), statusTimer: null, statusRequestId: 0, statusRefreshing: false,
   mode: 'live', focused: '', audioEnabled: false,
   allStopped: false, mosaic: 'auto', overlaysVisible: false, timelineVisible: true, surveillance: false,
-  audioContext: null, reviewEpoch: null, reviewStart: null, reviewEnd: null,
+  audioContext: null, reviewEpoch: null, reviewStart: null, reviewEnd: null, reviewLimitEnd: null,
   timelineStart: null, timelineEnd: null,
   timelineRequestId: 0, timelineData: new Map(), timelineZoom: 1, timelineControllers: [], recordings: new Map(), recordingSession: null,
   pendingRecordingScope: null,
-  thumbnailPage: 0, thumbnailSize: 'large', thumbnailInterval: 300, thumbnailCamera: '', thumbnailAnchor: 0, thumbnailActive: false, thumbnailWasStopped: false, thumbnails: [], thumbnailObjectUrls: [], thumbnailRequestId: 0, thumbnailControllers: new Set()
+  thumbnailPage: 0, thumbnailSize: 'large', thumbnailInterval: 300, thumbnailCamera: '', thumbnailAnchor: null, thumbnailActive: false, thumbnailWasStopped: false, thumbnails: [], thumbnailCache: new Map(), thumbnailRequestId: 0, thumbnailControllers: new Set()
 };
 
 const elements = {
@@ -50,7 +50,7 @@ const elements = {
   timelinePlayhead: $('#timelinePlayhead'), timelineStatus: $('#timelineStatus'),
   thumbnailPanel: $('#thumbnailPanel'), thumbnailGrid: $('#thumbnailGrid'), thumbnailStatus: $('#thumbnailStatus'),
   thumbnailPrev: $('#thumbnailPrev'),
-  mosaicSelect: $('#mosaicSelect'), mosaicPreview: $('#mosaicPreview'), overlayToggle: $('#overlayToggle'), displayControl: $('#displayControl'), displayMenuToggle: $('#displayMenuToggle'), displayMenu: $('#displayMenu'),
+  mosaicSelect: $('#mosaicSelect'), resetGrid: $('#resetGrid'), mosaicPreview: $('#mosaicPreview'), overlayToggle: $('#overlayToggle'), displayControl: $('#displayControl'), displayMenuToggle: $('#displayMenuToggle'), displayMenu: $('#displayMenu'),
   toggleOverlayVisibility: $('#toggleOverlayVisibility'), toggleTimelineVisibility: $('#toggleTimelineVisibility'),
   surveillanceToggle: $('#surveillanceToggle'), exitSurveillance: $('#exitSurveillance'), contextMenu: $('#contextMenu'),
   thumbnailNext: $('#thumbnailNext'),
@@ -127,7 +127,7 @@ function setDisplayMenuLabel(item, label, shortcut) {
 
 function updateOverlayState() {
   elements.viewerGrid.classList.toggle('overlays-hidden', !state.overlaysVisible);
-  elements.reviewPanel.hidden = state.mode !== 'playback' || !state.timelineVisible;
+  elements.reviewPanel.hidden = state.mode !== 'playback' || !state.timelineVisible || state.thumbnailActive;
   elements.thumbnailPanel.hidden = !state.thumbnailActive;
   const allVisible = state.overlaysVisible && state.timelineVisible;
   elements.overlayToggle.setAttribute('aria-pressed', String(allVisible));
@@ -234,14 +234,56 @@ function createCaptureMenu(scope) {
   return menu;
 }
 
+function contextSeparator() {
+  const separator = document.createElement('div');
+  separator.className = 'context-separator'; separator.setAttribute('role', 'separator');
+  return separator;
+}
+
 function createCameraScopeMenu(scope, { includeCapture = true } = {}) {
   const menu = document.createElement('div');
   menu.className = 'context-submenu context-scope-menu';
   menu.setAttribute('role', 'menu');
+  const cameraOpen = !scope.all && state.tiles.has(scope.camera);
+  if (cameraOpen) {
+    const focus = document.createElement('button');
+    focus.type = 'button'; focus.className = 'context-item context-check-item'; focus.setAttribute('role', 'menuitemcheckbox');
+    focus.setAttribute('aria-checked', String(state.focused === scope.camera)); focus.textContent = 'Em foco';
+    focus.addEventListener('click', () => { focusCamera(scope.camera); closeContextMenu(); });
+    menu.append(focus);
+    if (state.mode === 'live') {
+      menu.append(contextSeparator());
+      appendProfileItems(menu, scope.camera);
+    }
+    menu.append(contextSeparator());
+  }
   menu.append(createContextBranch('Gravado', () => createPlaybackMenu(scope)));
-  if (!scope.all && state.mode === 'playback' && state.tiles.has(scope.camera)) menu.append(createContextBranch('Miniaturas', () => createThumbnailMenu(scope.camera)));
+  if (cameraOpen && state.mode === 'playback') menu.append(createContextBranch('Miniaturas', () => createThumbnailMenu(scope.camera)));
   if (includeCapture) menu.append(createContextBranch('Captura', () => createCaptureMenu(scope)));
+  if (cameraOpen) {
+    const close = document.createElement('button');
+    close.type = 'button'; close.className = 'context-item'; close.setAttribute('role', 'menuitem'); close.textContent = 'Fechar câmera';
+    close.addEventListener('click', () => { closeContextMenu(); void closeCamera(scope.camera); });
+    menu.append(contextSeparator(), close);
+  }
   return menu;
+}
+
+function appendProfileItems(menu, cameraName) {
+  for (const [profile, label] of [['Visualization', 'Visualização'], ['Recording', 'Gravação']]) {
+    const item = document.createElement('button');
+    item.type = 'button'; item.className = 'context-item thumbnail-size-item'; item.setAttribute('role', 'menuitemradio');
+    item.setAttribute('aria-checked', String(state.tiles.get(cameraName)?.profile === profile)); item.textContent = label;
+    item.addEventListener('click', () => {
+      const player = state.tiles.get(cameraName);
+      if (player && state.mode === 'live' && player.profile !== profile) {
+        player.profile = profile; player.lastLiveProfile = profile;
+        if (!state.allStopped) player.restart();
+      }
+      closeContextMenu();
+    });
+    menu.append(item);
+  }
 }
 
 function scopedCameraNames(scope) { return scope.all ? [...state.tiles.keys()] : [scope.camera].filter(name => state.tiles.has(name)); }
@@ -596,7 +638,7 @@ async function beginContextPlayback(scope, seconds) {
   setMode('playback');
   if (seconds === null) {
     elements.startDateTime.value = ''; elements.endDateTime.value = '';
-    state.reviewStart = null; state.reviewEnd = null; state.reviewEpoch = null;
+    state.reviewStart = null; state.reviewEnd = null; state.reviewLimitEnd = null; state.reviewEpoch = null;
     clearTimeline(); clearThumbnails();
     elements.timelineStatus.textContent = 'Informe um período para carregar a timeline.';
     elements.thumbnailStatus.textContent = 'Informe um período para carregar miniaturas.';
@@ -862,6 +904,7 @@ async function selectServer(id) {
   state.surveillance = false; updateSurveillance();
   state.reviewStart = null;
   state.reviewEnd = null;
+  state.reviewLimitEnd = null;
   elements.liveMode.classList.add('is-active');
   elements.liveMode.setAttribute('aria-pressed', 'true');
   elements.reviewMode.classList.remove('is-active');
@@ -1008,15 +1051,10 @@ function createTile(cameraName, profile) {
     <div class="tile-video" tabindex="0" role="button" aria-label="Focar câmera">
       <canvas class="tile-canvas"></canvas>
       <div class="tile-overlay">
-        <div class="tile-topline"><div class="tile-camera-meta"><span class="tile-camera-name"></span><span class="tile-camera-description"></span></div><span class="tile-state"><span class="tile-state-text">Conectando</span></span></div>
+        <div class="tile-topline"><div class="tile-camera-meta"><span class="tile-camera-name"></span><span class="tile-camera-description"></span></div><span class="tile-state"><span class="tile-audio-indicator" hidden><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 8h3l4-3v10l-4-3H3z"></path><path class="tile-audio-on" d="M13 7c1.7 1.6 1.7 4.4 0 6m2-8c3 2.8 3 7.2 0 10"></path><path class="tile-audio-off" d="m13 8 4 4m0-4-4 4"></path></svg></span><span class="tile-state-text">Conectando</span></span></div>
         <div class="tile-message" hidden></div>
         <div class="tile-bottomline"><span class="tile-timecode">--:--:--</span><span class="tile-codec"></span></div>
       </div>
-    </div>
-    <div class="tile-controls">
-      <button class="tile-focus-button" type="button">Focar</button>
-      <select class="tile-profile"><option value="Visualization">Visualização</option><option value="Recording">Gravação</option></select>
-      <button class="tile-close-button" type="button">×</button>
     </div>`;
   tile.querySelector('.tile-camera-name').textContent = cameraName;
   const cameraDescription = tile.querySelector('.tile-camera-description');
@@ -1024,14 +1062,8 @@ function createTile(cameraName, profile) {
   cameraDescription.hidden = !camera?.description;
   tile.querySelector('.tile-video').setAttribute('aria-label', `Focar câmera ${cameraName}. Pressione F para tela cheia.`);
   tile.querySelector('.tile-video').setAttribute('aria-keyshortcuts', 'F');
-  tile.querySelector('.tile-focus-button').setAttribute('aria-label', `Focar câmera ${cameraName}`);
-  tile.querySelector('.tile-profile').setAttribute('aria-label', `Perfil da câmera ${cameraName}`);
-  const closeButton = tile.querySelector('.tile-close-button');
-  closeButton.setAttribute('aria-label', `Fechar câmera ${cameraName}`);
-  closeButton.title = `Fechar câmera ${cameraName}`;
-  tile.querySelector('.tile-profile').value = profile === 'Recording' ? 'Recording' : 'Visualization';
   const videoSurface = tile.querySelector('.tile-video');
-  videoSurface.title = 'Clique duas vezes ou pressione F para abrir em tela cheia';
+  videoSurface.title = 'Arraste para trocar de posição. Clique duas vezes ou pressione F para abrir em tela cheia';
   videoSurface.addEventListener('click', () => focusCamera(cameraName));
   videoSurface.addEventListener('dblclick', () => toggleTileFullscreen(tile, cameraName));
   tile.addEventListener('contextmenu', event => { event.preventDefault(); openContextMenu(event.clientX, event.clientY, { camera: cameraName, all: false }, { camera: cameraName, all: true }); });
@@ -1079,19 +1111,7 @@ function createTile(cameraName, profile) {
   tile.querySelector('.tile-video').addEventListener('keydown', event => {
     if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); focusCamera(cameraName); }
   });
-  tile.querySelector('.tile-focus-button').addEventListener('click', () => focusCamera(cameraName));
-  tile.querySelector('.tile-close-button').addEventListener('click', () => closeCamera(cameraName));
-  tile.querySelector('.tile-profile').addEventListener('change', event => {
-    const player = state.tiles.get(cameraName);
-    if (!player || state.mode !== 'live') return;
-    player.profile = event.target.value;
-    player.lastLiveProfile = player.profile;
-    if (!state.allStopped) player.restart();
-  });
-  if (state.mode === 'playback') {
-    tile.querySelector('.tile-profile').hidden = true;
-    tile.querySelector('.tile-state').classList.add('review');
-  }
+  if (state.mode === 'playback') tile.querySelector('.tile-state').classList.add('review');
   return tile;
 }
 
@@ -1161,7 +1181,7 @@ async function closeCamera(cameraName) {
   if (wasFocused) {
     const nextFocus = state.tiles.keys().next().value || '';
     if (nextFocus) focusCamera(nextFocus);
-    else state.focused = '';
+    else { state.focused = ''; clearThumbnails(); }
   }
   if (!state.tiles.size) {
     elements.emptyMonitor.hidden = false;
@@ -1198,10 +1218,10 @@ async function closeAllTiles() {
 function focusCamera(cameraName) {
   if (!state.tiles.has(cameraName)) return;
   const previousFocus = state.focused;
+  if (previousFocus !== cameraName) clearThumbnails();
   state.focused = cameraName;
   for (const [name, player] of state.tiles) {
     player.tile.classList.toggle('is-focused', name === cameraName);
-    player.tile.querySelector('.tile-focus-button').classList.toggle('is-audio', name === state.focused && state.audioEnabled);
   }
   updateAudioSources();
   updateViewHeader();
@@ -1211,6 +1231,13 @@ function focusCamera(cameraName) {
 
 function updateAudioSources() {
   elements.audioSource.replaceChildren();
+  for (const [name, player] of state.tiles) {
+    const indicator = player.tile.querySelector('.tile-audio-indicator');
+    indicator.hidden = name !== state.focused;
+    indicator.classList.toggle('is-audio-on', state.audioEnabled);
+    indicator.setAttribute('aria-label', state.audioEnabled ? 'Em foco, áudio ativado' : 'Em foco, áudio desativado');
+    indicator.title = state.audioEnabled ? 'Em foco, áudio ativado' : 'Em foco, áudio desativado';
+  }
   if (!state.tiles.size) {
     elements.audioSource.add(new Option('Nenhuma câmera aberta', ''));
     elements.audioSource.disabled = true;
@@ -1228,7 +1255,6 @@ function updateAudioSources() {
   const audioAction = state.audioEnabled ? 'Desativar áudio' : 'Ativar áudio';
   elements.audioToggle.setAttribute('aria-label', audioAction);
   elements.audioToggle.title = `${audioAction} · A`;
-  for (const [name, player] of state.tiles) player.tile.querySelector('.tile-focus-button').classList.toggle('is-audio', name === state.focused && state.audioEnabled);
 }
 
 function updateViewHeader() {
@@ -1260,19 +1286,16 @@ function setMode(mode) {
     setDefaultReviewTimes();
     state.reviewStart = null;
     state.reviewEnd = null;
+    state.reviewLimitEnd = null;
     state.reviewEpoch = null;
     for (const player of state.tiles.values()) {
       player.profile = 'Recording';
-      player.tile.querySelector('.tile-profile').hidden = true;
       player.tile.querySelector('.tile-state').classList.add('review');
     }
   } else {
     elements.timelineStatus.textContent = 'Timeline disponível durante as gravações.';
     for (const player of state.tiles.values()) {
       player.profile = player.lastLiveProfile || 'Visualization';
-      const select = player.tile.querySelector('.tile-profile');
-      select.hidden = false;
-      select.value = player.profile;
       player.tile.querySelector('.tile-state').classList.remove('review');
     }
   }
@@ -1296,7 +1319,9 @@ function startReview() {
     state.reviewStart = inputToEpoch(elements.startDateTime.value, state.server.timeZone);
     state.reviewEnd = elements.endDateTime.value ? inputToEpoch(elements.endDateTime.value, state.server.timeZone) : null;
     if (state.reviewEnd && state.reviewEnd <= state.reviewStart) throw new Error('O fim precisa ser posterior ao início.');
+    state.reviewLimitEnd = state.reviewEnd ?? Date.now();
     state.reviewEpoch = state.reviewStart;
+    clearThumbnails();
     state.allStopped = false;
   } catch (error) {
     return toast(error.message || 'Confira o período selecionado.', 'error');
@@ -1309,7 +1334,7 @@ function loadFocusedTimeline() {
   if (state.mode !== 'playback' || !state.reviewStart || !state.timelineVisible) return;
   clearTimeline();
   state.timelineStart = state.reviewStart;
-  state.timelineEnd = state.reviewEnd ?? Date.now();
+  state.timelineEnd = state.reviewLimitEnd;
   for (const camera of state.tiles.keys()) { state.timelineData.set(camera, []); void loadTimeline(camera); }
   drawTimeline();
 }
@@ -1317,7 +1342,8 @@ function loadFocusedTimeline() {
 function seekReview(epoch) {
   if (state.thumbnailActive) closeThumbnailView(false);
   if (state.mode !== 'playback' || !Number.isFinite(epoch) || !Number.isFinite(state.reviewStart)) return;
-  const end = state.reviewEnd ?? state.timelineEnd ?? Date.now();
+  const end = state.reviewLimitEnd ?? state.reviewEnd ?? state.timelineEnd ?? Date.now();
+  clearThumbnails();
   state.reviewEpoch = Math.max(state.reviewStart, Math.min(end, epoch));
   updateTimelinePlayhead(state.reviewEpoch);
   for (const player of state.tiles.values()) player.restart();
@@ -2244,7 +2270,7 @@ function seekFromTimeline(event, lane) {
   seekReview(state.timelineStart + (state.timelineEnd - state.timelineStart) * Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width)));
 }
 function updateTimelinePlayhead(epoch = state.reviewEpoch) {
-  if (Number.isFinite(epoch) && Number.isFinite(state.reviewStart)) state.reviewEpoch = Math.max(state.reviewStart, Math.min(state.reviewEnd ?? state.timelineEnd ?? Date.now(), epoch));
+  if (Number.isFinite(epoch) && Number.isFinite(state.reviewStart)) state.reviewEpoch = Math.max(state.reviewStart, Math.min(state.reviewLimitEnd ?? state.reviewEnd ?? state.timelineEnd ?? Date.now(), epoch));
   if (!Number.isFinite(epoch) || !Number.isFinite(state.timelineStart) || !Number.isFinite(state.timelineEnd) || state.timelineEnd <= state.timelineStart) { elements.timelinePlayhead.hidden = true; return; }
   state.reviewEpoch = Math.max(state.timelineStart, Math.min(state.timelineEnd, epoch));
   const fraction = (state.reviewEpoch - state.timelineStart) / (state.timelineEnd - state.timelineStart);
@@ -2320,14 +2346,20 @@ async function toggleAllStreams() {
   updateViewHeader();
 }
 
-function clearThumbnails() {
+function cancelThumbnailPage() {
   state.thumbnailRequestId += 1;
   for (const controller of state.thumbnailControllers) controller.abort();
   state.thumbnailControllers.clear();
-  for (const url of state.thumbnailObjectUrls) URL.revokeObjectURL(url);
-  state.thumbnailObjectUrls = [];
   state.thumbnails = [];
   elements.thumbnailGrid.replaceChildren();
+}
+
+function clearThumbnails() {
+  cancelThumbnailPage();
+  for (const url of state.thumbnailCache.values()) URL.revokeObjectURL(url);
+  state.thumbnailCache.clear();
+  state.thumbnailAnchor = null;
+  state.thumbnailPage = 0;
 }
 
 const THUMBNAIL_INTERVALS = [
@@ -2339,7 +2371,7 @@ function createThumbnailMenu(camera) {
   const menu = document.createElement('div'); menu.className = 'context-submenu'; menu.setAttribute('role', 'menu');
   for (const [size, label] of [['small', 'Pequeno'], ['medium', 'Médio'], ['large', 'Grande']]) {
     const item = document.createElement('button'); item.type = 'button'; item.className = 'context-item thumbnail-size-item'; item.setAttribute('role', 'menuitemradio'); item.setAttribute('aria-checked', String(state.thumbnailSize === size)); item.textContent = label;
-    item.addEventListener('click', () => { state.thumbnailSize = size; for (const other of menu.querySelectorAll('[role="menuitemradio"]')) other.setAttribute('aria-checked', String(other === item)); }); menu.append(item);
+    item.addEventListener('click', () => { if (state.thumbnailSize !== size) clearThumbnails(); state.thumbnailSize = size; for (const other of menu.querySelectorAll('[role="menuitemradio"]')) other.setAttribute('aria-checked', String(other === item)); }); menu.append(item);
   }
   const separator = document.createElement('div'); separator.className = 'context-separator'; separator.setAttribute('role', 'separator'); menu.append(separator);
   for (const [index, [seconds, label]] of THUMBNAIL_INTERVALS.entries()) {
@@ -2354,18 +2386,22 @@ function createThumbnailMenu(camera) {
 }
 async function openThumbnailView(camera, interval) {
   if (!state.reviewStart || !state.tiles.has(camera)) return;
+  if (state.thumbnailCamera !== camera || state.thumbnailInterval !== interval) clearThumbnails();
   state.thumbnailCamera = camera; state.thumbnailInterval = interval;
-  state.thumbnailAnchor = Math.max(state.reviewStart, Math.min(state.reviewEnd ?? state.timelineEnd ?? Date.now(), state.reviewEpoch ?? state.reviewStart));
-  state.thumbnailWasStopped = state.allStopped; state.thumbnailActive = true; elements.stopAll.disabled = true;
+  if (state.thumbnailAnchor === null) state.thumbnailAnchor = Math.max(state.reviewStart, Math.min(state.reviewLimitEnd ?? state.reviewEnd ?? state.timelineEnd ?? Date.now(), state.reviewEpoch ?? state.reviewStart));
+  if (!state.thumbnailActive) { state.thumbnailWasStopped = state.allStopped; state.thumbnailTimelineVisible = state.timelineVisible; }
+  state.thumbnailActive = true; elements.stopAll.disabled = true;
+  updateOverlayState();
   await Promise.all(requestStopRecordingSession());
   if (!state.thumbnailActive) return;
   for (const player of state.tiles.values()) player.stop(false);
   elements.viewerGrid.classList.add('showing-thumbnails'); elements.thumbnailPanel.hidden = false;
-  void renderThumbnailPage(0);
+  void renderThumbnailPage(state.thumbnailPage);
 }
 function closeThumbnailView(resume = true) {
   if (!state.thumbnailActive) return;
-  state.thumbnailActive = false; clearThumbnails(); elements.thumbnailPanel.hidden = true; updateViewHeader(); elements.viewerGrid.classList.remove('showing-thumbnails');
+  state.thumbnailActive = false; clearThumbnails(); elements.thumbnailPanel.hidden = true; elements.viewerGrid.classList.remove('showing-thumbnails');
+  setDisplayVisibility({ timeline: state.thumbnailTimelineVisible }); updateViewHeader();
   if (resume && !state.thumbnailWasStopped && state.mode === 'playback') for (const player of state.tiles.values()) void player.start();
 }
 async function renderThumbnailPage(page) {
@@ -2378,11 +2414,11 @@ async function renderThumbnailPage(page) {
   const count = Math.max(1, columns * rows);
   elements.thumbnailGrid.style.gridTemplateColumns = `repeat(${columns}, minmax(0, 1fr))`;
   elements.thumbnailGrid.style.gridTemplateRows = `repeat(${rows}, minmax(0, 1fr))`;
-  const interval = state.thumbnailInterval * 1000, end = state.reviewEnd ?? state.timelineEnd ?? Date.now();
+  const interval = state.thumbnailInterval * 1000, end = state.reviewLimitEnd ?? state.reviewEnd ?? state.timelineEnd ?? Date.now();
   const first = state.thumbnailAnchor + page * count * interval;
   state.thumbnailPage = page;
   const pageItems = Array.from({length: count}, (_, i) => first + i * interval).filter(epoch => epoch >= state.reviewStart && epoch <= end);
-  clearThumbnails(); const requestId = state.thumbnailRequestId; state.thumbnails = pageItems;
+  cancelThumbnailPage(); const requestId = state.thumbnailRequestId; state.thumbnails = pageItems;
   elements.thumbnailPrev.disabled = !pageItems.length || pageItems[0] - interval < state.reviewStart;
   elements.thumbnailNext.disabled = !pageItems.length || pageItems[pageItems.length - 1] + interval > end;
   elements.thumbnailStatus.textContent = `Carregando ${pageItems.length} miniaturas de ${camera}.`;
@@ -2430,6 +2466,12 @@ async function renderThumbnailPage(page) {
   const workers = Array.from({ length: Math.min(4, cards.length) }, async () => {
     while (requestId === state.thumbnailRequestId && cursor < cards.length) {
       const item = cards[cursor++];
+      const cached = state.thumbnailCache.get(item.epoch);
+      if (cached) {
+        item.image.src = cached;
+        finishCard(item, true);
+        continue;
+      }
       const controller = new AbortController();
       state.thumbnailControllers.add(controller);
       const api = epochToApi(item.epoch, state.server.timeZone);
@@ -2443,10 +2485,14 @@ async function renderThumbnailPage(page) {
         if (!blob.size || (blob.type && !blob.type.startsWith('image/'))) { finishCard(item, false); continue; }
         const objectUrl = URL.createObjectURL(blob);
         if (requestId !== state.thumbnailRequestId) { URL.revokeObjectURL(objectUrl); continue; }
-        state.thumbnailObjectUrls.push(objectUrl);
         await new Promise(resolve => {
-          const finish = success => { controller.signal.removeEventListener('abort', cancelled); finishCard(item, success); resolve(); };
-          const cancelled = () => resolve();
+          const finish = success => {
+            controller.signal.removeEventListener('abort', cancelled);
+            if (success && requestId === state.thumbnailRequestId) state.thumbnailCache.set(item.epoch, objectUrl);
+            else URL.revokeObjectURL(objectUrl);
+            finishCard(item, success); resolve();
+          };
+          const cancelled = () => { URL.revokeObjectURL(objectUrl); resolve(); };
           controller.signal.addEventListener('abort', cancelled, { once: true });
           item.image.addEventListener('load', () => finish(true), { once: true });
           item.image.addEventListener('error', () => finish(false), { once: true });
@@ -2479,6 +2525,7 @@ elements.cameraSearch.addEventListener('input', drawCameraList);
 elements.liveMode.addEventListener('click', () => setMode('live'));
 elements.reviewMode.addEventListener('click', () => setMode('playback'));
 elements.playReview.addEventListener('click', startReview);
+for (const input of [elements.startDateTime, elements.endDateTime]) input.addEventListener('change', clearThumbnails);
 elements.recordFormat.addEventListener('change', updateRecordFormatHelp);
 elements.recordForm.addEventListener('submit', event => {
   if (event.submitter?.value !== 'start') return;
@@ -2506,6 +2553,14 @@ function selectMosaic(id) {
   state.mosaic = next.id; elements.mosaicSelect.value = next.id; applyMosaic();
 }
 elements.mosaicSelect.addEventListener('change', event => selectMosaic(event.target.value));
+elements.resetGrid.addEventListener('click', async () => {
+  if (!state.serverId) return;
+  elements.resetGrid.disabled = true;
+  try {
+    await Promise.all(requestStopRecordingSession());
+    await selectServer(state.serverId);
+  } finally { elements.resetGrid.disabled = false; }
+});
 elements.overlayToggle.addEventListener('click', () => {
   const showAll = !(state.overlaysVisible && state.timelineVisible);
   setDisplayVisibility({ overlays: showAll, timeline: showAll });
@@ -2560,7 +2615,7 @@ for (const dialog of document.querySelectorAll('dialog')) {
 const controlShortcuts = [
   [elements.stopAll, 'Espaço', 'Space'], [elements.surveillanceToggle, 'V', 'V'],
   [elements.audioToggle, 'A', 'A'], [elements.liveMode, 'G', 'G'], [elements.reviewMode, 'G', 'G'],
-  [elements.cameraSearch, '/', '/']
+  [elements.resetGrid, 'Ctrl+Alt+R', 'Control+Alt+R'], [elements.cameraSearch, '/', '/']
 ];
 for (const [control, display, key] of controlShortcuts) {
   control.setAttribute('aria-keyshortcuts', key);
@@ -2586,6 +2641,7 @@ document.addEventListener('keydown', event => {
     return;
   }
   if (event.ctrlKey && event.altKey && !event.metaKey && !event.shiftKey && !event.getModifierState('AltGraph')) {
+    if (event.code === 'KeyR') { event.preventDefault(); closeContextMenu(); if (!elements.resetGrid.disabled) elements.resetGrid.click(); return; }
     const digit = /^Digit[0-9]$/.test(event.code) ? Number(event.code.slice(-1)) : null;
     const index = event.code === 'KeyA' ? 0 : digit === 0 ? 10 : digit;
     if (index !== null && MOSAICS[index]) { event.preventDefault(); selectMosaic(MOSAICS[index].id); }
@@ -2643,3 +2699,90 @@ updateOverlayState();
 clockTick();
 window.setInterval(clockTick, 1000);
 initializeServers();
+
+function setupDatePicker(input) {
+  const button = document.createElement('button');
+  button.type = 'button'; button.className = 'date-picker-toggle';
+  button.setAttribute('aria-label', `Escolher ${input.id === 'startDateTime' ? 'início' : 'fim'} da revisão`);
+  button.setAttribute('aria-expanded', 'false'); button.textContent = '▦';
+  input.insertAdjacentElement('afterend', button);
+  const panel = document.createElement('div');
+  panel.className = 'date-picker'; panel.hidden = true;
+  panel.innerHTML = '<div class="date-picker-heading"><button type="button" data-shift="-1" aria-label="Mês anterior">‹</button><strong></strong><button type="button" data-shift="1" aria-label="Próximo mês">›</button></div><div class="date-picker-week" aria-hidden="true"><span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span></div><div class="date-picker-days"></div><div class="date-picker-footer"><div class="date-picker-time" role="group" aria-label="Horário"><input type="number" min="0" max="23" step="1" aria-label="Hora"><span aria-hidden="true">:</span><input type="number" min="0" max="59" step="1" aria-label="Minuto"><span aria-hidden="true">:</span><input type="number" min="0" max="59" step="1" aria-label="Segundo"></div><button type="button" class="date-picker-done">Confirmar</button></div><p class="date-picker-error" role="status"></p>';
+  document.body.append(panel);
+  let year, month, selected;
+  const time = [...panel.querySelectorAll('.date-picker-time input')];
+  const confirm = panel.querySelector('.date-picker-done');
+  const error = panel.querySelector('.date-picker-error');
+  const candidate = () => {
+    if (!selected || time.some(field => field.value === '' || !field.validity.valid)) return '';
+    return `${selected}T${time.map(field => field.value.padStart(2, '0')).join(':')}`;
+  };
+  const validate = () => {
+    let message = '';
+    const value = candidate();
+    if (!value) message = 'Escolha uma data e um horário válidos.';
+    else {
+      try {
+        const zone = state.server?.timeZone;
+        const current = zone ? inputToEpoch(value, zone) : value;
+        const otherValue = input === elements.endDateTime ? elements.startDateTime.value : elements.endDateTime.value;
+        let other = null;
+        if (otherValue) {
+          try { other = zone ? inputToEpoch(otherValue, zone) : otherValue; } catch { /* Manual entry is validated when playing. */ }
+        }
+        if (other !== null && (input === elements.endDateTime ? current < other : current > other)) message = 'O fim não pode ser anterior ao início.';
+      } catch (issue) { message = issue.message; }
+    }
+    error.textContent = message;
+    confirm.disabled = Boolean(message);
+    return !message;
+  };
+  const close = () => { panel.hidden = true; button.setAttribute('aria-expanded', 'false'); };
+  const render = () => {
+    panel.querySelector('strong').textContent = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(Date.UTC(year, month, 1)));
+    const days = panel.querySelector('.date-picker-days'); days.replaceChildren();
+    const first = new Date(Date.UTC(year, month, 1)).getUTCDay();
+    const count = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+    for (let i = 0; i < first; i++) days.append(document.createElement('span'));
+    for (let day = 1; day <= count; day++) {
+      const item = document.createElement('button'); item.type = 'button'; item.textContent = day;
+      const date = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      item.setAttribute('aria-label', `${day} de ${panel.querySelector('strong').textContent}`);
+      const otherDate = (input === elements.endDateTime ? elements.startDateTime.value : elements.endDateTime.value).slice(0, 10);
+      if (otherDate && (input === elements.endDateTime ? date < otherDate : date > otherDate)) item.disabled = true;
+      if (date === selected) item.className = 'selected';
+      item.addEventListener('click', () => { selected = date; render(); }); days.append(item);
+    }
+    validate();
+  };
+  button.addEventListener('click', () => {
+    if (!panel.hidden) return close();
+    selected = input.value.slice(0, 10) || '';
+    const date = selected ? new Date(`${selected}T12:00:00`) : new Date(); year = date.getFullYear(); month = date.getMonth();
+    const values = (input.value.slice(11, 19) || '00:00:00').split(':');
+    time.forEach((field, index) => { field.value = values[index] || '00'; }); render(); panel.hidden = false;
+    const rect = button.getBoundingClientRect(); panel.style.left = `${Math.max(8, Math.min(rect.left, innerWidth - panel.offsetWidth - 8))}px`; panel.style.top = `${Math.min(rect.bottom + 5, innerHeight - panel.offsetHeight - 8)}px`;
+    button.setAttribute('aria-expanded', 'true');
+  });
+  panel.querySelectorAll('[data-shift]').forEach(control => control.addEventListener('click', () => { const date = new Date(year, month + Number(control.dataset.shift), 1); year = date.getFullYear(); month = date.getMonth(); render(); }));
+  time.forEach(field => { field.addEventListener('input', validate); field.addEventListener('blur', () => { if (field.value !== '' && field.validity.valid) field.value = field.value.padStart(2, '0'); }); });
+  confirm.addEventListener('click', () => { if (!validate()) return; input.value = candidate(); input.dispatchEvent(new Event('change', { bubbles: true })); close(); button.focus(); });
+  document.addEventListener('pointerdown', event => { if (!panel.hidden && !panel.contains(event.target) && event.target !== button) close(); });
+  panel.addEventListener('keydown', event => { if (event.key === 'Escape') { event.stopPropagation(); close(); button.focus(); } });
+}
+setupDatePicker(elements.startDateTime);
+setupDatePicker(elements.endDateTime);
+
+// The server performs the network request once per process; the UI only reads its result.
+void (async () => {
+  try {
+    const { update } = await (await fetch('/api/update')).json();
+    if (!update) return;
+    const dialog = $('#updateDialog');
+    $('#updateVersion').textContent = update.version;
+    $('#ignoreUpdate').addEventListener('click', () => { void fetch('/api/update', { method: 'POST' }).catch(() => {}); });
+    $('#downloadUpdate').addEventListener('click', () => window.open(update.url, '_blank', 'noopener,noreferrer'));
+    dialog.showModal();
+  } catch { /* Update checks never interrupt normal use. */ }
+})();

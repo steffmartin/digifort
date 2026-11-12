@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
 const source = readFileSync(new URL('../public/app.js', import.meta.url), 'utf8');
-const clear = source.slice(source.indexOf('function clearThumbnails()'), source.indexOf('const THUMBNAIL_INTERVALS'));
+const clear = source.slice(source.indexOf('function cancelThumbnailPage()'), source.indexOf('const THUMBNAIL_INTERVALS'));
 const render = source.slice(source.indexOf('async function renderThumbnailPage('), source.indexOf('function clockTick()'));
 
 class Element {
@@ -18,7 +18,7 @@ class Element {
 
 test('ao mudar de página cancela requisições antigas e não inicia outras antigas', async () => {
   const requests = [];
-  const state = { thumbnailActive: true, server: { timeZone: 'UTC' }, serverId: 'test', reviewStart: 1000, timelineEnd: 10000000, reviewEnd: 10000000, tiles: new Map([['test', {}]]), thumbnailCamera: 'test', thumbnailSize: 'small', thumbnailInterval: 5, thumbnailAnchor: 1000, thumbnailRequestId: 0, thumbnailControllers: new Set(), thumbnailObjectUrls: [], thumbnails: [] };
+  const state = { thumbnailActive: true, server: { timeZone: 'UTC' }, serverId: 'test', reviewStart: 1000, timelineEnd: 10000000, reviewEnd: 10000000, tiles: new Map([['test', {}]]), thumbnailCamera: 'test', thumbnailSize: 'small', thumbnailInterval: 5, thumbnailAnchor: 1000, thumbnailRequestId: 0, thumbnailControllers: new Set(), thumbnailCache: new Map(), thumbnails: [] };
   const elements = Object.fromEntries(['viewerGrid', 'thumbnailGrid', 'thumbnailPrev', 'thumbnailNext', 'thumbnailStatus'].map(name => [name, new Element()]));
   const context = vm.createContext({ state, elements, THUMBNAIL_SIZES: { small: [75, 51], large: [300, 205] }, document: { createElement: () => new Element() }, AbortController, URL, Promise, Math, Number, Set, Array, epochToApi: epoch => ({ date: String(epoch), time: '00' }), query: params => new URLSearchParams(params), formatClock: String, fetch: (url, options) => new Promise((resolve, reject) => { const request = { url, aborted: false }; requests.push(request); options.signal.addEventListener('abort', () => { request.aborted = true; reject(Object.assign(new Error('aborted'), { name: 'AbortError' })); }); }) });
   vm.runInContext(clear + render, context);

@@ -19,11 +19,40 @@ const authStates = new Map();
 const authPromises = new Map();
 const mediaWriters = new Map();
 const mediaRequests = new Set();
+const UPDATE_FILE = path.join(CONFIG_DIR, 'update.json');
+const RELEASE_API = 'https://api.github.com/repos/steffmartin/digifort/releases/latest';
 let shuttingDown = false;
 let activeServerId = '';
 let authGeneration = 0;
 
 const safeError = (message, status = 400) => ({ status, body: { error: message } });
+
+function versionParts(value) {
+  const match = typeof value === 'string' && value.match(/^v?(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/);
+  return match ? match.slice(1).map(Number) : null;
+}
+
+async function checkUpdate() {
+  try {
+    const installed = versionParts(JSON.parse(await fs.readFile(path.join(ROOT, 'package.json'), 'utf8')).version);
+    if (!installed) return null;
+    const response = await fetch(RELEASE_API, { headers: { 'User-Agent': 'Digifort-Monitor', Accept: 'application/vnd.github+json' }, signal: AbortSignal.timeout(10000), redirect: 'error' });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const release = await response.json();
+    const latest = versionParts(release.tag_name);
+    if (!latest || !latest.some((part, i) => part > installed[i] && latest.slice(0, i).every((value, j) => value === installed[j]))) return null;
+    let ignored = '';
+    try { ignored = JSON.parse(await fs.readFile(UPDATE_FILE, 'utf8')).ignoredVersion; } catch {}
+    if (versionParts(ignored)?.every((part, i) => part === latest[i])) return null;
+    return { version: latest.join('.'), url: `https://github.com/steffmartin/digifort/releases/tag/${encodeURIComponent(release.tag_name)}` };
+  } catch (error) {
+    console.debug(`Verificação de atualização indisponível (${error.name || 'erro'}).`);
+    return null;
+  }
+}
+
+const updateCheck = checkUpdate();
+let updateIgnored = false;
 
 function safeId(value) {
   return typeof value === 'string' && /^[a-zA-Z0-9_.-]{1,120}$/.test(value) && value !== '.' && value !== '..';
@@ -502,6 +531,20 @@ async function handleApi(req, res, url) {
     if (!res.writableEnded) controller.abort();
   });
   try {
+    if (url.pathname === '/api/update') {
+      if (req.headers.host !== `${HOST}:${PORT}` || (req.method !== 'GET' && req.headers.origin !== `http://${HOST}:${PORT}`)) return sendJson(res, 403, { error: 'Solicitação de outra origem.' });
+      if (req.method === 'GET') return sendJson(res, 200, { update: updateIgnored ? null : await updateCheck });
+      if (req.method === 'POST') {
+        const update = await updateCheck;
+        if (update) {
+          await fs.mkdir(CONFIG_DIR, { recursive: true });
+          await fs.writeFile(UPDATE_FILE, JSON.stringify({ ignoredVersion: update.version }) + '\n');
+          updateIgnored = true;
+        }
+        return sendJson(res, 200, { ok: true });
+      }
+      return sendJson(res, 405, { error: 'Método não disponível.' });
+    }
     if (req.method === 'POST' && ['/api/media-file', '/api/media-recording'].includes(url.pathname)) {
       const pending = handleMediaPost(req, res, url);
       mediaRequests.add(pending);

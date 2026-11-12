@@ -95,6 +95,7 @@
             </div>
             <div class="command-divider" aria-hidden="true"></div>
             <label class="mosaic-control" for="mosaicSelect"><span class="mosaic-preview" id="mosaicPreview" aria-hidden="true"></span><select id="mosaicSelect" aria-label="Composição da grade de câmeras"></select></label>
+            <button class="icon-button reset-grid" id="resetGrid" type="button" title="Restaurar grade configurada" aria-label="Restaurar grade configurada"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 7V3m0 4h4M4.5 7a6 6 0 1 1-.3 5"></path></svg></button>
             <div class="display-control" id="displayControl">
               <button class="overlay-toggle" id="overlayToggle" type="button" aria-pressed="false">Mostrar tudo</button>
               <button class="display-menu-toggle" id="displayMenuToggle" type="button" title="Opções de exibição" aria-label="Opções de exibição" aria-haspopup="menu" aria-expanded="false" aria-controls="displayMenu"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5.5 7.5 4.5 4.5 4.5-4.5"></path></svg></button>
@@ -126,6 +127,17 @@
       </div>
       <button id="exitSurveillance" class="exit-surveillance" type="button" hidden>Sair do modo vigilância · Esc</button>
       <div id="contextMenu" class="context-menu" role="menu" hidden></div>
+      <dialog class="record-dialog" id="updateDialog" aria-labelledby="updateTitle">
+        <form method="dialog">
+          <h2 id="updateTitle">Nova versão disponível</h2>
+          <p class="record-dialog-note">A versão <strong id="updateVersion"></strong> está disponível para download.</p>
+          <div class="record-dialog-actions">
+            <button value="cancel">Cancelar</button>
+            <button id="ignoreUpdate" value="ignore">Ignorar esta versão</button>
+            <button class="record-confirm" id="downloadUpdate" value="download">Baixar</button>
+          </div>
+        </form>
+      </dialog>
       <dialog class="record-dialog shortcut-dialog" id="shortcutDialog" aria-labelledby="shortcutDialogTitle">
         <form method="dialog">
           <h2 id="shortcutDialogTitle">Atalhos de teclado</h2>
@@ -136,6 +148,7 @@
             <dt>Alternar ao vivo e gravado</dt><dd>G</dd><dt>Mostrar ou ocultar timeline</dt><dd>T</dd>
             <dt>Voltar das miniaturas</dt><dd>Esc</dd><dt>Página anterior / próxima das miniaturas</dt><dd>← / →</dd><dt>Mostrar ou ocultar dados</dt><dd>D</dd>
             <dt>Grade automática / grades fixas</dt><dd>Ctrl+Alt+A / Ctrl+Alt+1–6</dd>
+            <dt>Restaurar grade configurada</dt><dd>Ctrl+Alt+R</dd>
             <dt>Navegar / abrir ou fechar câmera</dt><dd>↑ ↓ / Enter</dd>
             <dt>Capturar câmera em foco / todas</dt><dd>Ctrl+PrintScreen / Ctrl+Shift+PrintScreen</dd>
           </dl>

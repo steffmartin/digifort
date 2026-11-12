@@ -14,7 +14,7 @@
   #define ProductName "Digifort Monitor"
 #endif
 #ifndef ProductVersion
-  #define ProductVersion "1.1.0"
+  #define ProductVersion "1.2.0"
 #endif
 
 [Setup]
@@ -57,6 +57,7 @@ Name: "{#UserDataDir}\config"; Flags: uninsneveruninstall
 Source: "{#StageDir}\DigifortMonitor.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#StageDir}\DigifortMonitor.exe"; DestName: "BrowserCheck.exe"; Flags: dontcopy
 Source: "{#StageDir}\server.mjs"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#StageDir}\package.json"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#StageDir}\public\*"; DestDir: "{app}\public"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "{#StageDir}\runtime\*"; DestDir: "{app}\runtime"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "{#StageDir}\example.config"; DestDir: "{#UserDataDir}\config"; Flags: onlyifdoesntexist uninsneveruninstall

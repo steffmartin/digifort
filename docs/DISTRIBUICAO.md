@@ -1,6 +1,6 @@
 # Distribuição do Digifort Monitor para Windows
 
-## Build da versão 1.1.0
+## Build da versão 1.2.0
 
 Use Windows 11 x64 com o compilador do .NET Framework 4.x e o Inno Setup 7. Na raiz do projeto, execute:
 
@@ -8,17 +8,17 @@ Use Windows 11 x64 com o compilador do .NET Framework 4.x e o Inno Setup 7. Na r
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/build-installer.ps1
 ```
 
-Use `-IsccPath` se o `ISCC.exe` estiver em um caminho personalizado. O script baixa e confere o SHA-256 do Node.js 24.22.2 x64 oficial. Ele inclui `node.exe`, a licença do runtime, o servidor, a interface e o WASM versionado. O servidor usa os módulos nativos do Node. O build compila o inicializador gráfico e gera os ícones e as duas imagens do assistente. A arte em `installer/Artwork.cs` também gera `public/favicon.svg`, usado no cabeçalho e na aba da interface; ao atualizar a arte, execute `scripts/build-launcher.ps1` para regenerar os dois formatos.
+Use `-IsccPath` se o `ISCC.exe` estiver em um caminho personalizado. O script baixa e confere o SHA-256 do Node.js 24.22.2 x64 oficial. Ele inclui `node.exe`, a licença do runtime, o servidor, `package.json` com a versão instalada, a interface e o WASM versionado. O servidor usa os módulos nativos do Node. O build compila o inicializador gráfico e gera os ícones e as duas imagens do assistente. A arte em `installer/Artwork.cs` também gera `public/favicon.svg`, usado no cabeçalho e na aba da interface; ao atualizar a arte, execute `scripts/build-launcher.ps1` para regenerar os dois formatos.
 
 O instalador é distribuído sem assinatura. Para verificar o download, compare a saída do comando com a linha do instalador no arquivo de checksums:
 
 ```powershell
-Get-FileHash .\Digifort-Monitor-Setup-1.1.0.exe -Algorithm SHA256
+Get-FileHash .\Digifort-Monitor-Setup-1.2.0.exe -Algorithm SHA256
 ```
 
 ## Publicação
 
-Gere o instalador com a árvore do commit da versão na `main`. Use a tag `v1.1.0` e as [notas de versão](NOTAS-DE-VERSAO.md#110). Anexe `dist/Digifort-Monitor-Setup-1.1.0.exe` e `dist/SHA256SUMS.txt` à [release no GitHub](https://github.com/steffmartin/digifort/releases). Confira os nomes dos arquivos e o SHA-256 após a publicação.
+Gere o instalador com a árvore do commit da versão na `main`. Use a tag `v1.2.0` e as [notas de versão](NOTAS-DE-VERSAO.md#120). Anexe `dist/Digifort-Monitor-Setup-1.2.0.exe` e `dist/SHA256SUMS.txt` à [release no GitHub](https://github.com/steffmartin/digifort/releases). Confira os nomes dos arquivos e o SHA-256 após a publicação.
 
 ## Instalação e execução
 
@@ -35,5 +35,7 @@ Para depurar pelo repositório, execute `Iniciar-Digifort.bat --diagnostico`. Os
 ## Atualização e desinstalação
 
 Feche o Digifort Monitor e execute o novo instalador para atualizar ou reinstalar. A pasta de dados e os `.config` existentes são preservados. O assistente de configuração inicial reaparece quando a pasta contém apenas o modelo ou está vazia.
+
+Na inicialização, a aplicação consulta a release mais recente do repositório. Quando encontra uma versão superior, oferece abrir a página da release ou ignorar aquela versão. A preferência fica em `update.json` na pasta de configurações; o aplicativo não baixa nem instala atualizações automaticamente. Falhas na consulta não interrompem o uso.
 
 Na desinstalação, a resposta padrão mantém os `.config`. Se optar por excluí-los, são removidos somente os `.config` dos servidores na pasta de configuração. O modo silencioso exige `/DELETECONFIGS` para essa remoção. Capturas, gravações e o modelo `example.config` são preservados.
