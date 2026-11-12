@@ -1,6 +1,6 @@
 # Continuidade do Digifort Monitor
 
-A linha de trabalho atual prepara a versão 1.1.0 do instalador Windows. O histórico da implementação inicial está no [plano arquivado](historico/PLANO-INICIAL.md). Consulte as [notas de versão](NOTAS-DE-VERSAO.md) para o que foi entregue e as [issues](https://github.com/steffmartin/digifort/issues) para o estado de propostas e bugs.
+A linha de trabalho atual mantém a versão 1.1.0 do instalador Windows. O histórico da implementação inicial está no [plano arquivado](historico/PLANO-INICIAL.md). Consulte as [notas de versão](NOTAS-DE-VERSAO.md) para o que foi entregue e as [issues](https://github.com/steffmartin/digifort/issues) para o estado de propostas e bugs.
 
 ## Arquitetura vigente
 
@@ -13,7 +13,7 @@ O [manual e a transcrição OpenAPI](api/README.md) ficam juntos. Use o manual p
 
 ## Validação e limites
 
-No Windows 11 local, foram validados o assistente, a importação e o preenchimento parcial, a preservação de arquivos em reinstalação e desinstalação, o aviso de porta ocupada, a janela única, o encerramento pelo diálogo e a restauração da geometria. A execução com `PATH` restrito usou o Node incluído no pacote. Na integração posterior, o instalador foi compilado e a criação de configuração, o diálogo e as grades foram verificados com dados sintéticos. Ainda faltam validar o pacote integrado no Windows 10 e os fluxos combinados com câmeras reais, incluindo HEVC, áudio, revisão e captura.
+No Windows 11 local, foram validados o assistente, a importação e o preenchimento parcial, a preservação de arquivos em reinstalação e desinstalação, o aviso de porta ocupada, a janela única, o encerramento pelo diálogo e a restauração da geometria. A execução com `PATH` restrito usou o Node incluído no pacote. Na integração posterior, o instalador foi compilado e a criação de configuração, o diálogo e as grades foram verificados com dados sintéticos. A instalação e a desinstalação foram verificadas com identidade de produto, pasta e dados isolados; o runtime instalado serviu a interface e o ícone. A interrupção antes da abertura do assistente também foi verificada. A revisão com câmeras reais foi exercitada: faixas de múltiplas câmeras, zoom, navegação, miniaturas e reordenação da grade. Uma consulta de 24 horas confirmou a conversão dos timestamps recebidos após a correção de milissegundos. Ainda faltam validar o pacote integrado em máquina limpa e no Windows 10 e ampliar a validação dos fluxos combinados de HEVC, áudio e captura.
 
 O [plano arquivado](historico/PLANO-INICIAL.md#handoff--falha-de-transporte-em-getcameras) registra o `FETCH_ERROR` observado em `GetCameras` e a diferença entre a chamada do Node e a resposta informada no navegador. Consulte o histórico e a issue correspondente antes de reproduzir. Use uma configuração sintética e confirme a origem do processo que ocupa a porta local. Registre códigos e categorias de erro sem valores de autenticação ou payloads de mídia.
 
@@ -22,4 +22,5 @@ O [plano arquivado](historico/PLANO-INICIAL.md#handoff--falha-de-transporte-em-g
 1. Leia [AGENTS.md](../AGENTS.md) e consulte o guia correspondente ao fluxo alterado.
 2. Reproduza com dados sintéticos e mantenha arquivos de configuração, perfis e artefatos de build fora do Git.
 3. Valide o fluxo afetado e registre limitações verificadas. Para alterações visuais, use [UI](UI.md). Para mudanças de pacote, use [Distribuição](DISTRIBUICAO.md).
-4. Atualize o [guia de uso](USO.md) quando um fluxo mudar e registre as mudanças que forem compor uma versão nas [notas de versão](NOTAS-DE-VERSAO.md).
+4. Execute `node --test tests/*.test.mjs` para verificar as regressões da timeline e das miniaturas.
+5. Atualize o [guia de uso](USO.md) quando um fluxo mudar e registre as mudanças que forem compor uma versão nas [notas de versão](NOTAS-DE-VERSAO.md).

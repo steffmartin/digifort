@@ -10,6 +10,7 @@ if (-not ('DigifortArtwork' -as [type])) {
     Add-Type -Path (Join-Path $root 'installer\Artwork.cs') -ReferencedAssemblies System.Drawing
 }
 [DigifortArtwork]::Generate($output.FullName)
+Copy-Item -LiteralPath (Join-Path $output.FullName 'camera.svg') -Destination (Join-Path $root 'public\favicon.svg') -Force
 $icon = Join-Path $output.FullName 'camera.ico'
 $launcher = Join-Path $output.FullName 'DigifortMonitor.exe'
 & $compiler /nologo /target:winexe /platform:x64 /optimize+ /codepage:65001 /reference:System.Windows.Forms.dll "/win32icon:$icon" "/out:$launcher" (Join-Path $root 'installer\Launcher.cs')

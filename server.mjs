@@ -86,6 +86,9 @@ function parseConfig(id, value) {
   for (const [camera, profile] of Object.entries(initialCameras)) {
     if (!camera.trim() || !['Visualization', 'Recording'].includes(profile)) throw new Error('Cada câmera inicial precisa ter um nome e o perfil Visualization ou Recording.');
   }
+  const maxCams = value.maxCams ?? 0;
+  if (!Number.isSafeInteger(maxCams) || maxCams < 0) throw new Error('maxCams deve ser um inteiro maior ou igual a zero.');
+  if (maxCams && Object.keys(initialCameras).length > maxCams) throw new Error('initialCameras excede o limite maxCams da configuração.');
   const mosaicIds = new Set(['auto', '3x3-six', '4x4-eight', '4x4-ten', '4x4-thirteen-a', '4x4-thirteen-b', '4x4-center']);
   const initialMosaic = mosaicIds.has(value.initialMosaic) ? value.initialMosaic : 'auto';
   for (const key of ['mediaFolder', 'screenshotFolder', 'videoFolder']) {
@@ -94,7 +97,7 @@ function parseConfig(id, value) {
   const mediaFolder = value.mediaFolder?.trim() || '';
   const screenshotFolder = value.screenshotFolder?.trim() || mediaFolder;
   const videoFolder = value.videoFolder?.trim() || mediaFolder;
-  return { id, name, serverAddress: serverAddress.replace(/\/+$/, ''), userAgent: userAgent.trim(), username, password, useBasicAuth, timeZone, initialCameras, initialMosaic, screenshotFolder, videoFolder };
+  return { id, name, serverAddress: serverAddress.replace(/\/+$/, ''), userAgent: userAgent.trim(), username, password, useBasicAuth, timeZone, initialCameras, initialMosaic, maxCams, screenshotFolder, videoFolder };
 }
 
 async function getConfig(id) {
@@ -393,7 +396,7 @@ function safeErrorCategory(error) {
   const transport = message.match(/^Falha de transporte na etapa ([a-zA-Z0-9_]+) \(([A-Z0-9_]+)\)\.?$/);
   if (transport) return `transport:${transport[1]}:${transport[2]}`;
   if (/arquivo de configuração não contém JSON válido/i.test(message)) return 'invalid-config-json';
-  if (/configuração|fuso|initialCameras|initialMosaic/i.test(message)) return 'invalid-config';
+  if (/configuração|fuso|initialCameras|initialMosaic|maxCams/i.test(message)) return 'invalid-config';
   if (/servidor Digifort não aceitou/i.test(message)) return 'upstream-rejected';
   if (error?.name === 'AbortError' || error?.name === 'TimeoutError') return 'request-timeout';
   return 'request-failed';
@@ -518,7 +521,7 @@ async function handleApi(req, res, url) {
       const configPath = path.join(CONFIG_DIR, `${id}.config`);
       if (req.method === 'GET') {
         const value = await readConfig(id);
-        const fields = Object.fromEntries(['name', 'serverAddress', 'userAgent', 'username', 'timeZone', 'mediaFolder', 'screenshotFolder', 'videoFolder', 'initialMosaic', 'useBasicAuth', 'initialCameras'].filter(key => Object.hasOwn(value, key)).map(key => [key, value[key]]));
+        const fields = Object.fromEntries(['name', 'serverAddress', 'userAgent', 'username', 'timeZone', 'mediaFolder', 'screenshotFolder', 'videoFolder', 'initialMosaic', 'maxCams', 'useBasicAuth', 'initialCameras'].filter(key => Object.hasOwn(value, key)).map(key => [key, value[key]]));
         return sendJson(res, 200, { fields, hasPassword: typeof value.password === 'string' });
       }
       if (req.method === 'DELETE') {
@@ -558,7 +561,7 @@ async function handleApi(req, res, url) {
     if (url.pathname === '/api/server') {
       const config = await getConfig(id);
       activateServer(id);
-      return sendJson(res, 200, { id, name: config.name, timeZone: config.timeZone, initialCameras: config.initialCameras, initialMosaic: config.initialMosaic, screenshotFolderConfigured: Boolean(config.screenshotFolder), videoFolderConfigured: Boolean(config.videoFolder) });
+      return sendJson(res, 200, { id, name: config.name, timeZone: config.timeZone, initialCameras: config.initialCameras, initialMosaic: config.initialMosaic, maxCams: config.maxCams, screenshotFolderConfigured: Boolean(config.screenshotFolder), videoFolderConfigured: Boolean(config.videoFolder) });
     }
     if (activeServerId !== id) throw new Error('Selecione novamente o servidor antes de continuar.');
     const config = await getConfig(id);
@@ -645,7 +648,7 @@ async function handleApi(req, res, url) {
     const message = error?.message && !/password|authdata|authsession|nonce|http[s]?:\/\//i.test(error.message)
       ? error.message
       : 'Não foi possível concluir a solicitação. Revise a conexão e a configuração local.';
-    const status = /configuração|fuso|initialCameras|initialMosaic|parâmetro|perfil/i.test(message) ? 400 : 502;
+    const status = /configuração|fuso|initialCameras|initialMosaic|maxCams|parâmetro|perfil/i.test(message) ? 400 : 502;
     process.stderr.write(`[api:error] ${req.method} ${url.pathname} ${status} ${safeErrorCategory(error)}\n`);
     sendJson(res, status, { error: message });
   }

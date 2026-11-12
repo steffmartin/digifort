@@ -17,10 +17,10 @@ Durante a instalação, escolha importar um `.config`, preencher os dados de um 
 ## Recursos e funcionamento
 
 - **Ao vivo**. Filtre a lista de câmeras, monte um mosaico e escolha o perfil de cada transmissão.
-- **Revisão**. Consulte intervalos de vídeo e áudio gravados e navegue pela timeline e pelas miniaturas.
+- **Revisão**. Consulte faixas de vídeo e áudio por câmera, navegue com zoom na timeline e use miniaturas paginadas no mosaico.
 - **Áudio e vídeo**. Reproduza H.264, H.265/HEVC, AAC, G.711 e G.726 conforme o suporte do navegador e o perfil enviado pelo servidor.
 - **Captura local**. Salve PNGs sem sobreposições e grave os quadros reproduzidos pelo navegador em um formato compatível com `MediaRecorder`.
-- **Configuração e teclado**. Gerencie servidores no aplicativo e consulte os atalhos no rodapé da lista de câmeras.
+- **Configuração e teclado**. Gerencie servidores e limites de câmeras no aplicativo e consulte os atalhos no rodapé da lista de câmeras.
 
 O servidor local Node.js atende a interface e encaminha chamadas de leitura à HTTP API do Digifort. A decodificação ocorre no navegador. O [guia de continuidade](docs/CONTINUIDADE.md) descreve a arquitetura e os limites da validação.
 
@@ -39,6 +39,7 @@ Para verificar a sintaxe do servidor e da interface:
 ```powershell
 node --check server.mjs
 node --check public/app.js
+node --test tests/*.test.mjs
 ```
 
 ## Organização e documentação

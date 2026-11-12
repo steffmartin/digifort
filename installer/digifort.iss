@@ -395,8 +395,8 @@ end;
 
 procedure DeinitializeSetup;
 begin
-  CameraProfiles.Free;
-  CameraNames.Free;
+  if Assigned(CameraProfiles) then CameraProfiles.Free;
+  if Assigned(CameraNames) then CameraNames.Free;
 end;
 
 procedure CurUninstallStepChanged(Step: TUninstallStep);

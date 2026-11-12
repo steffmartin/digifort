@@ -8,7 +8,7 @@ Use Windows 11 x64 com o compilador do .NET Framework 4.x e o Inno Setup 7. Na r
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/build-installer.ps1
 ```
 
-Use `-IsccPath` se o `ISCC.exe` estiver em um caminho personalizado. O script baixa e confere o SHA-256 do Node.js 24.22.2 x64 oficial. Ele inclui `node.exe`, a licença do runtime, o servidor, a interface e o WASM versionado. O servidor usa os módulos nativos do Node. O build compila o inicializador gráfico e gera os ícones e as duas imagens do assistente.
+Use `-IsccPath` se o `ISCC.exe` estiver em um caminho personalizado. O script baixa e confere o SHA-256 do Node.js 24.22.2 x64 oficial. Ele inclui `node.exe`, a licença do runtime, o servidor, a interface e o WASM versionado. O servidor usa os módulos nativos do Node. O build compila o inicializador gráfico e gera os ícones e as duas imagens do assistente. A arte em `installer/Artwork.cs` também gera `public/favicon.svg`, usado no cabeçalho e na aba da interface; ao atualizar a arte, execute `scripts/build-launcher.ps1` para regenerar os dois formatos.
 
 O instalador é distribuído sem assinatura. Para verificar o download, compare a saída do comando com a linha do instalador no arquivo de checksums:
 
@@ -18,7 +18,7 @@ Get-FileHash .\Digifort-Monitor-Setup-1.1.0.exe -Algorithm SHA256
 
 ## Publicação
 
-Após o merge, gere o instalador a partir do commit da versão na `main`. Use a tag `v1.1.0` e as [notas de versão](NOTAS-DE-VERSAO.md#110). Anexe `dist/Digifort-Monitor-Setup-1.1.0.exe` e `dist/SHA256SUMS.txt` à [release no GitHub](https://github.com/steffmartin/digifort/releases). Confira os nomes dos arquivos e o SHA-256 após a publicação.
+Gere o instalador com a árvore do commit da versão na `main`. Use a tag `v1.1.0` e as [notas de versão](NOTAS-DE-VERSAO.md#110). Anexe `dist/Digifort-Monitor-Setup-1.1.0.exe` e `dist/SHA256SUMS.txt` à [release no GitHub](https://github.com/steffmartin/digifort/releases). Confira os nomes dos arquivos e o SHA-256 após a publicação.
 
 ## Instalação e execução
 

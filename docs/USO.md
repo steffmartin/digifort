@@ -21,6 +21,7 @@ O diálogo pausa as transmissões enquanto está aberto. Ao editar uma configura
 | `useBasicAuth` | `false` usa autenticação por sessão e é o padrão. `true` envia `AuthUser` e `AuthPass` na URL, que pode ser registrada pelo Digifort, proxy ou infraestrutura de rede. |
 | `timeZone` | Fuso IANA do servidor, por exemplo `America/Sao_Paulo`. |
 | `initialCameras` | Mapa de nomes exatos de câmera para `Visualization` ou `Recording`. Use `{}` para iniciar com a grade vazia. |
+| `maxCams` | Limite opcional de câmeras abertas por servidor; `0` ou ausência significa sem limite. As câmeras iniciais não podem exceder esse valor. |
 | `initialMosaic` | ID opcional do [mosaico inicial](#mosaico-inicial). |
 | `mediaFolder`, `screenshotFolder` e `videoFolder` | Caminhos completos para pastas graváveis. Cada destino específico vazio ou omitido usa `mediaFolder`. |
 
@@ -32,11 +33,11 @@ Mantenha os arquivos reais na pasta local de configurações e use somente dados
 
 Selecione **Ao vivo**, busque uma câmera na lateral e clique nela para abrir o vídeo na grade. Câmeras adicionadas manualmente começam com o perfil `Visualization`. Use os controles do quadro para trocar o perfil e o menu de contexto para iniciar uma captura. Abra uma câmera em tela cheia com duplo clique ou `F`. Use `Esc` para voltar à grade ou sair do modo vigilância.
 
-Selecione uma câmera no quadro ou em **Em foco:**. A câmera em foco determina o áudio, a timeline e as miniaturas. Para ouvir, ative o botão de áudio ao lado do seletor; ao mudar o foco, o áudio ativo acompanha a nova câmera. O player aceita AAC, G.711 e G.726 conforme o fluxo recebido. H.264 e H.265/HEVC são decodificados com WebCodecs e dependem do perfil aceito pelo navegador.
+Selecione uma câmera no quadro ou em **Em foco:**. A câmera em foco determina a fonte do áudio. Para ouvir, ative o botão de áudio ao lado do seletor; ao mudar o foco, o áudio ativo acompanha a nova câmera. O player aceita AAC, G.711 e G.726 conforme o fluxo recebido. H.264 e H.265/HEVC são decodificados com WebCodecs e dependem do perfil aceito pelo navegador.
 
 ### Mosaico inicial
 
-Use um dos valores abaixo em `initialMosaic`. Se estiver ausente ou for desconhecido, inclusive para grades removidas, o aplicativo usa a grade automática silenciosamente. A alteração pelo seletor vale para a sessão atual.
+Use um dos valores abaixo em `initialMosaic`. Se estiver ausente ou for desconhecido, inclusive para grades removidas, o aplicativo usa a grade automática silenciosamente. Se a capacidade da grade inicial exceder `maxCams`, também usa a grade automática. A alteração pelo seletor vale para a sessão atual.
 
 | ID | Grade |
 | --- | --- |
@@ -50,7 +51,7 @@ Use um dos valores abaixo em `initialMosaic`. Se estiver ausente ou for desconhe
 
 ## Revisar gravações
 
-Abra **Revisão**, informe o início e, se desejar, o fim no fuso do servidor. Clique em **Reproduzir**. A timeline mostra intervalos disponíveis de vídeo e áudio. Clique nela ou em uma miniatura para navegar na gravação. As miniaturas seguem a câmera em foco e podem ter tamanho e intervalo próprios. Use **Opções de exibição** para controlar dados sobrepostos, timeline e miniaturas.
+Abra **Revisão**, informe o início e, se desejar, o fim no fuso do servidor. Clique em **Reproduzir**. A timeline mostra os intervalos de vídeo e áudio de cada câmera aberta. Clique em uma faixa para navegar em todas as câmeras. Use a roda do mouse sobre a timeline para ajustar o zoom no ponto indicado e arraste para navegar quando houver zoom. Para abrir miniaturas, clique com o botão direito no quadro da câmera e escolha **Esta câmera > Miniaturas**, o tamanho e o intervalo. As miniaturas começam no tamanho grande. Use as setas esquerda e direita para mudar de página ou `Ctrl+Shift+Alt+1` a `Ctrl+Shift+Alt+0` para abri-las na câmera em foco, com intervalos de 5 segundos a 5 horas na ordem do menu. As transmissões pausam enquanto as miniaturas ocupam a grade; clique em uma imagem para retomar todas a partir daquele instante ou use **Voltar às câmeras**. Use **Opções de exibição** para controlar dados sobrepostos e timeline.
 
 ## Salvar capturas e gravações
 

@@ -2,15 +2,18 @@
 
 ## 1.1.0
 
-- Gestão de configurações de servidor no aplicativo, com criação, edição e exclusão.
-- Câmera em foco compartilhada pelos controles de áudio, timeline e miniaturas; barra de controles reorganizada.
-- Atalhos de teclado para monitoramento, revisão, captura e mosaicos, com lista no rodapé da barra lateral.
-- Títulos nos submenus de contexto e remoção das grades uniformes cobertas pela grade automática. Configurações com mosaico desconhecido usam a grade automática.
-- O instalador x64 passa a aceitar Windows 10 a partir da compilação 10240. O teste de instalação e execução no Windows 10 ainda está pendente.
+### Novidades
+
+- Timeline compacta com faixas de vídeo e áudio por câmera, mudança de dia, zoom pela roda do mouse e navegação sincronizada. A ordem das faixas acompanha a grade. ([#26](https://github.com/steffmartin/digifort/issues/26))
+- Miniaturas no mosaico, abertas pelo menu da câmera ou por atalhos, com tamanho e intervalo configuráveis, paginação dimensionada à janela e cancelamento das capturas da página anterior. ([#26](https://github.com/steffmartin/digifort/issues/26))
+- Correção da conversão de timestamps com milissegundos que podia descartar intervalos da timeline. ([#27](https://github.com/steffmartin/digifort/issues/27))
+- Limite opcional de câmeras por servidor em `maxCams`, com validação das câmeras iniciais e bloqueio de mosaicos incompatíveis. ([#38](https://github.com/steffmartin/digifort/issues/38))
+- Gestão de configurações no aplicativo, atalhos para monitoramento, revisão e captura, tela cheia sem a barra inferior e ícone compartilhado com o instalador.
+- O instalador x64 aceita Windows 10 a partir da compilação 10240 e Windows 11. A finalização após interrupção antes do assistente foi corrigida.
 
 ### Validação e distribuição
 
-O pacote de prévia foi compilado no Windows 11. A validação da integração com câmeras reais, teclado físico e Windows 10 permanece pendente. Gere o instalador definitivo a partir do commit da versão mesclado na `main` e confira o SHA-256 conforme [Distribuição](DISTRIBUICAO.md).
+A revisão, as miniaturas e a navegação foram exercitadas no Windows 11 com câmeras reais; uma consulta de 24 horas confirmou a conversão dos timestamps recebidos. Os testes automatizados cobrem datas, zoom, arraste, reordenação e cancelamento de miniaturas. A instalação, o runtime e a desinstalação foram verificados no Windows 11 com identidade e dados isolados. O teste do pacote no Windows 10, em máquina limpa e dos demais fluxos integrados de áudio e captura permanece pendente. Confira o SHA-256 do instalador conforme [Distribuição](DISTRIBUICAO.md).
 
 ## 1.0.0
 
