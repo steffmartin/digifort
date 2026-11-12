@@ -86,9 +86,8 @@ function parseConfig(id, value) {
   for (const [camera, profile] of Object.entries(initialCameras)) {
     if (!camera.trim() || !['Visualization', 'Recording'].includes(profile)) throw new Error('Cada câmera inicial precisa ter um nome e o perfil Visualization ou Recording.');
   }
-  const mosaicIds = new Set(['auto', '2x2', '3x3-six', '4x4-eight', '3x3', '4x4-ten', '4x4-thirteen-a', '4x4-thirteen-b', '4x4-center', '4x4', '5x5']);
-  const initialMosaic = value.initialMosaic ?? 'auto';
-  if (typeof initialMosaic !== 'string' || !mosaicIds.has(initialMosaic)) throw new Error('initialMosaic deve corresponder a um mosaico disponível.');
+  const mosaicIds = new Set(['auto', '3x3-six', '4x4-eight', '4x4-ten', '4x4-thirteen-a', '4x4-thirteen-b', '4x4-center']);
+  const initialMosaic = mosaicIds.has(value.initialMosaic) ? value.initialMosaic : 'auto';
   for (const key of ['mediaFolder', 'screenshotFolder', 'videoFolder']) {
     if (value[key] !== undefined && typeof value[key] !== 'string') throw new Error(`${key} deve ser um caminho de pasta ou uma string vazia.`);
   }

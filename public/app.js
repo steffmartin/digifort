@@ -66,16 +66,12 @@ const THUMBNAIL_SIZES = { small: [75, 51], medium: [150, 102], large: [300, 205]
 const THUMBNAILS_PER_PAGE = 20;
 const MOSAICS = [
   { id: 'auto', name: 'Grade automática', columns: 0, capacity: Infinity, previewCapacity: 8 },
-  { id: '2x2', name: '2 × 2 · 4 câmeras', columns: 2, capacity: 4 },
   { id: '3x3-six', name: '3 × 3 · 6 câmeras', columns: 3, capacity: 6, slots: [[1,1,2,2],[1,3,1,1],[2,3,1,1],[3,1,1,1],[3,2,1,1],[3,3,1,1]] },
   { id: '4x4-eight', name: '4 × 4 · 8 câmeras', columns: 4, capacity: 8, slots: [[1,1,3,3],[1,4,1,1],[2,4,1,1],[3,4,1,1],[4,1,1,1],[4,2,1,1],[4,3,1,1],[4,4,1,1]] },
-  { id: '3x3', name: '3 × 3 · 9 câmeras', columns: 3, capacity: 9 },
   { id: '4x4-ten', name: '4 × 4 · 10 câmeras', columns: 4, capacity: 10, slots: [[1,1,2,2],[1,3,2,2],[3,1,1,1],[3,2,1,1],[3,3,1,1],[3,4,1,1],[4,1,1,1],[4,2,1,1],[4,3,1,1],[4,4,1,1]] },
   { id: '4x4-thirteen-a', name: '4 × 4 · 13 câmeras A', columns: 4, capacity: 13, slots: [[1,1,2,2],[1,3,1,1],[1,4,1,1],[2,3,1,1],[2,4,1,1],[3,1,1,1],[3,2,1,1],[3,3,1,1],[3,4,1,1],[4,1,1,1],[4,2,1,1],[4,3,1,1],[4,4,1,1]] },
   { id: '4x4-thirteen-b', name: '4 × 4 · 13 câmeras B', columns: 4, capacity: 13, slots: [[1,2,2,2],[1,1,1,1],[1,4,1,1],[2,1,1,1],[2,4,1,1],[3,1,1,1],[3,2,1,1],[3,3,1,1],[3,4,1,1],[4,1,1,1],[4,2,1,1],[4,3,1,1],[4,4,1,1]] },
-  { id: '4x4-center', name: '4 × 4 · 13 câmeras C', columns: 4, capacity: 13, slots: [[2,2,2,2],[1,1,1,1],[1,2,1,1],[1,3,1,1],[1,4,1,1],[2,1,1,1],[2,4,1,1],[3,1,1,1],[3,4,1,1],[4,1,1,1],[4,2,1,1],[4,3,1,1],[4,4,1,1]] },
-  { id: '4x4', name: '4 × 4 · 16 câmeras', columns: 4, capacity: 16 },
-  { id: '5x5', name: '5 × 5 · 25 câmeras', columns: 5, capacity: 25 }
+  { id: '4x4-center', name: '4 × 4 · 13 câmeras C', columns: 4, capacity: 13, slots: [[2,2,2,2],[1,1,1,1],[1,2,1,1],[1,3,1,1],[1,4,1,1],[2,1,1,1],[2,4,1,1],[3,1,1,1],[3,4,1,1],[4,1,1,1],[4,2,1,1],[4,3,1,1],[4,4,1,1]] }
 ];
 
 function getMosaic(id = state.mosaic) { return MOSAICS.find(item => item.id === id) || MOSAICS[0]; }
@@ -256,6 +252,14 @@ function appendRecordingActions(menu, scope) {
 
 function recordingScopeKey(scope) { return scope.all ? 'all-cameras' : `camera:${scope.camera}`; }
 
+function addContextTitle(menu, label) {
+  const title = document.createElement('div');
+  title.className = 'context-title';
+  title.textContent = label;
+  menu.prepend(title);
+  menu.setAttribute('aria-label', label);
+}
+
 function createContextBranch(label, makeSubmenu) {
   const wrapper = document.createElement('div');
   wrapper.className = 'context-branch';
@@ -263,7 +267,7 @@ function createContextBranch(label, makeSubmenu) {
   trigger.type = 'button'; trigger.className = 'context-item context-branch-trigger'; trigger.setAttribute('role', 'menuitem'); trigger.setAttribute('aria-haspopup', 'menu'); trigger.setAttribute('aria-expanded', 'false');
   trigger.append(document.createTextNode(label));
   const arrow = document.createElement('span'); arrow.setAttribute('aria-hidden', 'true'); arrow.textContent = '›'; trigger.append(arrow);
-  const submenu = makeSubmenu(); submenu.hidden = true; wrapper.append(trigger, submenu);
+  const submenu = makeSubmenu(); addContextTitle(submenu, label); submenu.hidden = true; wrapper.append(trigger, submenu);
   const show = () => {
     for (const sibling of wrapper.parentElement.querySelectorAll(':scope > .context-branch')) {
       if (sibling === wrapper) continue;
@@ -293,13 +297,14 @@ function positionSubmenu(wrapper, submenu) {
 function openContextMenu(x, y, cameraScope, allScope = null) {
   const root = elements.contextMenu;
   state.contextInvoker = document.activeElement;
-  root.replaceChildren(); root.hidden = false;
+  root.replaceChildren(); root.removeAttribute('aria-label'); root.hidden = false;
   if (allScope) {
     root.append(
       createContextBranch('Esta câmera', () => createCameraScopeMenu(cameraScope)),
       createContextBranch('Todas as câmeras', () => createCameraScopeMenu(allScope))
     );
   } else {
+    addContextTitle(root, 'Gravado');
     appendPlaybackShortcuts(root, cameraScope);
   }
   root.style.left = `${Math.max(8, Math.min(x, innerWidth - 240))}px`;
@@ -1074,7 +1079,8 @@ function updateAudioSources() {
     elements.audioSource.disabled = true;
     elements.audioToggle.disabled = true;
     elements.audioToggle.setAttribute('aria-pressed', 'false');
-    elements.audioToggle.querySelector('span').textContent = 'Ativar áudio';
+    elements.audioToggle.setAttribute('aria-label', 'Ativar áudio');
+    elements.audioToggle.title = 'Ativar áudio';
     return;
   }
   for (const name of state.tiles.keys()) elements.audioSource.add(new Option(name, name));
@@ -1082,7 +1088,9 @@ function updateAudioSources() {
   elements.audioSource.disabled = false;
   elements.audioToggle.disabled = false;
   elements.audioToggle.setAttribute('aria-pressed', String(state.audioEnabled));
-  elements.audioToggle.querySelector('span').textContent = state.audioEnabled ? 'Áudio ativo' : 'Ativar áudio';
+  const audioAction = state.audioEnabled ? 'Desativar áudio' : 'Ativar áudio';
+  elements.audioToggle.setAttribute('aria-label', audioAction);
+  elements.audioToggle.title = audioAction;
   for (const [name, player] of state.tiles) player.tile.querySelector('.tile-focus-button').classList.toggle('is-audio', name === state.focused && state.audioEnabled);
 }
 

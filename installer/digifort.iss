@@ -203,7 +203,7 @@ begin
   MosaicCombo.Width := OptionsPage.SurfaceWidth;
   Mosaics := TStringList.Create;
   try
-    Mosaics.CommaText := 'auto,2x2,3x3-six,4x4-eight,3x3,4x4-ten,4x4-thirteen-a,4x4-thirteen-b,4x4-center,4x4,5x5';
+    Mosaics.CommaText := 'auto,3x3-six,4x4-eight,4x4-ten,4x4-thirteen-a,4x4-thirteen-b,4x4-center';
     for I := 0 to Mosaics.Count - 1 do MosaicCombo.Items.Add(Mosaics[I]);
   finally
     Mosaics.Free;
