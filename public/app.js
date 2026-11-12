@@ -29,7 +29,7 @@ function getG726Config(headers, type) {
 const state = {
   servers: [], serverId: '', server: null, cameras: [], tiles: new Map(), desktopWindow: false,
   cameraStatuses: new Map(), statusTimer: null, statusRequestId: 0, statusRefreshing: false,
-  mode: 'live', focused: '', audioSource: '', audioEnabled: false,
+  mode: 'live', focused: '', audioEnabled: false,
   allStopped: false, mosaic: 'auto', overlaysVisible: false, timelineVisible: true, thumbnailsVisible: true, surveillance: false,
   audioContext: null, reviewEpoch: null, reviewStart: null, reviewEnd: null,
   timeline: [], timelineStart: null, timelineEnd: null, timelineCamera: '',
@@ -56,8 +56,7 @@ const elements = {
   surveillanceToggle: $('#surveillanceToggle'), exitSurveillance: $('#exitSurveillance'), contextMenu: $('#contextMenu'), thumbnailSize: $('#thumbnailSize'),
   thumbnailNext: $('#thumbnailNext'), thumbnailPageLabel: $('#thumbnailPageLabel'),
   recordDialog: $('#recordDialog'), recordForm: $('#recordForm'), recordFormat: $('#recordFormat'), recordFormatHelp: $('#recordFormatHelp'), recordConfirm: $('#recordConfirm'),
-  configDialog: $('#configDialog'), configDialogMessage: $('#configDialogMessage'), configDialogPath: $('#configDialogPath'),
-  openConfigFolder: $('#openConfigFolder'), reloadConfigs: $('#reloadConfigs'), closeConfigApp: $('#closeConfigApp'),
+  configDialog: $('#configDialog'), configDialogMessage: $('#configDialogMessage'), closeConfigApp: $('#closeConfigApp'),
   toastRegion: $('#toastRegion')
 };
 
@@ -66,22 +65,23 @@ const THUMBNAIL_SIZES = { small: [75, 51], medium: [150, 102], large: [300, 205]
 const THUMBNAILS_PER_PAGE = 20;
 const MOSAICS = [
   { id: 'auto', name: 'Grade automática', columns: 0, capacity: Infinity, previewCapacity: 8 },
-  { id: '2x2', name: '2 × 2 · 4 câmeras', columns: 2, capacity: 4 },
   { id: '3x3-six', name: '3 × 3 · 6 câmeras', columns: 3, capacity: 6, slots: [[1,1,2,2],[1,3,1,1],[2,3,1,1],[3,1,1,1],[3,2,1,1],[3,3,1,1]] },
   { id: '4x4-eight', name: '4 × 4 · 8 câmeras', columns: 4, capacity: 8, slots: [[1,1,3,3],[1,4,1,1],[2,4,1,1],[3,4,1,1],[4,1,1,1],[4,2,1,1],[4,3,1,1],[4,4,1,1]] },
-  { id: '3x3', name: '3 × 3 · 9 câmeras', columns: 3, capacity: 9 },
   { id: '4x4-ten', name: '4 × 4 · 10 câmeras', columns: 4, capacity: 10, slots: [[1,1,2,2],[1,3,2,2],[3,1,1,1],[3,2,1,1],[3,3,1,1],[3,4,1,1],[4,1,1,1],[4,2,1,1],[4,3,1,1],[4,4,1,1]] },
   { id: '4x4-thirteen-a', name: '4 × 4 · 13 câmeras A', columns: 4, capacity: 13, slots: [[1,1,2,2],[1,3,1,1],[1,4,1,1],[2,3,1,1],[2,4,1,1],[3,1,1,1],[3,2,1,1],[3,3,1,1],[3,4,1,1],[4,1,1,1],[4,2,1,1],[4,3,1,1],[4,4,1,1]] },
   { id: '4x4-thirteen-b', name: '4 × 4 · 13 câmeras B', columns: 4, capacity: 13, slots: [[1,2,2,2],[1,1,1,1],[1,4,1,1],[2,1,1,1],[2,4,1,1],[3,1,1,1],[3,2,1,1],[3,3,1,1],[3,4,1,1],[4,1,1,1],[4,2,1,1],[4,3,1,1],[4,4,1,1]] },
-  { id: '4x4-center', name: '4 × 4 · 13 câmeras C', columns: 4, capacity: 13, slots: [[2,2,2,2],[1,1,1,1],[1,2,1,1],[1,3,1,1],[1,4,1,1],[2,1,1,1],[2,4,1,1],[3,1,1,1],[3,4,1,1],[4,1,1,1],[4,2,1,1],[4,3,1,1],[4,4,1,1]] },
-  { id: '4x4', name: '4 × 4 · 16 câmeras', columns: 4, capacity: 16 },
-  { id: '5x5', name: '5 × 5 · 25 câmeras', columns: 5, capacity: 25 }
+  { id: '4x4-center', name: '4 × 4 · 13 câmeras C', columns: 4, capacity: 13, slots: [[2,2,2,2],[1,1,1,1],[1,2,1,1],[1,3,1,1],[1,4,1,1],[2,1,1,1],[2,4,1,1],[3,1,1,1],[3,4,1,1],[4,1,1,1],[4,2,1,1],[4,3,1,1],[4,4,1,1]] }
 ];
 
 function getMosaic(id = state.mosaic) { return MOSAICS.find(item => item.id === id) || MOSAICS[0]; }
 
 function setupMosaics(initial = 'auto') {
-  elements.mosaicSelect.replaceChildren(...MOSAICS.map(item => new Option(item.name, item.id)));
+  elements.mosaicSelect.replaceChildren(...MOSAICS.map((item, index) => {
+    const option = new Option(item.name, item.id);
+    option.title = `Ctrl+Alt+${index ? index % 10 : 'A'}`;
+    return option;
+  }));
+  elements.mosaicSelect.title = MOSAICS.map((item, index) => `${item.name}: Ctrl+Alt+${index ? index % 10 : 'A'}`).join('\n');
   state.mosaic = MOSAICS.some(item => item.id === initial) ? initial : 'auto';
   elements.mosaicSelect.value = state.mosaic;
   applyMosaic();
@@ -117,6 +117,13 @@ function drawMosaicPreview(mosaic) {
   }
 }
 
+function setDisplayMenuLabel(item, label, shortcut) {
+  const hint = document.createElement('span');
+  hint.className = 'context-shortcut'; hint.textContent = shortcut;
+  item.setAttribute('aria-keyshortcuts', shortcut);
+  item.replaceChildren(document.createTextNode(label), hint);
+}
+
 function updateOverlayState() {
   elements.viewerGrid.classList.toggle('overlays-hidden', !state.overlaysVisible);
   elements.reviewPanel.hidden = state.mode !== 'playback' || !state.timelineVisible;
@@ -125,11 +132,11 @@ function updateOverlayState() {
   elements.overlayToggle.setAttribute('aria-pressed', String(allVisible));
   elements.overlayToggle.textContent = allVisible ? 'Ocultar tudo' : 'Mostrar tudo';
   elements.toggleOverlayVisibility.setAttribute('aria-checked', String(state.overlaysVisible));
-  elements.toggleOverlayVisibility.textContent = `${state.overlaysVisible ? 'Ocultar' : 'Mostrar'} dados`;
+  setDisplayMenuLabel(elements.toggleOverlayVisibility, `${state.overlaysVisible ? 'Ocultar' : 'Mostrar'} dados`, 'D');
   elements.toggleTimelineVisibility.setAttribute('aria-checked', String(state.timelineVisible));
-  elements.toggleTimelineVisibility.textContent = `${state.timelineVisible ? 'Ocultar' : 'Mostrar'} timeline`;
+  setDisplayMenuLabel(elements.toggleTimelineVisibility, `${state.timelineVisible ? 'Ocultar' : 'Mostrar'} timeline`, 'T');
   elements.toggleThumbnailVisibility.setAttribute('aria-checked', String(state.thumbnailsVisible));
-  elements.toggleThumbnailVisibility.textContent = `${state.thumbnailsVisible ? 'Ocultar' : 'Mostrar'} miniatura`;
+  setDisplayMenuLabel(elements.toggleThumbnailVisibility, `${state.thumbnailsVisible ? 'Ocultar' : 'Mostrar'} miniatura`, 'M');
   if (state.mode === 'playback' && state.reviewStart && state.timelineVisible) drawTimeline();
 }
 
@@ -146,7 +153,7 @@ function setDisplayVisibility({ overlays = state.overlaysVisible, timeline = sta
   if (wereThumbnailsVisible && !thumbnails) clearThumbnails();
   updateOverlayState();
   if (state.mode === 'playback' && state.reviewStart) {
-    if (!wasTimelineVisible && timeline) loadFocusedTimeline(state.focused || state.tiles.keys().next().value);
+    if (!wasTimelineVisible && timeline) loadFocusedTimeline(state.focused);
     if (!wereThumbnailsVisible && thumbnails) renderThumbnailPage(0).catch(() => {});
   }
 }
@@ -178,10 +185,10 @@ function updateSurveillance() {
 }
 
 const PLAYBACK_SHORTCUTS = [
-  ['10 segundos atrás', 10], ['30 segundos atrás', 30], ['1 minuto atrás', 60], ['15 minutos atrás', 900], ['30 minutos atrás', 1800],
+  ['30 segundos atrás', 30], ['1 minuto atrás', 60], ['30 minutos atrás', 1800],
   null, ['1 hora atrás', 3600], ['6 horas atrás', 21600], ['12 horas atrás', 43200], null,
   ['1 dia atrás', 86400], ['2 dias atrás', 172800], ['3 dias atrás', 259200], null,
-  ['1 semana atrás', 604800], ['2 semanas atrás', 1209600], null, ['Personalizado', null]
+  ['1 semana atrás', 604800], null, ['Personalizado', null]
 ];
 
 function createPlaybackMenu(scope) {
@@ -198,6 +205,12 @@ function appendPlaybackShortcuts(menu, scope) {
     const [label, seconds] = entry;
     const item = document.createElement('button');
     item.type = 'button'; item.className = 'context-item'; item.setAttribute('role', 'menuitem'); item.textContent = label;
+    const index = PLAYBACK_SHORTCUTS.filter(entry => entry && entry[1] !== null).findIndex(entry => entry[1] === seconds);
+    if (index >= 0) {
+      const hint = document.createElement('span'); hint.className = 'context-shortcut';
+      hint.textContent = `Ctrl+${scope.all ? 'Shift+' : ''}${(index + 1) % 10}`;
+      item.append(hint);
+    }
     item.addEventListener('click', () => { void beginContextPlayback(scope, seconds); closeContextMenu(); });
     menu.append(item);
   }
@@ -209,7 +222,12 @@ function createCaptureMenu(scope) {
   menu.setAttribute('role', 'menu');
   const capture = document.createElement('button');
   capture.type = 'button'; capture.className = 'context-item'; capture.setAttribute('role', 'menuitem');
-  capture.textContent = scope.all ? 'Frame' : 'Frame';
+  capture.textContent = 'Frame';
+  if (scope.all || scope.camera === state.focused) {
+    const hint = document.createElement('span'); hint.className = 'context-shortcut';
+    hint.textContent = scope.all ? 'Ctrl+Shift+PrintScreen' : 'Ctrl+PrintScreen';
+    capture.append(hint);
+  }
   capture.disabled = !(scope.all ? state.tiles.size : state.tiles.has(scope.camera));
   capture.addEventListener('click', () => { void captureFrames(scope); closeContextMenu(); });
   menu.append(capture);
@@ -256,6 +274,14 @@ function appendRecordingActions(menu, scope) {
 
 function recordingScopeKey(scope) { return scope.all ? 'all-cameras' : `camera:${scope.camera}`; }
 
+function addContextTitle(menu, label) {
+  const title = document.createElement('div');
+  title.className = 'context-title';
+  title.textContent = label;
+  menu.prepend(title);
+  menu.setAttribute('aria-label', label);
+}
+
 function createContextBranch(label, makeSubmenu) {
   const wrapper = document.createElement('div');
   wrapper.className = 'context-branch';
@@ -263,7 +289,7 @@ function createContextBranch(label, makeSubmenu) {
   trigger.type = 'button'; trigger.className = 'context-item context-branch-trigger'; trigger.setAttribute('role', 'menuitem'); trigger.setAttribute('aria-haspopup', 'menu'); trigger.setAttribute('aria-expanded', 'false');
   trigger.append(document.createTextNode(label));
   const arrow = document.createElement('span'); arrow.setAttribute('aria-hidden', 'true'); arrow.textContent = '›'; trigger.append(arrow);
-  const submenu = makeSubmenu(); submenu.hidden = true; wrapper.append(trigger, submenu);
+  const submenu = makeSubmenu(); addContextTitle(submenu, label); submenu.hidden = true; wrapper.append(trigger, submenu);
   const show = () => {
     for (const sibling of wrapper.parentElement.querySelectorAll(':scope > .context-branch')) {
       if (sibling === wrapper) continue;
@@ -293,13 +319,15 @@ function positionSubmenu(wrapper, submenu) {
 function openContextMenu(x, y, cameraScope, allScope = null) {
   const root = elements.contextMenu;
   state.contextInvoker = document.activeElement;
-  root.replaceChildren(); root.hidden = false;
+  state.contextCamera = cameraScope.camera;
+  root.replaceChildren(); root.removeAttribute('aria-label'); root.hidden = false;
   if (allScope) {
     root.append(
       createContextBranch('Esta câmera', () => createCameraScopeMenu(cameraScope)),
       createContextBranch('Todas as câmeras', () => createCameraScopeMenu(allScope))
     );
   } else {
+    addContextTitle(root, 'Gravado');
     appendPlaybackShortcuts(root, cameraScope);
   }
   root.style.left = `${Math.max(8, Math.min(x, innerWidth - 240))}px`;
@@ -638,16 +666,7 @@ async function initializeServers() {
       : { id: server.id, name: server.name || server.id, ready: server.ready });
     const readyServers = state.servers.filter(server => server.ready !== false);
     elements.serverSelect.replaceChildren();
-    if (!readyServers.length) {
-      elements.configDialogMessage.textContent = state.servers.length
-        ? 'Revise os campos do seu arquivo .config para conectar ao servidor. Depois, verifique novamente.'
-        : 'Para visualizar as câmeras, salve um arquivo de configuração na pasta abaixo e verifique novamente.';
-      elements.configDialogPath.textContent = result.configDirectory || 'config/';
-      elements.openConfigFolder.hidden = !state.desktopWindow;
-      if (!elements.configDialog.open) elements.configDialog.showModal();
-    } else if (elements.configDialog.open) {
-      elements.configDialog.close();
-    }
+    if (!readyServers.length && !elements.configDialog.open) await openConfigDialog();
     if (!state.servers.length) {
       const option = new Option('Nenhuma configuração encontrada', '');
       elements.serverSelect.add(option);
@@ -679,41 +698,144 @@ async function initializeServers() {
   }
 }
 
-elements.reloadConfigs.addEventListener('click', async () => {
-  elements.reloadConfigs.disabled = true;
-  try { await initializeServers(); } finally { elements.reloadConfigs.disabled = false; }
-});
+const configForm = $('#configForm');
+const configChoice = $('#configChoice');
+let configPausedStreams = false;
+let configChangedActive = false;
 
-elements.openConfigFolder.addEventListener('click', async () => {
-  try {
-    const response = await fetch('/api/config-folder', { method: 'POST' });
-    if (!response.ok) throw new Error();
-  } catch {
-    elements.configDialogMessage.textContent = 'Não foi possível abrir a pasta. Abra o caminho abaixo no Explorador de Arquivos.';
-  }
-});
-
-async function closeAppFromConfigDialog() {
-  if (elements.closeConfigApp.disabled) return;
-  if (!state.desktopWindow) {
-    window.location.replace('about:blank');
-    return;
-  }
-  elements.closeConfigApp.disabled = true;
-  try {
-    const response = await fetch('/api/close-app', { method: 'POST' });
-    if (!response.ok) throw new Error();
-  } catch {
-    elements.configDialogMessage.textContent = 'Não foi possível fechar automaticamente. Feche a janela do Digifort Monitor.';
-    elements.closeConfigApp.disabled = false;
-  }
+function refreshConfigChoices(selected = '') {
+  configChoice.replaceChildren(new Option('Nova configuração', ''), ...state.servers.map(server => new Option(server.name, server.id)));
+  configChoice.value = selected;
 }
 
-elements.closeConfigApp.addEventListener('click', closeAppFromConfigDialog);
-elements.configDialog.addEventListener('cancel', event => {
-  event.preventDefault();
-  void closeAppFromConfigDialog();
+async function loadConfigForm(id) {
+  configForm.reset();
+  configChoice.value = id;
+  configForm.elements.initialMosaic.replaceChildren(...MOSAICS.map(item => new Option(item.name, item.id)));
+  configForm.elements.id.readOnly = Boolean(id);
+  $('#deleteConfig').hidden = !id;
+  $('#passwordHint').textContent = id ? 'Deixe em branco para manter a senha atual.' : '';
+  configForm.elements.password.required = !id;
+  configForm.elements.password.type = 'password';
+  $('#toggleConfigPassword').setAttribute('aria-label', 'Mostrar senha');
+  elements.configDialogMessage.textContent = '';
+  if (!id) return;
+  try {
+    const { fields, hasPassword } = await apiJson(`/api/config?${query({ server: id })}`);
+    for (const name of ['name', 'serverAddress', 'userAgent', 'username', 'timeZone', 'mediaFolder', 'screenshotFolder', 'videoFolder', 'initialMosaic']) {
+      if (typeof fields[name] === 'string') configForm.elements[name].value = fields[name];
+    }
+    configForm.elements.id.value = id;
+    configForm.elements.useBasicAuth.checked = fields.useBasicAuth === true;
+    configForm.elements.initialCameras.value = Object.entries(fields.initialCameras || {}).map(([name, profile]) => `${name} | ${profile}`).join('\n');
+    configForm.elements.password.required = !hasPassword;
+  } catch (error) { elements.configDialogMessage.textContent = error.message; }
+}
+
+async function openConfigDialog() {
+  if (elements.configDialog.open) return;
+  configPausedStreams = !state.allStopped && state.tiles.size > 0;
+  if (configPausedStreams) await toggleAllStreams();
+  configChangedActive = false;
+  refreshConfigChoices(state.serverId);
+  await loadConfigForm(configChoice.value);
+  elements.configDialog.showModal();
+}
+$('#manageConfigs').addEventListener('click', openConfigDialog);
+configChoice.addEventListener('change', () => loadConfigForm(configChoice.value));
+$('#toggleConfigPassword').addEventListener('click', event => {
+  const input = configForm.elements.password;
+  input.type = input.type === 'password' ? 'text' : 'password';
+  const label = input.type === 'password' ? 'Mostrar senha' : 'Ocultar senha';
+  event.currentTarget.setAttribute('aria-label', label);
+  event.currentTarget.title = label;
 });
+
+async function configRequest(method, id, fields) {
+  const response = await fetch(`/api/config?${query({ server: id })}`, {
+    method, headers: fields ? { 'Content-Type': 'application/json' } : {}, body: fields ? JSON.stringify(fields) : undefined
+  });
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.error || 'Não foi possível salvar a configuração.');
+}
+
+async function saveConfig() {
+  if (!configForm.reportValidity()) return;
+  $('#saveConfig').disabled = true;
+  const f = configForm.elements;
+  const id = f.id.value.trim();
+  const initialCameras = Object.create(null);
+  for (const line of f.initialCameras.value.split('\n').filter(line => line.trim())) {
+    const parts = line.split('|').map(part => part.trim());
+    if (parts.length !== 2 || !parts[0] || !['Visualization', 'Recording'].includes(parts[1]) || Object.hasOwn(initialCameras, parts[0])) {
+      elements.configDialogMessage.textContent = 'Informe cada câmera uma vez, no formato nome | Visualization ou nome | Recording.';
+      $('#saveConfig').disabled = false; return;
+    }
+    initialCameras[parts[0]] = parts[1];
+  }
+  const fields = { name: f.name.value, serverAddress: f.serverAddress.value, userAgent: f.userAgent.value, username: f.username.value, timeZone: f.timeZone.value, mediaFolder: f.mediaFolder.value, screenshotFolder: f.screenshotFolder.value, videoFolder: f.videoFolder.value, initialMosaic: f.initialMosaic.value, useBasicAuth: f.useBasicAuth.checked, initialCameras };
+  if (f.password.value || !configChoice.value) fields.password = f.password.value;
+  f.password.value = '';
+  try {
+    await configRequest(configChoice.value ? 'PUT' : 'POST', id, fields);
+    if (id === state.serverId) configChangedActive = true;
+    const result = await apiJson('/api/servers'); state.servers = result.servers;
+    refreshConfigChoices(id); await loadConfigForm(id);
+    elements.configDialogMessage.textContent = 'Configuração salva.';
+  } catch (error) {
+    if (Object.hasOwn(fields, 'password')) f.password.value = fields.password;
+    elements.configDialogMessage.textContent = error.message;
+  } finally { $('#saveConfig').disabled = false; }
+}
+$('#saveConfig').addEventListener('click', saveConfig);
+configForm.addEventListener('submit', event => event.preventDefault());
+configForm.addEventListener('keydown', event => {
+  if (event.key === 'Enter' && !event.isComposing && event.target.tagName !== 'TEXTAREA' && event.target.tagName !== 'BUTTON') {
+    event.preventDefault();
+    if (!$('#saveConfig').disabled) void saveConfig();
+  }
+});
+$('#deleteConfig').addEventListener('click', async () => {
+  const id = configChoice.value;
+  if (!id || !window.confirm('Excluir esta configuração?')) return;
+  try {
+    await configRequest('DELETE', id);
+    if (id === state.serverId) configChangedActive = true;
+    const result = await apiJson('/api/servers'); state.servers = result.servers;
+    refreshConfigChoices(); await loadConfigForm('');
+    elements.configDialogMessage.textContent = 'Configuração excluída.';
+  } catch (error) { elements.configDialogMessage.textContent = error.message; }
+});
+async function closeConfigDialog() {
+  if (!state.servers.some(server => server.ready !== false)) {
+    if (state.desktopWindow) await fetch('/api/close-app', { method: 'POST' });
+    else window.location.replace('about:blank');
+    return;
+  }
+  elements.configDialog.close();
+  const oldId = state.serverId;
+  if (configChangedActive || !oldId) {
+    if (oldId && !state.servers.some(server => server.id === oldId && server.ready)) {
+      if (state.statusTimer) window.clearInterval(state.statusTimer);
+      state.statusTimer = null; state.statusRequestId += 1;
+      clearTimeline(); clearThumbnails(); await closeAllTiles();
+      state.server = null; state.cameras = []; state.cameraStatuses.clear();
+      drawCameraList();
+    }
+    state.serverId = '';
+    await initializeServers();
+    if (oldId && state.servers.some(server => server.id === oldId && server.ready) && state.serverId !== oldId) {
+      elements.serverSelect.value = oldId; await selectServer(oldId);
+    }
+  } else {
+    const result = await apiJson('/api/servers'); state.servers = result.servers;
+    elements.serverSelect.replaceChildren(new Option('Escolha um servidor…', ''), ...state.servers.map(server => new Option(server.name, server.id)));
+    elements.serverSelect.value = oldId;
+    if (configPausedStreams) await toggleAllStreams();
+  }
+}
+elements.closeConfigApp.addEventListener('click', closeConfigDialog);
+elements.configDialog.addEventListener('cancel', event => { event.preventDefault(); void closeConfigDialog(); });
 
 async function selectServer(id) {
   if (!id) return;
@@ -729,7 +851,6 @@ async function selectServer(id) {
   state.cameras = [];
   state.cameraStatuses.clear();
   state.focused = '';
-  state.audioSource = '';
   state.audioEnabled = false;
   state.allStopped = false;
   state.reviewEpoch = null;
@@ -779,6 +900,7 @@ async function selectServer(id) {
 function drawCameraList() {
   const filter = elements.cameraSearch.value.trim().toLocaleLowerCase('pt-BR');
   const visible = state.cameras.filter(camera => `${camera.name} ${camera.description}`.toLocaleLowerCase('pt-BR').includes(filter));
+  const focusedName = elements.cameraList.contains(document.activeElement) ? document.activeElement.dataset.cameraName : null;
   elements.cameraList.replaceChildren();
   elements.cameraCount.textContent = String(state.tiles.size);
   elements.availableCount.textContent = String(state.cameras.length);
@@ -790,6 +912,7 @@ function drawCameraList() {
     const description = camera.description || (camera.active ? 'Disponível' : 'Desativada');
     const button = document.createElement('button');
     button.type = 'button';
+    button.dataset.cameraName = camera.name;
     button.className = `camera-row${isOpen ? ' is-open' : ''}${unavailable ? ' is-unavailable' : ''}`;
     button.setAttribute('aria-pressed', String(isOpen));
     const statusLabel = unavailable ? 'indisponível' : status?.working === true ? 'funcionando' : '';
@@ -815,10 +938,17 @@ function drawCameraList() {
     button.addEventListener('click', () => isOpen ? closeCamera(camera.name) : full ? toast('O mosaico está cheio. Libere uma posição antes de abrir outra câmera.', 'error') : openCamera(camera.name));
     button.addEventListener('contextmenu', event => { event.preventDefault(); openContextMenu(event.clientX, event.clientY, { camera: camera.name, all: false }); });
     button.addEventListener('keydown', event => {
+      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        event.preventDefault();
+        const rows = [...elements.cameraList.querySelectorAll('.camera-row:not(:disabled)')];
+        const index = rows.indexOf(button);
+        rows[Math.max(0, Math.min(rows.length - 1, index + (event.key === 'ArrowDown' ? 1 : -1)))]?.focus();
+      }
       if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) { event.preventDefault(); const rect = button.getBoundingClientRect(); openContextMenu(rect.left + 12, rect.top + 12, { camera: camera.name, all: false }); }
     });
     elements.cameraList.append(button);
   }
+  if (focusedName) [...elements.cameraList.querySelectorAll('.camera-row')].find(row => row.dataset.cameraName === focusedName)?.focus();
   if (state.cameras.length && !visible.length) {
     const empty = document.createElement('div');
     empty.className = 'rail-empty';
@@ -887,6 +1017,7 @@ function createTile(cameraName, profile) {
   cameraDescription.textContent = camera?.description || '';
   cameraDescription.hidden = !camera?.description;
   tile.querySelector('.tile-video').setAttribute('aria-label', `Focar câmera ${cameraName}. Pressione F para tela cheia.`);
+  tile.querySelector('.tile-video').setAttribute('aria-keyshortcuts', 'F');
   tile.querySelector('.tile-focus-button').setAttribute('aria-label', `Focar câmera ${cameraName}`);
   tile.querySelector('.tile-profile').setAttribute('aria-label', `Perfil da câmera ${cameraName}`);
   const closeButton = tile.querySelector('.tile-close-button');
@@ -941,7 +1072,6 @@ function createTile(cameraName, profile) {
   });
   tile.querySelector('.tile-video').addEventListener('keydown', event => {
     if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); focusCamera(cameraName); }
-    if (event.key.toLowerCase() === 'f') { event.preventDefault(); toggleTileFullscreen(tile, cameraName); }
   });
   tile.querySelector('.tile-focus-button').addEventListener('click', () => focusCamera(cameraName));
   tile.querySelector('.tile-close-button').addEventListener('click', () => closeCamera(cameraName));
@@ -974,6 +1104,7 @@ async function toggleTileFullscreen(tile, cameraName) {
 }
 
 document.addEventListener('keydown', event => {
+  if (event.defaultPrevented || document.querySelector('dialog[open]')) return;
   if (event.key === 'Escape' && state.surveillance && !document.fullscreenElement) { state.surveillance = false; updateSurveillance(); return; }
   if (event.key !== 'Escape' || !document.fullscreenElement?.classList.contains('camera-tile')) return;
   event.preventDefault();
@@ -1000,7 +1131,6 @@ async function openCamera(cameraName, initialProfile = 'Visualization') {
   state.allStopped = false;
   if (resumeExisting) for (const existing of state.tiles.values()) if (existing !== player) await existing.start();
   if (!state.focused) focusCamera(cameraName);
-  if (!state.audioSource) state.audioSource = cameraName;
   updateAudioSources();
   drawCameraList();
   updateViewHeader();
@@ -1014,16 +1144,15 @@ async function closeCamera(cameraName) {
   if (recording) {
     await Promise.all(requestStopRecordingSession());
   }
-  const oldAudioSource = state.audioSource;
   const wasFocused = state.focused === cameraName;
   player.stop();
   state.tiles.delete(cameraName);
   player.tile.remove();
   if (wasFocused) {
-    state.focused = state.tiles.keys().next().value || '';
-    state.tiles.get(state.focused)?.tile.classList.add('is-focused');
+    const nextFocus = state.tiles.keys().next().value || '';
+    if (nextFocus) focusCamera(nextFocus);
+    else state.focused = '';
   }
-  if (state.audioSource === cameraName) state.audioSource = state.focused;
   if (!state.tiles.size) {
     elements.emptyMonitor.hidden = false;
     state.audioEnabled = false;
@@ -1033,10 +1162,8 @@ async function closeCamera(cameraName) {
   updateAudioSources();
   drawCameraList();
   updateViewHeader();
-  if (state.audioEnabled && oldAudioSource !== state.audioSource) void audioSourceChanged(oldAudioSource, state.audioSource);
   if (wasFocused && state.mode === 'playback' && state.reviewStart) {
-    if (state.focused) reloadFocusedReview(state.focused);
-    else {
+    if (!state.focused) {
       clearTimeline();
       clearThumbnails();
       if (state.timelineVisible) elements.timelineStatus.textContent = 'Abra uma câmera para carregar a timeline.';
@@ -1051,7 +1178,6 @@ async function closeAllTiles() {
   elements.viewerGrid.querySelectorAll('.camera-tile').forEach(tile => tile.remove());
   elements.emptyMonitor.hidden = false;
   state.focused = '';
-  state.audioSource = '';
   state.audioEnabled = false;
   state.allStopped = false;
   updateAudioSources();
@@ -1063,37 +1189,36 @@ function focusCamera(cameraName) {
   if (!state.tiles.has(cameraName)) return;
   const previousFocus = state.focused;
   state.focused = cameraName;
-  const oldSource = state.audioSource;
-  state.audioSource = cameraName;
   for (const [name, player] of state.tiles) {
     player.tile.classList.toggle('is-focused', name === cameraName);
-    player.tile.querySelector('.tile-focus-button').classList.toggle('is-audio', name === state.audioSource && state.audioEnabled);
+    player.tile.querySelector('.tile-focus-button').classList.toggle('is-audio', name === state.focused && state.audioEnabled);
   }
-  updateAudioSources(cameraName);
+  updateAudioSources();
   updateViewHeader();
-  if (state.audioEnabled && oldSource !== state.audioSource) void audioSourceChanged(oldSource, state.audioSource);
+  if (state.audioEnabled && previousFocus !== cameraName) void audioSourceChanged(previousFocus, cameraName);
   if (previousFocus !== cameraName && state.mode === 'playback' && state.reviewStart) reloadFocusedReview(cameraName);
 }
 
-function updateAudioSources(preferredSource = '') {
-  const previous = preferredSource || elements.audioSource.value;
+function updateAudioSources() {
   elements.audioSource.replaceChildren();
   if (!state.tiles.size) {
     elements.audioSource.add(new Option('Nenhuma câmera aberta', ''));
     elements.audioSource.disabled = true;
     elements.audioToggle.disabled = true;
     elements.audioToggle.setAttribute('aria-pressed', 'false');
-    elements.audioToggle.querySelector('span').textContent = 'Ativar áudio';
+    elements.audioToggle.setAttribute('aria-label', 'Ativar áudio');
+    elements.audioToggle.title = 'Ativar áudio';
     return;
   }
   for (const name of state.tiles.keys()) elements.audioSource.add(new Option(name, name));
-  elements.audioSource.value = [...state.tiles.keys()].includes(previous) ? previous : (state.audioSource || state.focused);
-  state.audioSource = elements.audioSource.value;
+  elements.audioSource.value = state.focused;
   elements.audioSource.disabled = false;
   elements.audioToggle.disabled = false;
   elements.audioToggle.setAttribute('aria-pressed', String(state.audioEnabled));
-  elements.audioToggle.querySelector('span').textContent = state.audioEnabled ? 'Áudio ativo' : 'Ativar áudio';
-  for (const [name, player] of state.tiles) player.tile.querySelector('.tile-focus-button').classList.toggle('is-audio', name === state.audioSource && state.audioEnabled);
+  const audioAction = state.audioEnabled ? 'Desativar áudio' : 'Ativar áudio';
+  elements.audioToggle.setAttribute('aria-label', audioAction);
+  elements.audioToggle.title = audioAction;
+  for (const [name, player] of state.tiles) player.tile.querySelector('.tile-focus-button').classList.toggle('is-audio', name === state.focused && state.audioEnabled);
 }
 
 function updateViewHeader() {
@@ -1101,7 +1226,7 @@ function updateViewHeader() {
   elements.cameraCount.textContent = String(count);
   elements.stopAll.disabled = count === 0;
   const stopAction = state.allStopped ? 'Retomar todas as câmeras' : 'Parar todas as câmeras';
-  elements.stopAll.title = stopAction;
+  elements.stopAll.title = `${stopAction} · Espaço`;
   elements.stopAll.setAttribute('aria-label', stopAction);
   elements.stopAll.setAttribute('aria-pressed', String(state.allStopped));
   elements.stopAll.dataset.state = state.allStopped ? 'stopped' : 'active';
@@ -1165,7 +1290,7 @@ function startReview() {
     return toast(error.message || 'Confira o período selecionado.', 'error');
   }
   for (const player of state.tiles.values()) player.restart();
-  const timelineCamera = state.focused || state.tiles.keys().next().value;
+  const timelineCamera = state.focused;
   reloadFocusedReview(timelineCamera);
 }
 
@@ -1321,7 +1446,7 @@ class CameraPlayer {
         this.setState('Erro');
         toast(`${this.name}: ${error.message || 'erro de stream.'}`, 'error');
       });
-      if (state.audioEnabled && state.audioSource === this.name) void this.startAudioStream();
+      if (state.audioEnabled && state.focused === this.name) void this.startAudioStream();
     } catch (error) {
       if (error.name === 'AbortError' || this.stopped || token !== this.requestToken) return;
       this.setMessage(error.message || 'Erro ao receber stream.');
@@ -1338,7 +1463,7 @@ class CameraPlayer {
 
   async startAudioStream() {
     this.stopAudioStream();
-    if (this.stopped || state.allStopped || !state.audioEnabled || state.audioSource !== this.name) return;
+    if (this.stopped || state.allStopped || !state.audioEnabled || state.focused !== this.name) return;
     if (state.mode === 'playback' && !state.reviewStart) return;
     const token = ++this.audioStreamToken;
     const controller = new AbortController();
@@ -1352,20 +1477,20 @@ class CameraPlayer {
     }
     try {
       const response = await fetch(`/api/audio-stream?${query(params)}`, { signal: controller.signal, cache: 'no-store' });
-      if (token !== this.audioStreamToken || !state.audioEnabled || state.audioSource !== this.name) return;
+      if (token !== this.audioStreamToken || !state.audioEnabled || state.focused !== this.name) return;
       if (!response.ok || !response.body || !(response.headers.get('content-type') || '').toLowerCase().includes('multipart/')) {
         let message = 'Não foi possível abrir o áudio desta câmera.';
         try { message = (await response.json()).error || message; } catch {}
         throw new Error(message);
       }
       void consumeMultipart(response, part => {
-        if (token === this.audioStreamToken && state.audioEnabled && state.audioSource === this.name) this.consumePart(part, true);
+        if (token === this.audioStreamToken && state.audioEnabled && state.focused === this.name) this.consumePart(part, true);
       }).catch(error => {
-        if (error.name === 'AbortError' || token !== this.audioStreamToken || !state.audioEnabled || state.audioSource !== this.name) return;
+        if (error.name === 'AbortError' || token !== this.audioStreamToken || !state.audioEnabled || state.focused !== this.name) return;
         this.setMessage(error.message || 'Erro ao receber áudio.');
       });
     } catch (error) {
-      if (error.name === 'AbortError' || token !== this.audioStreamToken || !state.audioEnabled || state.audioSource !== this.name) return;
+      if (error.name === 'AbortError' || token !== this.audioStreamToken || !state.audioEnabled || state.focused !== this.name) return;
       this.setMessage(error.message || 'Não foi possível abrir o áudio desta câmera.');
     }
   }
@@ -1438,15 +1563,15 @@ class CameraPlayer {
       return;
     }
     if (/g\.?726/i.test(type)) {
-      if (state.audioEnabled && state.audioSource === this.name) this.decodeG726(part.data, type, epoch, part.headers);
+      if (state.audioEnabled && state.focused === this.name) this.decodeG726(part.data, type, epoch, part.headers);
       return;
     }
     if (type.includes('audio/basic') || type.includes('audio/alaw') || type.includes('audio/mulaw') || type.includes('audio/ulaw')) {
-      if (state.audioEnabled && state.audioSource === this.name) this.decodeWebAudio(part.data, type, epoch);
+      if (state.audioEnabled && state.focused === this.name) this.decodeWebAudio(part.data, type, epoch);
       return;
     }
     if (type.includes('audio/aac')) {
-      if (state.audioEnabled && state.audioSource === this.name) this.decodeAac(part.data, epoch);
+      if (state.audioEnabled && state.focused === this.name) this.decodeAac(part.data, epoch);
       return;
     }
     if (type.startsWith('audio/')) {
@@ -1698,14 +1823,14 @@ class CameraPlayer {
     const audioToken = this.audioStreamToken;
     const config = getG726Config(headers, type);
     this.g726DecodeChain = this.g726DecodeChain.then(async () => {
-      if (this.stopped || token !== this.requestToken || audioToken !== this.audioStreamToken || !state.audioEnabled || state.audioSource !== this.name) return;
+      if (this.stopped || token !== this.requestToken || audioToken !== this.audioStreamToken || !state.audioEnabled || state.focused !== this.name) return;
       if (!config.rate) {
         this.setMessage('O frame G.726 não informa uma taxa reconhecida (16, 24, 32 ou 40 kb/s).');
         this.setState('Taxa G.726 desconhecida');
         return;
       }
       const Decoder = await loadG726Decoder();
-      if (this.stopped || token !== this.requestToken || audioToken !== this.audioStreamToken || !state.audioEnabled || state.audioSource !== this.name) return;
+      if (this.stopped || token !== this.requestToken || audioToken !== this.audioStreamToken || !state.audioEnabled || state.focused !== this.name) return;
       if (!this.g726 || this.g726Config?.rate !== config.rate || this.g726Config?.bitOrder !== config.bitOrder) {
         try { this.g726?.free(); } catch {}
         this.g726 = new Decoder(config.rate, config.bitOrder);
@@ -1741,7 +1866,7 @@ class CameraPlayer {
   }
 
   schedulePcm(pcm, sampleRate, channels, timestampUs) {
-    if (!state.audioContext || !state.audioEnabled || state.audioSource !== this.name) return;
+    if (!state.audioContext || !state.audioEnabled || state.focused !== this.name) return;
     try {
       const ctx = state.audioContext;
       const frames = Math.floor(pcm.length / channels);
@@ -2158,7 +2283,7 @@ function getThumbnailInterval() {
 
 async function renderThumbnailPage(page) {
   if (!state.thumbnailsVisible || !state.server || !state.reviewStart || !state.tiles.size) return;
-  const camera = state.focused || state.tiles.keys().next().value;
+  const camera = state.focused;
   const [requestedWidth] = THUMBNAIL_SIZES[state.thumbnailSize] || THUMBNAIL_SIZES.medium;
   elements.thumbnailGrid.style.setProperty('--thumbnail-card-width', `${requestedWidth}px`);
   const end = state.reviewEnd || Date.now();
@@ -2277,16 +2402,17 @@ elements.recordForm.addEventListener('submit', event => {
 });
 elements.recordDialog.addEventListener('close', () => { state.pendingRecordingScope = null; });
 elements.stopAll.addEventListener('click', toggleAllStreams);
-elements.mosaicSelect.addEventListener('change', event => {
-  const next = getMosaic(event.target.value);
+function selectMosaic(id) {
+  const next = getMosaic(id);
   if (state.tiles.size > next.capacity) {
     elements.mosaicSelect.value = state.mosaic;
     const camerasToClose = state.tiles.size - next.capacity;
     toast(`Esse mosaico comporta até ${next.capacity} câmeras. Feche ${camerasToClose} ${camerasToClose === 1 ? 'câmera' : 'câmeras'} para selecioná-lo.`, 'error');
     return;
   }
-  state.mosaic = next.id; applyMosaic();
-});
+  state.mosaic = next.id; elements.mosaicSelect.value = next.id; applyMosaic();
+}
+elements.mosaicSelect.addEventListener('change', event => selectMosaic(event.target.value));
 elements.overlayToggle.addEventListener('click', () => {
   const showAll = !(state.overlaysVisible && state.timelineVisible && state.thumbnailsVisible);
   setDisplayVisibility({ overlays: showAll, timeline: showAll, thumbnails: showAll });
@@ -2312,7 +2438,6 @@ elements.thumbnailSize.addEventListener('change', event => {
 });
 elements.audioSource.addEventListener('change', event => {
   focusCamera(event.target.value);
-  updateAudioSources();
 });
 elements.audioToggle.addEventListener('click', async () => {
   if (!state.audioContext) state.audioContext = new AudioContext();
@@ -2320,7 +2445,7 @@ elements.audioToggle.addEventListener('click', async () => {
   state.audioContextStart = state.audioContext.currentTime + 0.08;
   state.audioEnabled = !state.audioEnabled;
   updateAudioSources();
-  const source = state.audioSource || state.focused;
+  const source = state.focused;
   if (!state.allStopped && source && state.tiles.has(source)) {
     const player = state.tiles.get(source);
     if (state.audioEnabled) await player.startAudioStream();
@@ -2334,11 +2459,91 @@ elements.thumbnailInterval.addEventListener('change', () => {
 elements.customInterval.addEventListener('change', () => renderThumbnailPage(0).catch(() => {}));
 elements.thumbnailPrev.addEventListener('click', () => renderThumbnailPage(state.thumbnailPage - 1).catch(() => {}));
 elements.thumbnailNext.addEventListener('click', () => renderThumbnailPage(state.thumbnailPage + 1).catch(() => {}));
+const shortcutDialog = $('#shortcutDialog');
+$('#openShortcuts').addEventListener('click', () => shortcutDialog.showModal());
+for (const dialog of document.querySelectorAll('dialog')) {
+  let backdropDown = false;
+  const outside = event => { const rect = dialog.getBoundingClientRect(); return event.target === dialog && (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom); };
+  dialog.addEventListener('pointerdown', event => { backdropDown = outside(event); });
+  dialog.addEventListener('click', event => {
+    if (!backdropDown || !outside(event)) return;
+    backdropDown = false;
+    if (dialog === elements.configDialog) void closeConfigDialog();
+    else dialog.close();
+  });
+}
+
+const controlShortcuts = [
+  [elements.stopAll, 'Espaço', 'Space'], [elements.surveillanceToggle, 'V', 'V'],
+  [elements.audioToggle, 'A', 'A'], [elements.liveMode, 'G', 'G'], [elements.reviewMode, 'G', 'G'],
+  [elements.cameraSearch, '/', '/']
+];
+for (const [control, display, key] of controlShortcuts) {
+  control.dataset.shortcut = display;
+  control.setAttribute('aria-keyshortcuts', key);
+  control.setAttribute('aria-description', `Atalho: ${display}`);
+  if (!control.title) control.title = `Atalho: ${display}`;
+}
+
 document.addEventListener('keydown', event => {
-  if (event.key === '/' && !['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) { event.preventDefault(); elements.cameraSearch.focus(); }
-  if (event.key === 'Escape' && document.activeElement === elements.cameraSearch) { elements.cameraSearch.value = ''; drawCameraList(); elements.cameraSearch.blur(); }
+  if (event.ctrlKey && !event.altKey && !event.metaKey && !event.shiftKey && event.code === 'KeyP') { event.preventDefault(); return; }
+  if (event.key === 'Escape' && document.activeElement === elements.cameraSearch) {
+    elements.cameraSearch.value = ''; drawCameraList(); elements.cameraSearch.blur(); return;
+  }
+  if (event.defaultPrevented || event.repeat || document.querySelector('dialog[open]') ||
+      event.target.closest('input, textarea, [contenteditable]:not([contenteditable="false"])') ||
+      !elements.displayMenu.hidden) return;
+  if (event.ctrlKey && event.altKey && !event.metaKey && !event.shiftKey && !event.getModifierState('AltGraph')) {
+    const digit = /^Digit[0-9]$/.test(event.code) ? Number(event.code.slice(-1)) : null;
+    const index = event.code === 'KeyA' ? 0 : digit === 0 ? 10 : digit;
+    if (index !== null && MOSAICS[index]) { event.preventDefault(); selectMosaic(MOSAICS[index].id); }
+    return;
+  }
+  if (event.target.closest('select')) return;
+  if (event.ctrlKey && !event.altKey && !event.metaKey && /^Digit[0-9]$/.test(event.code)) {
+    const camera = !elements.contextMenu.hidden && !event.shiftKey ? state.contextCamera : state.focused;
+    if (!camera || (event.shiftKey && !state.tiles.has(camera))) return;
+    const digit = Number(event.code.slice(-1));
+    const entry = PLAYBACK_SHORTCUTS.filter(item => item && item[1] !== null)[digit === 0 ? 9 : digit - 1];
+    if (!entry) return;
+    event.preventDefault();
+    closeContextMenu();
+    void beginContextPlayback({ camera, all: event.shiftKey }, entry[1]);
+    return;
+  }
+  if (event.ctrlKey && !event.altKey && !event.metaKey && event.code === 'PrintScreen') {
+    if (!state.focused) return;
+    event.preventDefault();
+    closeContextMenu();
+    void captureFrames({ camera: state.focused, all: event.shiftKey });
+    return;
+  }
+  if (!elements.contextMenu.hidden || event.ctrlKey || event.altKey || event.metaKey || event.shiftKey) return;
+  if ((event.key === 'ArrowDown' || event.key === 'ArrowUp') &&
+      (event.target === document.body || event.target === document.documentElement)) {
+    const rows = [...elements.cameraList.querySelectorAll('.camera-row:not(:disabled)')];
+    const row = event.key === 'ArrowDown' ? rows[0] : rows[rows.length - 1];
+    if (row) { event.preventDefault(); row.focus(); }
+    return;
+  }
+  // Space on a camera controls all streams; other controls retain native activation.
+  if (event.key === ' ' && event.target.closest('button, [role="button"], a') && !event.target.closest('.camera-row')) return;
+  const key = event.key.toLowerCase();
+  const actions = {
+    '/': () => elements.cameraSearch.focus(),
+    ' ': () => { if (!elements.stopAll.disabled) elements.stopAll.click(); },
+    v: () => elements.surveillanceToggle.click(),
+    a: () => { if (!elements.audioToggle.disabled) elements.audioToggle.click(); },
+    g: () => setMode(state.mode === 'live' ? 'playback' : 'live'),
+    t: () => setDisplayVisibility({ timeline: !state.timelineVisible }),
+    m: () => setDisplayVisibility({ thumbnails: !state.thumbnailsVisible }),
+    d: () => setDisplayVisibility({ overlays: !state.overlaysVisible }),
+    f: () => { const player = state.tiles.get(state.focused); if (player) void toggleTileFullscreen(player.tile, state.focused); }
+  };
+  if (actions[key]) { event.preventDefault(); actions[key](); }
 });
 
+setupMosaics();
 updateOverlayState();
 clockTick();
 window.setInterval(clockTick, 1000);

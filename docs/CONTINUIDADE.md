@@ -1,6 +1,6 @@
 # Continuidade do Digifort Monitor
 
-A linha de trabalho atual é a versão 1.0.0 do instalador Windows. O histórico da implementação inicial está no [plano arquivado](historico/PLANO-INICIAL.md). Consulte as [notas de versão](NOTAS-DE-VERSAO.md) para o que foi entregue e as [issues](https://github.com/steffmartin/digifort/issues) para o estado de propostas e bugs.
+A linha de trabalho atual prepara a versão 1.1.0 do instalador Windows. O histórico da implementação inicial está no [plano arquivado](historico/PLANO-INICIAL.md). Consulte as [notas de versão](NOTAS-DE-VERSAO.md) para o que foi entregue e as [issues](https://github.com/steffmartin/digifort/issues) para o estado de propostas e bugs.
 
 ## Arquitetura vigente
 
@@ -13,7 +13,7 @@ O [manual e a transcrição OpenAPI](api/README.md) ficam juntos. Use o manual p
 
 ## Validação e limites
 
-No Windows 11 local, foram validados o assistente, a importação e o preenchimento parcial, a preservação de arquivos em reinstalação e desinstalação, o aviso de porta ocupada, a janela única, o encerramento pelo diálogo e a restauração da geometria. A execução com `PATH` restrito usou o Node incluído no pacote. Ainda falta validar a instalação em outra máquina limpa e ampliar os testes com câmeras reais, incluindo HEVC, áudio e revisão.
+No Windows 11 local, foram validados o assistente, a importação e o preenchimento parcial, a preservação de arquivos em reinstalação e desinstalação, o aviso de porta ocupada, a janela única, o encerramento pelo diálogo e a restauração da geometria. A execução com `PATH` restrito usou o Node incluído no pacote. Na integração posterior, o instalador foi compilado e a criação de configuração, o diálogo e as grades foram verificados com dados sintéticos. Ainda faltam validar o pacote integrado no Windows 10 e os fluxos combinados com câmeras reais, incluindo HEVC, áudio, revisão e captura.
 
 O [plano arquivado](historico/PLANO-INICIAL.md#handoff--falha-de-transporte-em-getcameras) registra o `FETCH_ERROR` observado em `GetCameras` e a diferença entre a chamada do Node e a resposta informada no navegador. Consulte o histórico e a issue correspondente antes de reproduzir. Use uma configuração sintética e confirme a origem do processo que ocupa a porta local. Registre códigos e categorias de erro sem valores de autenticação ou payloads de mídia.
 

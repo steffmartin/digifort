@@ -27,6 +27,7 @@
           <span class="state-dot" aria-hidden="true"></span>
           <span id="connectionLabel">Sem conexão</span>
         </div>
+        <button id="manageConfigs" type="button" aria-label="Gerenciar configurações" title="Gerenciar configurações">⚙</button>
         <div class="topbar-spacer"></div>
         <div class="clock-block">
           <span id="clockTime" class="clock-time">--:--:--</span>
@@ -56,6 +57,7 @@
           <div class="rail-footer">
             <span class="server-time-zone" id="serverTimeZone">Fuso horário não definido</span>
             <span class="read-only-tag"><span aria-hidden="true">◉</span> Somente leitura</span>
+            <button id="openShortcuts" class="shortcuts-help" type="button" aria-label="Atalhos de teclado" title="Atalhos de teclado">⌨</button>
           </div>
         </aside>
 
@@ -79,10 +81,23 @@
               <button id="playReview" class="button-primary" type="button">Reproduzir</button>
             </div>
             <div class="topbar-spacer"></div>
+            <div class="audio-control-wrap">
+              <label class="field-label" for="audioSource">Em foco:</label>
+              <select id="audioSource" disabled aria-label="Fonte do áudio">
+                <option value="">Nenhuma câmera aberta</option>
+              </select>
+              <button id="audioToggle" class="icon-button audio-toggle" type="button" aria-label="Ativar áudio" title="Ativar áudio" aria-pressed="false" disabled>
+                <svg class="speaker-icon" viewBox="0 0 20 20" aria-hidden="true"><path class="speaker-body" d="M3 8v4h3l4 3V5L6 8H3Z"></path><path class="speaker-waves" d="M13 7.2a4 4 0 0 1 0 5.6M15 5a7 7 0 0 1 0 10"></path><path class="speaker-muted" d="m13 8 4 4m0-4-4 4"></path></svg>
+              </button>
+              <button class="icon-button stop-all-button" id="stopAll" type="button" title="Parar todas as câmeras" aria-label="Parar todas as câmeras" aria-pressed="false" data-state="active" disabled>
+                <svg viewBox="0 0 20 20" aria-hidden="true"><path class="pause-icon" d="M6 5v10M14 5v10"></path><path class="play-icon" d="M7 4.5v11l9-5.5-9-5.5Z"></path></svg>
+              </button>
+            </div>
+            <div class="command-divider" aria-hidden="true"></div>
             <label class="mosaic-control" for="mosaicSelect"><span class="mosaic-preview" id="mosaicPreview" aria-hidden="true"></span><select id="mosaicSelect" aria-label="Composição da grade de câmeras"></select></label>
             <div class="display-control" id="displayControl">
               <button class="overlay-toggle" id="overlayToggle" type="button" aria-pressed="false">Mostrar tudo</button>
-              <button class="display-menu-toggle" id="displayMenuToggle" type="button" aria-label="Opções de exibição" aria-haspopup="menu" aria-expanded="false" aria-controls="displayMenu"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5.5 7.5 4.5 4.5 4.5-4.5"></path></svg></button>
+              <button class="display-menu-toggle" id="displayMenuToggle" type="button" title="Opções de exibição" aria-label="Opções de exibição" aria-haspopup="menu" aria-expanded="false" aria-controls="displayMenu"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5.5 7.5 4.5 4.5 4.5-4.5"></path></svg></button>
               <div class="display-menu" id="displayMenu" role="menu" aria-label="Opções de exibição" hidden>
                 <button class="display-menu-item" id="toggleOverlayVisibility" type="button" role="menuitemcheckbox" aria-checked="false">Mostrar dados</button>
                 <button class="display-menu-item" id="toggleTimelineVisibility" type="button" role="menuitemcheckbox" aria-checked="true">Ocultar timeline</button>
@@ -91,19 +106,6 @@
             </div>
             <button class="icon-button surveillance-toggle" id="surveillanceToggle" type="button" aria-pressed="false" aria-label="Ativar modo vigilância" title="Modo vigilância">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5"></path></svg>
-            </button>
-            <div class="audio-control-wrap">
-              <label class="field-label" for="audioSource">Áudio de</label>
-              <select id="audioSource" disabled aria-label="Fonte do áudio">
-                <option value="">Nenhuma câmera aberta</option>
-              </select>
-              <button id="audioToggle" class="audio-toggle" type="button" aria-pressed="false" disabled>
-                <svg class="speaker-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 8v4h3l4 3V5L6 8H3Z"></path><path d="M13 7.2a4 4 0 0 1 0 5.6M15 5a7 7 0 0 1 0 10"></path></svg>
-                <span>Ativar áudio</span>
-              </button>
-            </div>
-            <button class="icon-button stop-all-button" id="stopAll" type="button" title="Parar todas as câmeras" aria-label="Parar todas as câmeras" aria-pressed="false" data-state="active" disabled>
-              <svg viewBox="0 0 20 20" aria-hidden="true"><path class="pause-icon" d="M6 5v10M14 5v10"></path><path class="play-icon" d="M7 4.5v11l9-5.5-9-5.5Z"></path></svg>
             </button>
           </section>
           <p class="visually-hidden" id="viewSubtitle" aria-live="polite">Escolha uma câmera para começar.</p>
@@ -157,6 +159,29 @@
       </div>
       <button id="exitSurveillance" class="exit-surveillance" type="button" hidden>Sair do modo vigilância · Esc</button>
       <div id="contextMenu" class="context-menu" role="menu" hidden></div>
+      <dialog class="record-dialog shortcut-dialog" id="shortcutDialog" aria-labelledby="shortcutDialogTitle">
+        <form method="dialog">
+          <h2 id="shortcutDialogTitle">Atalhos de teclado</h2>
+          <dl class="shortcut-list">
+            <dt>Buscar câmera</dt><dd>/</dd><dt>Ampliar ou restaurar câmera em foco</dt><dd>F</dd>
+            <dt>Sair da ampliação ou vigilância</dt><dd>Esc</dd><dt>Pausar ou retomar todas</dt><dd>Espaço</dd>
+            <dt>Alternar vigilância</dt><dd>V</dd><dt>Alternar áudio</dt><dd>A</dd>
+            <dt>Alternar ao vivo e gravado</dt><dd>G</dd><dt>Mostrar ou ocultar timeline</dt><dd>T</dd>
+            <dt>Mostrar ou ocultar miniaturas</dt><dd>M</dd><dt>Mostrar ou ocultar dados</dt><dd>D</dd>
+            <dt>Grade automática / grades fixas</dt><dd>Ctrl+Alt+A / Ctrl+Alt+1–6</dd>
+            <dt>Navegar / abrir ou fechar câmera</dt><dd>↑ ↓ / Enter</dd>
+            <dt>Capturar câmera em foco / todas</dt><dd>Ctrl+PrintScreen / Ctrl+Shift+PrintScreen</dd>
+          </dl>
+          <p class="shortcut-note">Para revisar a câmera em foco, use Ctrl+1 a Ctrl+0; para todas, acrescente Shift. A revisão de uma câmera fecha as demais.</p>
+          <dl class="shortcut-list">
+            <dt>30 segundos / 1 minuto / 30 minutos</dt><dd>1 / 2 / 3</dd>
+            <dt>1 / 6 / 12 horas</dt><dd>4 / 5 / 6</dd>
+            <dt>1 / 2 / 3 dias</dt><dd>7 / 8 / 9</dd>
+            <dt>1 semana</dt><dd>0</dd>
+          </dl>
+          <div class="record-dialog-actions"><button>Fechar</button></div>
+        </form>
+      </dialog>
       <dialog class="record-dialog" id="recordDialog" aria-labelledby="recordDialogTitle">
         <form method="dialog" id="recordForm">
           <h2 id="recordDialogTitle">Iniciar gravação local</h2>
@@ -173,16 +198,30 @@
           </div>
         </form>
       </dialog>
-      <dialog class="record-dialog config-dialog" id="configDialog" aria-labelledby="configDialogTitle" aria-describedby="configDialogMessage">
-        <form method="dialog">
-          <h2 id="configDialogTitle">Configure um servidor Digifort</h2>
-          <p id="configDialogMessage"></p>
-          <code id="configDialogPath"></code>
-          <p>Use <code>example.config</code> como modelo e salve a sua configuração como <code>&lt;servidor&gt;.config</code>.</p>
+      <dialog class="record-dialog config-dialog" id="configDialog" aria-labelledby="configDialogTitle">
+        <form id="configForm" autocomplete="off">
+          <h2 id="configDialogTitle">Configurações de servidor</h2>
+          <p id="configDialogMessage" role="status"></p>
+          <label>Configuração <select id="configChoice"></select></label>
+          <div class="config-grid">
+            <label>Identificador do arquivo <input name="id" required pattern="[a-zA-Z0-9_.-]{1,120}" placeholder="servidor" /></label>
+            <label>Nome <input name="name" required /></label>
+            <label>Endereço HTTP ou HTTPS <input name="serverAddress" type="url" required placeholder="http://servidor:8601" /></label>
+            <label>User-Agent <input name="userAgent" required value="custom" /></label>
+            <label>Usuário <input name="username" required autocomplete="off" /></label>
+            <label>Senha <span class="password-field"><input name="password" type="password" autocomplete="new-password" /><button id="toggleConfigPassword" type="button" aria-label="Mostrar senha" title="Mostrar senha">◉</button></span><small id="passwordHint"></small></label>
+            <label>Fuso horário IANA <input name="timeZone" required value="America/Sao_Paulo" /></label>
+            <label>Mosaico inicial <select name="initialMosaic" id="configMosaic"></select></label>
+            <label>Pasta de mídia <input name="mediaFolder" /></label>
+            <label>Pasta de screenshots <input name="screenshotFolder" /></label>
+            <label>Pasta de vídeos <input name="videoFolder" /></label>
+            <label class="config-check"><input name="useBasicAuth" type="checkbox" /> Usar autenticação básica</label>
+            <label class="config-wide">Câmeras iniciais (uma por linha: nome | Visualization ou Recording)<textarea name="initialCameras" rows="3"></textarea></label>
+          </div>
           <div class="record-dialog-actions">
+            <button id="deleteConfig" type="button">Excluir</button>
             <button id="closeConfigApp" type="button">Fechar</button>
-            <button id="openConfigFolder" type="button" hidden>Abrir pasta de configurações</button>
-            <button class="config-retry" id="reloadConfigs" type="button">Verificar novamente</button>
+            <button class="config-retry" id="saveConfig" type="button">Salvar</button>
           </div>
         </form>
       </dialog>

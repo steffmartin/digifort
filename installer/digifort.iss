@@ -14,7 +14,7 @@
   #define ProductName "Digifort Monitor"
 #endif
 #ifndef ProductVersion
-  #define ProductVersion "1.0.0"
+  #define ProductVersion "1.1.0"
 #endif
 
 [Setup]
@@ -29,7 +29,7 @@ DisableDirPage=yes
 PrivilegesRequired=lowest
 ArchitecturesAllowed=x64os
 ArchitecturesInstallIn64BitMode=x64os
-MinVersion=10.0.22000
+MinVersion=10.0.10240
 OutputDir={#OutputPath}
 OutputBaseFilename=Digifort-Monitor-Setup-{#ProductVersion}
 Compression=lzma2
@@ -63,8 +63,10 @@ Source: "{#StageDir}\example.config"; DestDir: "{#UserDataDir}\config"; Flags: o
 
 [Icons]
 Name: "{group}\Digifort Monitor"; Filename: "{app}\DigifortMonitor.exe"
-Name: "{group}\Pasta de configurações"; Filename: "{app}\DigifortMonitor.exe"; Parameters: "--config-folder"
 Name: "{userdesktop}\Digifort Monitor"; Filename: "{app}\DigifortMonitor.exe"; Tasks: desktopicon
+
+[InstallDelete]
+Type: files; Name: "{group}\Pasta de configurações.lnk"
 
 [Run]
 Filename: "{app}\DigifortMonitor.exe"; Description: "Abrir o Digifort Monitor"; Flags: nowait postinstall skipifsilent
@@ -203,7 +205,7 @@ begin
   MosaicCombo.Width := OptionsPage.SurfaceWidth;
   Mosaics := TStringList.Create;
   try
-    Mosaics.CommaText := 'auto,2x2,3x3-six,4x4-eight,3x3,4x4-ten,4x4-thirteen-a,4x4-thirteen-b,4x4-center,4x4,5x5';
+    Mosaics.CommaText := 'auto,3x3-six,4x4-eight,4x4-ten,4x4-thirteen-a,4x4-thirteen-b,4x4-center';
     for I := 0 to Mosaics.Count - 1 do MosaicCombo.Items.Add(Mosaics[I]);
   finally
     Mosaics.Free;

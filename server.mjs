@@ -86,9 +86,8 @@ function parseConfig(id, value) {
   for (const [camera, profile] of Object.entries(initialCameras)) {
     if (!camera.trim() || !['Visualization', 'Recording'].includes(profile)) throw new Error('Cada câmera inicial precisa ter um nome e o perfil Visualization ou Recording.');
   }
-  const mosaicIds = new Set(['auto', '2x2', '3x3-six', '4x4-eight', '3x3', '4x4-ten', '4x4-thirteen-a', '4x4-thirteen-b', '4x4-center', '4x4', '5x5']);
-  const initialMosaic = value.initialMosaic ?? 'auto';
-  if (typeof initialMosaic !== 'string' || !mosaicIds.has(initialMosaic)) throw new Error('initialMosaic deve corresponder a um mosaico disponível.');
+  const mosaicIds = new Set(['auto', '3x3-six', '4x4-eight', '4x4-ten', '4x4-thirteen-a', '4x4-thirteen-b', '4x4-center']);
+  const initialMosaic = mosaicIds.has(value.initialMosaic) ? value.initialMosaic : 'auto';
   for (const key of ['mediaFolder', 'screenshotFolder', 'videoFolder']) {
     if (value[key] !== undefined && typeof value[key] !== 'string') throw new Error(`${key} deve ser um caminho de pasta ou uma string vazia.`);
   }
@@ -511,6 +510,45 @@ async function handleApi(req, res, url) {
       }
       const command = url.pathname === '/api/config-folder' ? 'DIGIFORT_OPEN_CONFIG' : 'DIGIFORT_CLOSE_APP';
       return res.once('finish', () => process.stdout.write(`${command}\n`)).writeHead(204).end();
+    }
+    if (url.pathname === '/api/config') {
+      if (req.headers.host !== `${HOST}:${PORT}` || (req.method !== 'GET' && req.headers.origin !== `http://${HOST}:${PORT}`)) return sendJson(res, 403, { error: 'Solicitação de outra origem.' });
+      const id = queryValue(url, 'server');
+      if (!safeId(id) || id.toLowerCase() === 'example') throw new Error('Identificador de configuração inválido.');
+      const configPath = path.join(CONFIG_DIR, `${id}.config`);
+      if (req.method === 'GET') {
+        const value = await readConfig(id);
+        const fields = Object.fromEntries(['name', 'serverAddress', 'userAgent', 'username', 'timeZone', 'mediaFolder', 'screenshotFolder', 'videoFolder', 'initialMosaic', 'useBasicAuth', 'initialCameras'].filter(key => Object.hasOwn(value, key)).map(key => [key, value[key]]));
+        return sendJson(res, 200, { fields, hasPassword: typeof value.password === 'string' });
+      }
+      if (req.method === 'DELETE') {
+        await fs.unlink(configPath);
+        configs.delete(id);
+        if (activeServerId === id) activateServer('');
+        return sendJson(res, 200, { ok: true });
+      }
+      if (req.method === 'PUT' || req.method === 'POST') {
+        let body = '';
+        for await (const chunk of req) {
+          body += chunk;
+          if (body.length > 65536) throw new Error('Configuração muito grande.');
+        }
+        let fields;
+        try { fields = JSON.parse(body); } catch { throw new Error('Configuração JSON inválida.'); }
+        if (!fields || typeof fields !== 'object' || Array.isArray(fields)) throw new Error('Configuração inválida.');
+        let previous = {};
+        if (req.method === 'PUT') previous = await readConfig(id);
+        const value = { ...previous, ...fields };
+        if (!Object.hasOwn(fields, 'password')) value.password = previous.password;
+        parseConfig(id, value);
+        await fs.mkdir(CONFIG_DIR, { recursive: true });
+        if (req.method === 'POST') await fs.writeFile(configPath, JSON.stringify(value, null, 2) + '\n', { flag: 'wx' });
+        else await fs.writeFile(configPath, JSON.stringify(value, null, 2) + '\n');
+        configs.delete(id);
+        if (activeServerId === id) activateServer('');
+        return sendJson(res, 200, { ok: true });
+      }
+      return sendJson(res, 405, { error: 'Método não disponível.' });
     }
     if (req.method !== 'GET') return sendJson(res, 405, { error: 'Método não disponível.' });
     if (url.pathname === '/api/servers') {
