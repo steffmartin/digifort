@@ -57,6 +57,7 @@
           <div class="rail-footer">
             <span class="server-time-zone" id="serverTimeZone">Fuso horário não definido</span>
             <span class="read-only-tag"><span aria-hidden="true">◉</span> Somente leitura</span>
+            <button id="openShortcuts" class="shortcuts-help" type="button" aria-label="Atalhos de teclado" title="Atalhos de teclado">⌨</button>
           </div>
         </aside>
 
@@ -158,6 +159,29 @@
       </div>
       <button id="exitSurveillance" class="exit-surveillance" type="button" hidden>Sair do modo vigilância · Esc</button>
       <div id="contextMenu" class="context-menu" role="menu" hidden></div>
+      <dialog class="record-dialog shortcut-dialog" id="shortcutDialog" aria-labelledby="shortcutDialogTitle">
+        <form method="dialog">
+          <h2 id="shortcutDialogTitle">Atalhos de teclado</h2>
+          <dl class="shortcut-list">
+            <dt>Buscar câmera</dt><dd>/</dd><dt>Ampliar ou restaurar câmera em foco</dt><dd>F</dd>
+            <dt>Sair da ampliação ou vigilância</dt><dd>Esc</dd><dt>Pausar ou retomar todas</dt><dd>Espaço</dd>
+            <dt>Alternar vigilância</dt><dd>V</dd><dt>Alternar áudio</dt><dd>A</dd>
+            <dt>Alternar ao vivo e gravado</dt><dd>G</dd><dt>Mostrar ou ocultar timeline</dt><dd>T</dd>
+            <dt>Mostrar ou ocultar miniaturas</dt><dd>M</dd><dt>Mostrar ou ocultar dados</dt><dd>D</dd>
+            <dt>Grade automática / grades fixas</dt><dd>Ctrl+Alt+A / Ctrl+Alt+1–0</dd>
+            <dt>Navegar / abrir ou fechar câmera</dt><dd>↑ ↓ / Enter</dd>
+            <dt>Capturar câmera em foco / todas</dt><dd>Ctrl+PrintScreen / Ctrl+Shift+PrintScreen</dd>
+          </dl>
+          <p class="shortcut-note">Para revisar a câmera em foco, use Ctrl+1 a Ctrl+0; para todas, acrescente Shift. A revisão de uma câmera fecha as demais.</p>
+          <dl class="shortcut-list">
+            <dt>30 segundos / 1 minuto / 30 minutos</dt><dd>1 / 2 / 3</dd>
+            <dt>1 / 6 / 12 horas</dt><dd>4 / 5 / 6</dd>
+            <dt>1 / 2 / 3 dias</dt><dd>7 / 8 / 9</dd>
+            <dt>1 semana</dt><dd>0</dd>
+          </dl>
+          <div class="record-dialog-actions"><button>Fechar</button></div>
+        </form>
+      </dialog>
       <dialog class="record-dialog" id="recordDialog" aria-labelledby="recordDialogTitle">
         <form method="dialog" id="recordForm">
           <h2 id="recordDialogTitle">Iniciar gravação local</h2>
