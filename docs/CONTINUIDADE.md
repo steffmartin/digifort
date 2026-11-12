@@ -1,6 +1,6 @@
 # Continuidade do Digifort Monitor
 
-A linha de trabalho atual é a versão 1.0.0 do instalador Windows. O histórico da implementação inicial está no [plano arquivado](historico/PLANO-INICIAL.md). Consulte as [notas de versão](NOTAS-DE-VERSAO.md) para o que foi entregue e as [issues](https://github.com/steffmartin/digifort/issues) para o estado de propostas e bugs.
+A linha de trabalho atual prepara a versão 1.1.0 do instalador Windows. O histórico da implementação inicial está no [plano arquivado](historico/PLANO-INICIAL.md). Consulte as [notas de versão](NOTAS-DE-VERSAO.md) para o que foi entregue e as [issues](https://github.com/steffmartin/digifort/issues) para o estado de propostas e bugs.
 
 ## Arquitetura vigente
 
