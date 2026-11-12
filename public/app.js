@@ -730,27 +730,41 @@ async function configRequest(method, id, fields) {
   if (!response.ok) throw new Error(result.error || 'Não foi possível salvar a configuração.');
 }
 
-configForm.addEventListener('submit', async event => {
-  event.preventDefault();
+async function saveConfig() {
+  if (!configForm.reportValidity()) return;
+  $('#saveConfig').disabled = true;
   const f = configForm.elements;
   const id = f.id.value.trim();
   const initialCameras = Object.create(null);
   for (const line of f.initialCameras.value.split('\n').filter(line => line.trim())) {
     const parts = line.split('|').map(part => part.trim());
     if (parts.length !== 2 || !parts[0] || !['Visualization', 'Recording'].includes(parts[1]) || Object.hasOwn(initialCameras, parts[0])) {
-      elements.configDialogMessage.textContent = 'Informe cada câmera uma vez, no formato nome | Visualization ou nome | Recording.'; return;
+      elements.configDialogMessage.textContent = 'Informe cada câmera uma vez, no formato nome | Visualization ou nome | Recording.';
+      $('#saveConfig').disabled = false; return;
     }
     initialCameras[parts[0]] = parts[1];
   }
   const fields = { name: f.name.value, serverAddress: f.serverAddress.value, userAgent: f.userAgent.value, username: f.username.value, timeZone: f.timeZone.value, mediaFolder: f.mediaFolder.value, screenshotFolder: f.screenshotFolder.value, videoFolder: f.videoFolder.value, initialMosaic: f.initialMosaic.value, useBasicAuth: f.useBasicAuth.checked, initialCameras };
   if (f.password.value || !configChoice.value) fields.password = f.password.value;
+  f.password.value = '';
   try {
     await configRequest(configChoice.value ? 'PUT' : 'POST', id, fields);
     if (id === state.serverId) configChangedActive = true;
     const result = await apiJson('/api/servers'); state.servers = result.servers;
     refreshConfigChoices(id); await loadConfigForm(id);
     elements.configDialogMessage.textContent = 'Configuração salva.';
-  } catch (error) { elements.configDialogMessage.textContent = error.message; }
+  } catch (error) {
+    if (Object.hasOwn(fields, 'password')) f.password.value = fields.password;
+    elements.configDialogMessage.textContent = error.message;
+  } finally { $('#saveConfig').disabled = false; }
+}
+$('#saveConfig').addEventListener('click', saveConfig);
+configForm.addEventListener('submit', event => event.preventDefault());
+configForm.addEventListener('keydown', event => {
+  if (event.key === 'Enter' && !event.isComposing && event.target.tagName !== 'TEXTAREA' && event.target.tagName !== 'BUTTON') {
+    event.preventDefault();
+    if (!$('#saveConfig').disabled) void saveConfig();
+  }
 });
 $('#deleteConfig').addEventListener('click', async () => {
   const id = configChoice.value;

@@ -175,7 +175,7 @@
         </form>
       </dialog>
       <dialog class="record-dialog config-dialog" id="configDialog" aria-labelledby="configDialogTitle">
-        <form id="configForm">
+        <form id="configForm" autocomplete="off">
           <h2 id="configDialogTitle">Configurações de servidor</h2>
           <p id="configDialogMessage" role="status"></p>
           <label>Configuração <select id="configChoice"></select></label>
@@ -197,7 +197,7 @@
           <div class="record-dialog-actions">
             <button id="deleteConfig" type="button">Excluir</button>
             <button id="closeConfigApp" type="button">Fechar</button>
-            <button class="config-retry" type="submit">Salvar</button>
+            <button class="config-retry" id="saveConfig" type="button">Salvar</button>
           </div>
         </form>
       </dialog>
