@@ -86,7 +86,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, [role="button"]
 .camera-add { margin-left: auto; color: var(--live); opacity: 0; font-size: 17px; }
 .camera-row:hover .camera-add, .camera-row:focus-visible .camera-add { opacity: 1; }
 .rail-empty { margin: 22px 18px; color: var(--muted); font-size: 11px; line-height: 1.55; }
-.rail-footer { display: grid; gap: 10px; padding: 14px 18px 16px; border-top: 1px solid var(--line); }
+.rail-footer { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 8px; row-gap: 10px; padding: 14px 18px 16px; border-top: 1px solid var(--line); }
 .server-time-zone { color: var(--dim); font: 9px var(--mono); }
 .read-only-tag { display: inline-flex; align-items: center; gap: 6px; color: var(--live); font-size: 10px; }
 
@@ -310,7 +310,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, [role="button"]
   .thumbnail-card .thumbnail-spinner { animation: none; }
 }
 
-.shortcuts-help { justify-self: start; padding: 2px 5px; border: 0; background: transparent; color: var(--muted); font-size: 17px; line-height: 1; }
+.shortcuts-help { grid-column: 2; grid-row: 1 / span 2; align-self: center; justify-self: end; padding: 2px 5px; border: 0; background: transparent; color: var(--muted); font-size: 17px; line-height: 1; }
 .shortcuts-help:hover, .shortcuts-help:focus-visible { color: var(--text); }
 .shortcut-dialog { max-height: calc(100dvh - 32px); overflow: auto; }
 .shortcut-list { display: grid; grid-template-columns: 1fr auto; gap: 8px 20px; margin: 0; font-size: 11px; }
@@ -322,3 +322,5 @@ button[data-shortcut]:hover::after, button[data-shortcut]:focus-visible::after {
 .context-shortcut { margin-left: auto; color: var(--muted); font-size: 10px; white-space: nowrap; }
 
 .shortcut-note { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.5; }
+
+.rail-footer > :not(.shortcuts-help) { grid-column: 1; }

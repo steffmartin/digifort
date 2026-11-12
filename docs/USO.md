@@ -64,4 +64,6 @@ Finalize a gravação para salvar o arquivo completo. Se fechar o aplicativo dur
 
 Abra **Atalhos de teclado** no rodapé da lista de câmeras para consultar os comandos. Os atalhos ficam suspensos durante a edição de campos e enquanto um diálogo está aberto. Espaço mantém a ativação normal quando um botão está em foco.
 
-Para revisar a câmera em foco, use `Ctrl+1` a `Ctrl+0`; acrescente `Shift` para revisar todas. A ordem é 30 segundos, 1 minuto, 30 minutos, 1 hora, 6 horas, 12 horas, 1 dia, 2 dias, 3 dias e 1 semana. Como no menu de contexto, revisar apenas a câmera em foco fecha as demais e seleciona a grade automática. Em uma aba normal do navegador, `Ctrl+1` a `Ctrl+9` podem trocar de guia e `Ctrl+0` pode redefinir o zoom; use o modo aplicativo ou o menu de contexto.
+Para revisar a câmera em foco, use `Ctrl+1` a `Ctrl+0`; acrescente `Shift` para revisar todas. A ordem é 30 segundos, 1 minuto, 30 minutos, 1 hora, 6 horas, 12 horas, 1 dia, 2 dias, 3 dias e 1 semana. Como no menu de contexto, revisar apenas a câmera em foco fecha as demais e seleciona a grade automática.
+
+Na lista lateral, use as setas para navegar entre câmeras e Enter para abrir ou fechar. Para selecionar mosaicos, use `Ctrl+Alt+A` para automático e `Ctrl+Alt+1` até `Ctrl+Alt+0` para as grades fixas na ordem do seletor.
