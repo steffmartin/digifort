@@ -81,8 +81,18 @@ const MOSAICS = [
 function getMosaic(id = state.mosaic) { return MOSAICS.find(item => item.id === id) || MOSAICS[0]; }
 
 function setupMosaics(initial = 'auto') {
-  elements.mosaicSelect.replaceChildren(...MOSAICS.map(item => new Option(item.name, item.id)));
+  elements.mosaicSelect.replaceChildren(...MOSAICS.map((item, index) => {
+    const option = new Option(item.name, item.id);
+    option.title = `Ctrl+Alt+${index ? index % 10 : 'A'}`;
+    return option;
+  }));
   elements.mosaicSelect.title = MOSAICS.map((item, index) => `${item.name}: Ctrl+Alt+${index ? index % 10 : 'A'}`).join('\n');
+  const shortcuts = $('#mosaicShortcuts');
+  shortcuts.replaceChildren(...MOSAICS.flatMap((item, index) => {
+    const label = document.createElement('dt'); label.textContent = item.name;
+    const key = document.createElement('dd'); key.textContent = `Ctrl+Alt+${index ? index % 10 : 'A'}`;
+    return [label, key];
+  }));
   state.mosaic = MOSAICS.some(item => item.id === initial) ? initial : 'auto';
   elements.mosaicSelect.value = state.mosaic;
   applyMosaic();
@@ -2397,7 +2407,7 @@ document.addEventListener('keydown', event => {
     elements.cameraSearch.value = ''; drawCameraList(); elements.cameraSearch.blur(); return;
   }
   if (event.defaultPrevented || event.repeat || document.querySelector('dialog[open]') ||
-      event.target.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"])') ||
+      event.target.closest('input, textarea, [contenteditable]:not([contenteditable="false"])') ||
       !elements.displayMenu.hidden) return;
   if (event.ctrlKey && event.altKey && !event.metaKey && !event.shiftKey && !event.getModifierState('AltGraph')) {
     const digit = /^Digit[0-9]$/.test(event.code) ? Number(event.code.slice(-1)) : null;
@@ -2405,6 +2415,7 @@ document.addEventListener('keydown', event => {
     if (index !== null && MOSAICS[index]) { event.preventDefault(); selectMosaic(MOSAICS[index].id); }
     return;
   }
+  if (event.target.closest('select')) return;
   if (event.ctrlKey && !event.altKey && !event.metaKey && /^Digit[0-9]$/.test(event.code)) {
     const camera = !elements.contextMenu.hidden && !event.shiftKey ? state.contextCamera : state.focused;
     if (!camera || (event.shiftKey && !state.tiles.has(camera))) return;
@@ -2424,8 +2435,15 @@ document.addEventListener('keydown', event => {
     return;
   }
   if (!elements.contextMenu.hidden || event.ctrlKey || event.altKey || event.metaKey || event.shiftKey) return;
-  // Space retains its native activation behavior on interactive controls.
-  if (event.key === ' ' && event.target.closest('button, [role="button"], a')) return;
+  if ((event.key === 'ArrowDown' || event.key === 'ArrowUp') &&
+      (event.target === document.body || event.target === document.documentElement)) {
+    const rows = [...elements.cameraList.querySelectorAll('.camera-row:not(:disabled)')];
+    const row = event.key === 'ArrowDown' ? rows[0] : rows[rows.length - 1];
+    if (row) { event.preventDefault(); row.focus(); }
+    return;
+  }
+  // Space on a camera controls all streams; other controls retain native activation.
+  if (event.key === ' ' && event.target.closest('button, [role="button"], a') && !event.target.closest('.camera-row')) return;
   const key = event.key.toLowerCase();
   const actions = {
     '/': () => elements.cameraSearch.focus(),
@@ -2441,6 +2459,7 @@ document.addEventListener('keydown', event => {
   if (actions[key]) { event.preventDefault(); actions[key](); }
 });
 
+setupMosaics();
 updateOverlayState();
 clockTick();
 window.setInterval(clockTick, 1000);

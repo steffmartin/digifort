@@ -62,7 +62,7 @@ Finalize a gravação para salvar o arquivo completo. Se fechar o aplicativo dur
 
 ## Atalhos de teclado
 
-Abra **Atalhos de teclado** no rodapé da lista de câmeras para consultar os comandos. Os atalhos ficam suspensos durante a edição de campos e enquanto um diálogo está aberto. Espaço mantém a ativação normal quando um botão está em foco.
+Abra **Atalhos de teclado** no rodapé da lista de câmeras para consultar os comandos. Os atalhos ficam suspensos durante a edição de campos e enquanto um diálogo está aberto. Espaço controla todas as câmeras quando o foco está na lista lateral; em outros botões, mantém a ativação normal.
 
 Para revisar a câmera em foco, use `Ctrl+1` a `Ctrl+0`; acrescente `Shift` para revisar todas. A ordem é 30 segundos, 1 minuto, 30 minutos, 1 hora, 6 horas, 12 horas, 1 dia, 2 dias, 3 dias e 1 semana. Como no menu de contexto, revisar apenas a câmera em foco fecha as demais e seleciona a grade automática.
 
