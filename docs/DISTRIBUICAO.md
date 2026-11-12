@@ -22,6 +22,8 @@ Gere o instalador a partir do commit da versão. Use a tag `v1.0.0` e as [notas 
 
 ## Instalação e execução
 
+O instalador atual exige Windows x64 e aceita Windows 10 a partir da compilação 10240 e Windows 11. O build integrado foi compilado no Windows 11; a instalação e a execução no Windows 10 ainda precisam ser validadas. A disponibilidade e o suporte do navegador variam conforme a versão do sistema.
+
 O instalador roda por usuário em `%LOCALAPPDATA%\Programs\Digifort Monitor` e funciona offline. O instalador e o inicializador procuram Google Chrome, Chromium e Microsoft Edge, nessa ordem, nas pastas padrão, nas entradas App Paths do Windows e no `PATH`. O Edge usa um perfil dedicado separado, com sincronização desativada. A disponibilidade de H.264, AAC e HEVC depende do navegador e, para HEVC, da configuração do sistema.
 
 O atalho inicia o executável gráfico e o Node distribuído no pacote. A janela em modo aplicativo abre quando o Node confirma que está escutando em `127.0.0.1:4177`. Se a porta estiver ocupada, o Digifort exibe um aviso. O inicializador acompanha a janela e usa objetos de trabalho do Windows para encerrar a árvore de processos que iniciou. Ao fechar durante uma gravação, o servidor tenta finalizar os blocos recebidos por completo. Uma gravação sem blocos completos é descartada.

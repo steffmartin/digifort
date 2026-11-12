@@ -2,13 +2,15 @@
 
 ## Instalar e abrir
 
-No Windows 11 x64, execute o instalador com Google Chrome, Chromium compatível ou Microsoft Edge já instalado. Consulte as notas da release para confirmar os navegadores aceitos pelo pacote baixado. No assistente, importe um `.config`, preencha os dados do primeiro servidor ou escolha **Pular por enquanto**. O preenchimento parcial pode ser salvo para completar depois. Na página **Preferências do servidor**, configure o mosaico inicial e as câmeras que devem abrir ao conectar.
+No Windows x64, execute o instalador com Google Chrome, Chromium compatível ou Microsoft Edge já instalado. O instalador atual aceita Windows 10 e 11; a validação no Windows 10 permanece pendente. Consulte as notas da release para confirmar os requisitos do pacote baixado. No assistente, importe um `.config`, preencha os dados do primeiro servidor ou escolha **Pular por enquanto**. O preenchimento parcial pode ser salvo para completar depois. Na página **Preferências do servidor**, configure o mosaico inicial e as câmeras que devem abrir ao conectar.
 
 Abra **Digifort Monitor** no menu Iniciar ou pelo atalho na área de trabalho, se selecionado na instalação. Fechar a janela encerra o servidor local. Na próxima abertura, o aplicativo restaura a posição, o tamanho e o estado de maximização da janela. Consulte [Distribuição](DISTRIBUICAO.md) para verificar o pacote, atualizar ou desinstalar.
 
 ## Configurar um servidor
 
 Use o botão de configurações ao lado do estado de conexão para criar, editar ou excluir servidores. Os arquivos ficam em `%LOCALAPPDATA%\Digifort Monitor\config` na versão instalada e em `config/` na versão executada a partir do código-fonte. O aplicativo exclui [example.config](../config/example.config) da lista de servidores.
+
+O diálogo pausa as transmissões enquanto está aberto. Ao editar uma configuração, deixe a senha vazia para preservar a senha atual; o botão ao lado permite revelar ou ocultar o texto digitado. Ao fechar, o aplicativo retoma as transmissões ou reconecta o servidor alterado.
 
 | Campo | Preenchimento |
 | --- | --- |
@@ -30,7 +32,7 @@ Mantenha os arquivos reais na pasta local de configurações e use somente dados
 
 Selecione **Ao vivo**, busque uma câmera na lateral e clique nela para abrir o vídeo na grade. Câmeras adicionadas manualmente começam com o perfil `Visualization`. Use os controles do quadro para trocar o perfil e o menu de contexto para iniciar uma captura. Abra uma câmera em tela cheia com duplo clique ou `F`. Use `Esc` para voltar à grade ou sair do modo vigilância.
 
-Para ouvir áudio, escolha uma câmera aberta em **Áudio de** e ative **Áudio**. A interface solicita áudio para a fonte selecionada após essa interação. O player aceita AAC, G.711 e G.726 conforme o fluxo recebido. H.264 e H.265/HEVC são decodificados com WebCodecs e dependem do perfil aceito pelo navegador.
+Selecione uma câmera no quadro ou em **Em foco:**. A câmera em foco determina o áudio, a timeline e as miniaturas. Para ouvir, ative o botão de áudio ao lado do seletor; ao mudar o foco, o áudio ativo acompanha a nova câmera. O player aceita AAC, G.711 e G.726 conforme o fluxo recebido. H.264 e H.265/HEVC são decodificados com WebCodecs e dependem do perfil aceito pelo navegador.
 
 ### Mosaico inicial
 
@@ -62,4 +64,4 @@ Abra **Atalhos de teclado** no rodapé da lista de câmeras para consultar os co
 
 Para revisar a câmera em foco, use `Ctrl+1` a `Ctrl+0`; acrescente `Shift` para revisar todas. A ordem é 30 segundos, 1 minuto, 30 minutos, 1 hora, 6 horas, 12 horas, 1 dia, 2 dias, 3 dias e 1 semana. Como no menu de contexto, revisar apenas a câmera em foco fecha as demais e seleciona a grade automática.
 
-Na lista lateral, use as setas para navegar entre câmeras e Enter para abrir ou fechar. Para selecionar mosaicos, use `Ctrl+Alt+A` para automático e `Ctrl+Alt+1` até `Ctrl+Alt+0` para as grades fixas na ordem do seletor.
+Na lista lateral, use as setas para navegar entre câmeras e Enter para abrir ou fechar. Para selecionar mosaicos, use `Ctrl+Alt+A` para automático e `Ctrl+Alt+1` a `Ctrl+Alt+6` para as seis grades fixas na ordem do seletor. Use `Ctrl+PrintScreen` para capturar a câmera em foco ou `Ctrl+Shift+PrintScreen` para todas.

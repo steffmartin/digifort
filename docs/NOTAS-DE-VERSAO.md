@@ -1,5 +1,13 @@
 # Notas de versão do Digifort Monitor
 
+## Não lançado
+
+- Gestão de configurações de servidor no aplicativo, com criação, edição e exclusão.
+- Câmera em foco compartilhada pelos controles de áudio, timeline e miniaturas; barra de controles reorganizada.
+- Atalhos de teclado para monitoramento, revisão, captura e mosaicos, com lista no rodapé da barra lateral.
+- Títulos nos submenus de contexto e remoção das grades uniformes cobertas pela grade automática. Configurações com mosaico desconhecido usam a grade automática.
+- O instalador x64 passa a aceitar Windows 10 a partir da compilação 10240. O teste de instalação e execução no Windows 10 ainda está pendente.
+
 ## 1.0.0
 
 ### Destaques
