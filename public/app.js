@@ -29,7 +29,7 @@ function getG726Config(headers, type) {
 const state = {
   servers: [], serverId: '', server: null, cameras: [], tiles: new Map(), desktopWindow: false,
   cameraStatuses: new Map(), statusTimer: null, statusRequestId: 0, statusRefreshing: false,
-  mode: 'live', focused: '', audioSource: '', audioEnabled: false,
+  mode: 'live', focused: '', audioEnabled: false,
   allStopped: false, mosaic: 'auto', overlaysVisible: false, timelineVisible: true, thumbnailsVisible: true, surveillance: false,
   audioContext: null, reviewEpoch: null, reviewStart: null, reviewEnd: null,
   timeline: [], timelineStart: null, timelineEnd: null, timelineCamera: '',
@@ -146,7 +146,7 @@ function setDisplayVisibility({ overlays = state.overlaysVisible, timeline = sta
   if (wereThumbnailsVisible && !thumbnails) clearThumbnails();
   updateOverlayState();
   if (state.mode === 'playback' && state.reviewStart) {
-    if (!wasTimelineVisible && timeline) loadFocusedTimeline(state.focused || state.tiles.keys().next().value);
+    if (!wasTimelineVisible && timeline) loadFocusedTimeline(state.focused);
     if (!wereThumbnailsVisible && thumbnails) renderThumbnailPage(0).catch(() => {});
   }
 }
@@ -729,7 +729,6 @@ async function selectServer(id) {
   state.cameras = [];
   state.cameraStatuses.clear();
   state.focused = '';
-  state.audioSource = '';
   state.audioEnabled = false;
   state.allStopped = false;
   state.reviewEpoch = null;
@@ -1000,7 +999,6 @@ async function openCamera(cameraName, initialProfile = 'Visualization') {
   state.allStopped = false;
   if (resumeExisting) for (const existing of state.tiles.values()) if (existing !== player) await existing.start();
   if (!state.focused) focusCamera(cameraName);
-  if (!state.audioSource) state.audioSource = cameraName;
   updateAudioSources();
   drawCameraList();
   updateViewHeader();
@@ -1014,16 +1012,15 @@ async function closeCamera(cameraName) {
   if (recording) {
     await Promise.all(requestStopRecordingSession());
   }
-  const oldAudioSource = state.audioSource;
   const wasFocused = state.focused === cameraName;
   player.stop();
   state.tiles.delete(cameraName);
   player.tile.remove();
   if (wasFocused) {
-    state.focused = state.tiles.keys().next().value || '';
-    state.tiles.get(state.focused)?.tile.classList.add('is-focused');
+    const nextFocus = state.tiles.keys().next().value || '';
+    if (nextFocus) focusCamera(nextFocus);
+    else state.focused = '';
   }
-  if (state.audioSource === cameraName) state.audioSource = state.focused;
   if (!state.tiles.size) {
     elements.emptyMonitor.hidden = false;
     state.audioEnabled = false;
@@ -1033,10 +1030,8 @@ async function closeCamera(cameraName) {
   updateAudioSources();
   drawCameraList();
   updateViewHeader();
-  if (state.audioEnabled && oldAudioSource !== state.audioSource) void audioSourceChanged(oldAudioSource, state.audioSource);
   if (wasFocused && state.mode === 'playback' && state.reviewStart) {
-    if (state.focused) reloadFocusedReview(state.focused);
-    else {
+    if (!state.focused) {
       clearTimeline();
       clearThumbnails();
       if (state.timelineVisible) elements.timelineStatus.textContent = 'Abra uma câmera para carregar a timeline.';
@@ -1051,7 +1046,6 @@ async function closeAllTiles() {
   elements.viewerGrid.querySelectorAll('.camera-tile').forEach(tile => tile.remove());
   elements.emptyMonitor.hidden = false;
   state.focused = '';
-  state.audioSource = '';
   state.audioEnabled = false;
   state.allStopped = false;
   updateAudioSources();
@@ -1063,20 +1057,17 @@ function focusCamera(cameraName) {
   if (!state.tiles.has(cameraName)) return;
   const previousFocus = state.focused;
   state.focused = cameraName;
-  const oldSource = state.audioSource;
-  state.audioSource = cameraName;
   for (const [name, player] of state.tiles) {
     player.tile.classList.toggle('is-focused', name === cameraName);
-    player.tile.querySelector('.tile-focus-button').classList.toggle('is-audio', name === state.audioSource && state.audioEnabled);
+    player.tile.querySelector('.tile-focus-button').classList.toggle('is-audio', name === state.focused && state.audioEnabled);
   }
-  updateAudioSources(cameraName);
+  updateAudioSources();
   updateViewHeader();
-  if (state.audioEnabled && oldSource !== state.audioSource) void audioSourceChanged(oldSource, state.audioSource);
+  if (state.audioEnabled && previousFocus !== cameraName) void audioSourceChanged(previousFocus, cameraName);
   if (previousFocus !== cameraName && state.mode === 'playback' && state.reviewStart) reloadFocusedReview(cameraName);
 }
 
-function updateAudioSources(preferredSource = '') {
-  const previous = preferredSource || elements.audioSource.value;
+function updateAudioSources() {
   elements.audioSource.replaceChildren();
   if (!state.tiles.size) {
     elements.audioSource.add(new Option('Nenhuma câmera aberta', ''));
@@ -1087,13 +1078,12 @@ function updateAudioSources(preferredSource = '') {
     return;
   }
   for (const name of state.tiles.keys()) elements.audioSource.add(new Option(name, name));
-  elements.audioSource.value = [...state.tiles.keys()].includes(previous) ? previous : (state.audioSource || state.focused);
-  state.audioSource = elements.audioSource.value;
+  elements.audioSource.value = state.focused;
   elements.audioSource.disabled = false;
   elements.audioToggle.disabled = false;
   elements.audioToggle.setAttribute('aria-pressed', String(state.audioEnabled));
   elements.audioToggle.querySelector('span').textContent = state.audioEnabled ? 'Áudio ativo' : 'Ativar áudio';
-  for (const [name, player] of state.tiles) player.tile.querySelector('.tile-focus-button').classList.toggle('is-audio', name === state.audioSource && state.audioEnabled);
+  for (const [name, player] of state.tiles) player.tile.querySelector('.tile-focus-button').classList.toggle('is-audio', name === state.focused && state.audioEnabled);
 }
 
 function updateViewHeader() {
@@ -1165,7 +1155,7 @@ function startReview() {
     return toast(error.message || 'Confira o período selecionado.', 'error');
   }
   for (const player of state.tiles.values()) player.restart();
-  const timelineCamera = state.focused || state.tiles.keys().next().value;
+  const timelineCamera = state.focused;
   reloadFocusedReview(timelineCamera);
 }
 
@@ -1321,7 +1311,7 @@ class CameraPlayer {
         this.setState('Erro');
         toast(`${this.name}: ${error.message || 'erro de stream.'}`, 'error');
       });
-      if (state.audioEnabled && state.audioSource === this.name) void this.startAudioStream();
+      if (state.audioEnabled && state.focused === this.name) void this.startAudioStream();
     } catch (error) {
       if (error.name === 'AbortError' || this.stopped || token !== this.requestToken) return;
       this.setMessage(error.message || 'Erro ao receber stream.');
@@ -1338,7 +1328,7 @@ class CameraPlayer {
 
   async startAudioStream() {
     this.stopAudioStream();
-    if (this.stopped || state.allStopped || !state.audioEnabled || state.audioSource !== this.name) return;
+    if (this.stopped || state.allStopped || !state.audioEnabled || state.focused !== this.name) return;
     if (state.mode === 'playback' && !state.reviewStart) return;
     const token = ++this.audioStreamToken;
     const controller = new AbortController();
@@ -1352,20 +1342,20 @@ class CameraPlayer {
     }
     try {
       const response = await fetch(`/api/audio-stream?${query(params)}`, { signal: controller.signal, cache: 'no-store' });
-      if (token !== this.audioStreamToken || !state.audioEnabled || state.audioSource !== this.name) return;
+      if (token !== this.audioStreamToken || !state.audioEnabled || state.focused !== this.name) return;
       if (!response.ok || !response.body || !(response.headers.get('content-type') || '').toLowerCase().includes('multipart/')) {
         let message = 'Não foi possível abrir o áudio desta câmera.';
         try { message = (await response.json()).error || message; } catch {}
         throw new Error(message);
       }
       void consumeMultipart(response, part => {
-        if (token === this.audioStreamToken && state.audioEnabled && state.audioSource === this.name) this.consumePart(part, true);
+        if (token === this.audioStreamToken && state.audioEnabled && state.focused === this.name) this.consumePart(part, true);
       }).catch(error => {
-        if (error.name === 'AbortError' || token !== this.audioStreamToken || !state.audioEnabled || state.audioSource !== this.name) return;
+        if (error.name === 'AbortError' || token !== this.audioStreamToken || !state.audioEnabled || state.focused !== this.name) return;
         this.setMessage(error.message || 'Erro ao receber áudio.');
       });
     } catch (error) {
-      if (error.name === 'AbortError' || token !== this.audioStreamToken || !state.audioEnabled || state.audioSource !== this.name) return;
+      if (error.name === 'AbortError' || token !== this.audioStreamToken || !state.audioEnabled || state.focused !== this.name) return;
       this.setMessage(error.message || 'Não foi possível abrir o áudio desta câmera.');
     }
   }
@@ -1438,15 +1428,15 @@ class CameraPlayer {
       return;
     }
     if (/g\.?726/i.test(type)) {
-      if (state.audioEnabled && state.audioSource === this.name) this.decodeG726(part.data, type, epoch, part.headers);
+      if (state.audioEnabled && state.focused === this.name) this.decodeG726(part.data, type, epoch, part.headers);
       return;
     }
     if (type.includes('audio/basic') || type.includes('audio/alaw') || type.includes('audio/mulaw') || type.includes('audio/ulaw')) {
-      if (state.audioEnabled && state.audioSource === this.name) this.decodeWebAudio(part.data, type, epoch);
+      if (state.audioEnabled && state.focused === this.name) this.decodeWebAudio(part.data, type, epoch);
       return;
     }
     if (type.includes('audio/aac')) {
-      if (state.audioEnabled && state.audioSource === this.name) this.decodeAac(part.data, epoch);
+      if (state.audioEnabled && state.focused === this.name) this.decodeAac(part.data, epoch);
       return;
     }
     if (type.startsWith('audio/')) {
@@ -1698,14 +1688,14 @@ class CameraPlayer {
     const audioToken = this.audioStreamToken;
     const config = getG726Config(headers, type);
     this.g726DecodeChain = this.g726DecodeChain.then(async () => {
-      if (this.stopped || token !== this.requestToken || audioToken !== this.audioStreamToken || !state.audioEnabled || state.audioSource !== this.name) return;
+      if (this.stopped || token !== this.requestToken || audioToken !== this.audioStreamToken || !state.audioEnabled || state.focused !== this.name) return;
       if (!config.rate) {
         this.setMessage('O frame G.726 não informa uma taxa reconhecida (16, 24, 32 ou 40 kb/s).');
         this.setState('Taxa G.726 desconhecida');
         return;
       }
       const Decoder = await loadG726Decoder();
-      if (this.stopped || token !== this.requestToken || audioToken !== this.audioStreamToken || !state.audioEnabled || state.audioSource !== this.name) return;
+      if (this.stopped || token !== this.requestToken || audioToken !== this.audioStreamToken || !state.audioEnabled || state.focused !== this.name) return;
       if (!this.g726 || this.g726Config?.rate !== config.rate || this.g726Config?.bitOrder !== config.bitOrder) {
         try { this.g726?.free(); } catch {}
         this.g726 = new Decoder(config.rate, config.bitOrder);
@@ -1741,7 +1731,7 @@ class CameraPlayer {
   }
 
   schedulePcm(pcm, sampleRate, channels, timestampUs) {
-    if (!state.audioContext || !state.audioEnabled || state.audioSource !== this.name) return;
+    if (!state.audioContext || !state.audioEnabled || state.focused !== this.name) return;
     try {
       const ctx = state.audioContext;
       const frames = Math.floor(pcm.length / channels);
@@ -2158,7 +2148,7 @@ function getThumbnailInterval() {
 
 async function renderThumbnailPage(page) {
   if (!state.thumbnailsVisible || !state.server || !state.reviewStart || !state.tiles.size) return;
-  const camera = state.focused || state.tiles.keys().next().value;
+  const camera = state.focused;
   const [requestedWidth] = THUMBNAIL_SIZES[state.thumbnailSize] || THUMBNAIL_SIZES.medium;
   elements.thumbnailGrid.style.setProperty('--thumbnail-card-width', `${requestedWidth}px`);
   const end = state.reviewEnd || Date.now();
@@ -2312,7 +2302,6 @@ elements.thumbnailSize.addEventListener('change', event => {
 });
 elements.audioSource.addEventListener('change', event => {
   focusCamera(event.target.value);
-  updateAudioSources();
 });
 elements.audioToggle.addEventListener('click', async () => {
   if (!state.audioContext) state.audioContext = new AudioContext();
@@ -2320,7 +2309,7 @@ elements.audioToggle.addEventListener('click', async () => {
   state.audioContextStart = state.audioContext.currentTime + 0.08;
   state.audioEnabled = !state.audioEnabled;
   updateAudioSources();
-  const source = state.audioSource || state.focused;
+  const source = state.focused;
   if (!state.allStopped && source && state.tiles.has(source)) {
     const player = state.tiles.get(source);
     if (state.audioEnabled) await player.startAudioStream();
