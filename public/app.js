@@ -87,12 +87,6 @@ function setupMosaics(initial = 'auto') {
     return option;
   }));
   elements.mosaicSelect.title = MOSAICS.map((item, index) => `${item.name}: Ctrl+Alt+${index ? index % 10 : 'A'}`).join('\n');
-  const shortcuts = $('#mosaicShortcuts');
-  shortcuts.replaceChildren(...MOSAICS.flatMap((item, index) => {
-    const label = document.createElement('dt'); label.textContent = item.name;
-    const key = document.createElement('dd'); key.textContent = `Ctrl+Alt+${index ? index % 10 : 'A'}`;
-    return [label, key];
-  }));
   state.mosaic = MOSAICS.some(item => item.id === initial) ? initial : 'auto';
   elements.mosaicSelect.value = state.mosaic;
   applyMosaic();
