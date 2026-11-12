@@ -8,7 +8,7 @@ Abra **Digifort Monitor** no menu Iniciar ou pelo atalho na área de trabalho, s
 
 ## Configurar um servidor
 
-O atalho **Pasta de configurações** abre `%LOCALAPPDATA%\Digifort Monitor\config`. Na versão executada a partir do código-fonte, use `config/` no repositório. Copie [example.config](../config/example.config) para `<servidor>.config` e salve em JSON UTF-8 sem BOM. O aplicativo exclui o modelo da lista de servidores.
+Use o botão de configurações ao lado do estado de conexão para criar, editar ou excluir servidores. Os arquivos ficam em `%LOCALAPPDATA%\Digifort Monitor\config` na versão instalada e em `config/` na versão executada a partir do código-fonte. O aplicativo exclui [example.config](../config/example.config) da lista de servidores.
 
 | Campo | Preenchimento |
 | --- | --- |
@@ -22,7 +22,7 @@ O atalho **Pasta de configurações** abre `%LOCALAPPDATA%\Digifort Monitor\conf
 | `initialMosaic` | ID opcional do [mosaico inicial](#mosaico-inicial). |
 | `mediaFolder`, `screenshotFolder` e `videoFolder` | Caminhos completos para pastas graváveis. Cada destino específico vazio ou omitido usa `mediaFolder`. |
 
-O aplicativo seleciona automaticamente uma configuração válida quando ela é a única utilizável. Quando houver mais de uma, escolha o **Servidor** na barra superior. Sem configuração válida, o diálogo mostra a pasta e oferece **Abrir pasta de configurações** na versão Windows, **Verificar novamente** e **Fechar**. Depois de criar ou corrigir o arquivo, clique em **Verificar novamente**.
+O aplicativo seleciona automaticamente uma configuração válida quando ela é a única utilizável. Quando houver mais de uma, escolha o **Servidor** na barra superior. Sem configuração válida, o diálogo abre automaticamente para criar ou corrigir uma configuração.
 
 Mantenha os arquivos reais na pasta local de configurações e use somente dados fictícios em exemplos compartilhados. Usuário, senha e dados de autenticação são tratados no servidor local.
 

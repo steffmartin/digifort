@@ -2468,7 +2468,7 @@ for (const dialog of document.querySelectorAll('dialog')) {
   dialog.addEventListener('click', event => {
     if (!backdropDown || !outside(event)) return;
     backdropDown = false;
-    if (dialog === elements.configDialog) void closeAppFromConfigDialog();
+    if (dialog === elements.configDialog) void closeConfigDialog();
     else dialog.close();
   });
 }
