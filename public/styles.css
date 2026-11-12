@@ -98,6 +98,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .mode-button.is-active#reviewMode { color: var(--review); }
 .mode-live-mark { width: 7px; height: 7px; border-radius: 50%; background: currentColor; box-shadow: 0 0 0 3px #53cbb71c; }
 .review-fields { position: relative; display: flex; align-items: center; gap: 8px; }
+.review-date { display: inline-flex; align-items: center; gap: 8px; }
 .review-fields input { width: 174px; height: 31px; padding: 0 8px; border: 1px solid var(--line); background: #101a1c; font: 10px var(--mono); color: var(--text); }
 .review-fields input::-webkit-calendar-picker-indicator { display: none; }
 .date-picker-toggle { height: 31px; width: 30px; margin-left: -8px; border: 1px solid var(--line); border-left: 0; background: #101a1c; color: var(--review); font-size: 17px; }
@@ -160,7 +161,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .viewer-grid[data-mosaic="3x3-six"] { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(3, minmax(0, 1fr)); }
 .viewer-grid[data-mosaic^="4x4"] { grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: repeat(4, minmax(0, 1fr)); }
 .viewer-grid:not([data-mosaic="auto"]) .empty-monitor { grid-row: 1 / -1; min-height: 0; }
-.empty-monitor { min-height: 330px; grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; background: #0c1517; text-align: center; }
+.empty-monitor { min-height: 0; grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: auto; padding: 20px; background: #0c1517; text-align: center; }
 .empty-monitor h3 { margin: 23px 0 7px; font-size: 16px; font-weight: 500; }
 .empty-monitor p { max-width: 410px; margin: 0; color: var(--muted); font-size: 11px; line-height: 1.6; }
 .empty-signal { height: 30px; display: flex; align-items: center; gap: 5px; }
@@ -243,14 +244,14 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .context-title { padding: 7px 10px; color: var(--muted); font-size: 10px; font-weight: 600; border-bottom: 1px solid var(--line); margin-bottom: 4px; }
 .context-separator { height: 1px; margin: 4px 8px; background: var(--line); }
 .exit-surveillance { position: fixed; right: 16px; bottom: 16px; z-index: 25; min-height: 38px; padding: 0 13px; border: 1px solid #74613f; background: #171c1bbd; color: var(--review); backdrop-filter: blur(8px); }
-.record-dialog { width: min(460px, calc(100vw - 32px)); padding: 0; border: 1px solid #405255; background: #101a1c; color: var(--text); box-shadow: 0 18px 60px #000b; }
+.record-dialog { width: min(460px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); overflow: auto; padding: 0; border: 1px solid #405255; background: #101a1c; color: var(--text); box-shadow: 0 18px 60px #000b; }
 .record-dialog::backdrop { background: #030808c9; backdrop-filter: blur(3px); }
 .record-dialog form { display: grid; gap: 12px; padding: 22px; }
 .record-dialog h2 { margin: 0 0 4px; font-size: 16px; font-weight: 550; }
 .record-dialog label { color: var(--muted); font-size: 10px; }
 .record-dialog select { height: 35px; border: 1px solid var(--line); background: #111b1d; color: var(--text); }
 .record-format-help, .record-dialog-note { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.6; }
-.record-dialog-actions { display: flex; justify-content: end; gap: 8px; margin-top: 5px; }
+.record-dialog-actions { display: flex; flex-wrap: wrap; justify-content: end; gap: 8px; margin-top: 5px; }
 .record-dialog-actions button { min-height: 34px; padding: 0 12px; border: 1px solid var(--line); background: transparent; color: var(--text); font-size: 10px; }
 .record-dialog-actions .record-confirm { border-color: var(--review); background: var(--review); color: #1d201f; font-weight: 700; }
 .record-dialog-actions button:disabled { opacity: .4; cursor: not-allowed; }
@@ -267,6 +268,11 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .toast { max-width: 360px; padding: 11px 14px; border-left: 2px solid var(--live); background: #1b2a2d; color: var(--text); box-shadow: 0 8px 30px #0006; font-size: 11px; line-height: 1.45; }
 .toast.error { border-color: var(--danger); }
 
+@media (max-width: 1500px) {
+  .command-bar { flex-wrap: wrap; row-gap: 8px; padding: 8px 0; }
+  .command-divider { display: none; }
+  .review-fields { order: 1; width: 100%; flex-wrap: wrap; }
+}
 @media (max-width: 1000px) {
   .workspace { grid-template-columns: 230px minmax(0, 1fr); }
   .monitor-area { padding: 0 16px; }
@@ -274,7 +280,9 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   .review-fields { width: 100%; flex-wrap: wrap; }
   .audio-control-wrap { margin-left: auto; }
   .review-fields { gap: 5px; }
+  .review-date { gap: 5px; }
   .review-fields input { width: 145px; }
+  .date-picker-toggle { margin-left: -5px; }
 }
 @media (max-width: 760px) {
   html, body { overflow: auto; min-height: 100%; height: auto; }
@@ -346,7 +354,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .rail-footer > :not(.shortcuts-help) { grid-column: 1; }
 
 /* Revisão: régua compartilhada e uma faixa compacta por câmera. */
-.review-panel { position: relative; margin-top: 4px; padding-top: 4px; }
+.review-panel { position: relative; max-height: 30%; overflow-y: auto; margin-top: 4px; padding-top: 4px; scrollbar-color: #42585a transparent; scrollbar-width: thin; }
 .timeline-layout { display: flex; min-width: 0; }
 .timeline-names { flex: 0 1 auto; width: max-content; min-width: 0; max-width: clamp(76px, 13vw, 160px); padding-top: 22px; overflow: hidden; }
 .timeline-camera-name { height: 15px; margin-bottom: 2px; overflow: hidden; padding-right: 8px; color: var(--muted); font-size: 10px; line-height: 15px; text-overflow: ellipsis; white-space: nowrap; }

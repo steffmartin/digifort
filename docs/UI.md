@@ -29,3 +29,9 @@ A estrutura fica em [index.html](../public/index.html), os estilos em [styles.cs
 Use português do Brasil para rótulos, instruções e erros. Mantenha `Visualization` e `Recording` quando forem valores do perfil da API. Controles só com ícone precisam de nome acessível. Verifique contraste, foco, fechamento de menus pelo teclado e legibilidade nos estados desabilitados.
 
 Para alterações na interface, siga [AGENTS.md](../AGENTS.md) e valide o fluxo em uma janela estreita e em tela cheia quando o layout for afetado. Para o assistente Windows, confira a página modificada no tema do sistema e verifique se rótulos, campos e botões permanecem visíveis.
+
+### Janelas de desktop
+
+- Em janelas menores, os controles de revisão passam para outra linha; cada rótulo permanece junto ao respectivo campo e botão de calendário. Os controles continuam disponíveis.
+- A timeline usa no máximo 30% da altura da área de monitoramento e oferece rolagem vertical quando há muitas câmeras, preservando espaço para a grade. Os diálogos também rolam quando a altura da janela é insuficiente.
+- A revisão desta disposição usou conteúdo sintético nas dimensões 1920×1080, 1366×768, 1280×720, 1024×768, 900×600, 800×600 e 768×480, incluindo revisão com 32 faixas. Conferiram-se os limites dos controles e os diálogos de configuração, atalhos, gravação e atualização; não houve conexão com um servidor Digifort.

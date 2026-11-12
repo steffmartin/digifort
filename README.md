@@ -40,7 +40,7 @@ Para verificar a sintaxe do servidor e da interface:
 ```powershell
 node --check server.mjs
 node --check public/app.js
-node --test tests/*.test.mjs
+npm test
 ```
 
 ## Organização e documentação

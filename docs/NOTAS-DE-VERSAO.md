@@ -8,10 +8,12 @@
 - Calendário e campos de horário integrados ao tema, com seleção no fuso do servidor e verificação dos limites da revisão. ([#41](https://github.com/steffmartin/digifort/issues/41))
 - Comandos de foco, perfil e fechamento no menu de contexto da câmera, indicador de áudio e restauração do mosaico e das câmeras iniciais pelo botão ou por `Ctrl+Alt+R`.
 - Miniaturas reutilizadas em memória durante a sessão de navegação, com paginação limitada ao período da revisão. Quando o fim não é informado, a timeline mantém o limite fixado no início da revisão.
+- Controles de revisão reorganizados em janelas menores e timeline com altura limitada e rolagem para preservar a grade de câmeras. Os campos de data usam os rótulos **Início** e **Fim**. ([#46](https://github.com/steffmartin/digifort/issues/46))
+- Testes unitários adicionais para controles e processamento de mídia no frontend, e para configuração, autenticação, protocolo e gravação no backend. ([#22](https://github.com/steffmartin/digifort/issues/22), [#21](https://github.com/steffmartin/digifort/issues/21))
 
 ### Validação e distribuição
 
-O calendário, os menus e os limites das miniaturas foram verificados em Chromium com dados sintéticos. A suíte automatizada passou com 12 testes. Um build anterior, identificado como 1.1.0, foi instalado e desinstalado com identidade e dados isolados; seu runtime confirmou a persistência da versão ignorada e o aviso de uma versão posterior. O instalador 1.2.0 foi compilado no Windows 11; confira seu SHA-256 conforme [Distribuição](DISTRIBUICAO.md). A validação do pacote 1.2.0 em máquina limpa e no Windows 10 e a ampliação dos testes integrados de HEVC, áudio e captura permanecem pendentes.
+O calendário, os menus, os limites das miniaturas e a responsividade de janelas desktop foram verificados em Chromium com dados sintéticos. A suíte automatizada passou com 32 testes. Um build anterior, identificado como 1.1.0, foi instalado e desinstalado com identidade e dados isolados; seu runtime confirmou a persistência da versão ignorada e o aviso de uma versão posterior. O instalador 1.2.0 foi compilado no Windows 11; confira seu SHA-256 conforme [Distribuição](DISTRIBUICAO.md). A validação do pacote 1.2.0 em máquina limpa e no Windows 10 e a ampliação dos testes integrados de HEVC, áudio e captura permanecem pendentes.
 
 ## 1.1.0
 

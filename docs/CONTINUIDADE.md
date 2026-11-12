@@ -10,7 +10,7 @@ A linha de trabalho atual mantém a versão 1.2.0 do instalador Windows. O hist�
 4. O [player](../public/app.js) trata os frames multipart e decodifica vídeo com WebCodecs. Para HEVC, deriva o codec do SPS, verifica `VideoDecoder.isConfigSupported` e aguarda parâmetros e quadro de acesso aleatório. O áudio AAC e G.711 é tratado no cliente, e o [wrapper WASM](../wasm/g726/README.md) decodifica G.726. O player usa empacotamento LSB como fallback quando a ordem não é informada. O áudio de revisão usa `Playback/GetMediaStream?Audio=TRUE` para a fonte selecionada.
 5. A revisão fixa o limite final no início da consulta quando não há fim informado. As miniaturas são mantidas em memória apenas durante sua sessão e descartadas ao sair ou mudar parâmetros relevantes. O servidor consulta a release mais recente uma vez na inicialização e guarda a versão ignorada em `update.json`, separado dos arquivos `.config`.
 
-O [manual e a transcrição OpenAPI](api/README.md) ficam juntos. Use o manual para distinguir tipos e restrições documentados de exemplos e lacunas do schema.
+O [manual e a transcrição OpenAPI](api/README.md) ficam juntos. Use o manual para distinguir tipos e restrições documentados de exemplos e lacunas do schema. Os testes unitários usam dados sintéticos para verificar configuração, autenticação, protocolo, gravação e componentes do cliente; eles não substituem testes integrados com o Digifort.
 
 ## Validação e limites
 
@@ -25,5 +25,5 @@ O [plano arquivado](historico/PLANO-INICIAL.md#handoff--falha-de-transporte-em-g
 1. Leia [AGENTS.md](../AGENTS.md) e consulte o guia correspondente ao fluxo alterado.
 2. Reproduza com dados sintéticos e mantenha arquivos de configuração, perfis e artefatos de build fora do Git.
 3. Valide o fluxo afetado e registre limitações verificadas. Para alterações visuais, use [UI](UI.md). Para mudanças de pacote, use [Distribuição](DISTRIBUICAO.md).
-4. Execute `node --test tests/*.test.mjs` para verificar as regressões da timeline e das miniaturas.
+4. Execute `npm test` para verificar as regressões de configuração, protocolo e segurança do backend, além de controles da interface, mídia, timeline e miniaturas. A suíte usa dados sintéticos e não substitui a validação no navegador ou com um servidor Digifort.
 5. Atualize o [guia de uso](USO.md) quando um fluxo mudar e registre as mudanças que forem compor uma versão nas [notas de versão](NOTAS-DE-VERSAO.md).
