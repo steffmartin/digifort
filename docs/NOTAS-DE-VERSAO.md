@@ -1,5 +1,17 @@
 # Notas de versão do Digifort Monitor
 
+## 1.2.1
+
+### Novidades
+
+- Atualização pelo aplicativo: download com progresso, verificação do SHA-256 da release, instalação sem perguntas e reabertura após a conclusão. A primeira instalação com esse recurso requer atualização manual a partir da release oficial 1.2.0. ([#48](https://github.com/steffmartin/digifort/issues/48))
+- Modo vigilância em tela cheia, foco por `F`, ampliação por duplo clique e destaque da câmera em foco conforme o estado. O navegador pode solicitar permissão para usar `Esc` em dois níveis durante a vigilância. ([#47](https://github.com/steffmartin/digifort/issues/47))
+- Assistente de instalação simplificado: importe uma configuração existente ou configure os servidores dentro do aplicativo.
+
+### Validação e distribuição
+
+A suíte automatizada inclui testes de download, SHA-256 e transições da vigilância. O auxiliar de atualização foi exercitado com instalador e aplicativo sintéticos; o ciclo completo de atualização oficial, o uso de câmeras reais e a instalação em máquina limpa e no Windows 10 ainda precisam ser validados. Confira o SHA-256 do instalador conforme [Distribuição](DISTRIBUICAO.md).
+
 ## 1.2.0
 
 ### Novidades

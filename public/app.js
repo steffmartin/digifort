@@ -41,7 +41,7 @@ const state = {
 const elements = {
   serverSelect: $('#serverSelect'), connectionState: $('#connectionState'), connectionLabel: $('#connectionLabel'),
   cameraSearch: $('#cameraSearch'), cameraList: $('#cameraList'), cameraListEmpty: $('#cameraListEmpty'),
-  cameraCount: $('#cameraCount'), availableCount: $('#availableCount'), timeZone: $('#serverTimeZone'),
+  cameraCount: $('#cameraCount'), availableCount: $('#availableCount'),
   liveMode: $('#liveMode'), reviewMode: $('#reviewMode'), reviewFields: $('#reviewFields'),
   startDateTime: $('#startDateTime'), endDateTime: $('#endDateTime'), playReview: $('#playReview'),
   audioSource: $('#audioSource'), audioToggle: $('#audioToggle'), viewerGrid: $('#viewerGrid'), emptyMonitor: $('#emptyMonitor'),
@@ -52,7 +52,7 @@ const elements = {
   thumbnailPrev: $('#thumbnailPrev'),
   mosaicSelect: $('#mosaicSelect'), resetGrid: $('#resetGrid'), mosaicPreview: $('#mosaicPreview'), overlayToggle: $('#overlayToggle'), displayControl: $('#displayControl'), displayMenuToggle: $('#displayMenuToggle'), displayMenu: $('#displayMenu'),
   toggleOverlayVisibility: $('#toggleOverlayVisibility'), toggleTimelineVisibility: $('#toggleTimelineVisibility'),
-  surveillanceToggle: $('#surveillanceToggle'), exitSurveillance: $('#exitSurveillance'), contextMenu: $('#contextMenu'),
+  surveillanceToggle: $('#surveillanceToggle'), contextMenu: $('#contextMenu'),
   thumbnailNext: $('#thumbnailNext'),
   recordDialog: $('#recordDialog'), recordForm: $('#recordForm'), recordFormat: $('#recordFormat'), recordFormatHelp: $('#recordFormatHelp'), recordConfirm: $('#recordConfirm'),
   configDialog: $('#configDialog'), configDialogMessage: $('#configDialogMessage'), closeConfigApp: $('#closeConfigApp'),
@@ -180,7 +180,6 @@ function updateSurveillance() {
   const surveillanceAction = state.surveillance ? 'Sair do modo vigilância' : 'Ativar modo vigilância';
   elements.surveillanceToggle.setAttribute('aria-label', surveillanceAction);
   elements.surveillanceToggle.title = `${surveillanceAction} · V`;
-  elements.exitSurveillance.hidden = !state.surveillance;
 }
 
 const PLAYBACK_SHORTCUTS = [
@@ -634,7 +633,7 @@ async function beginContextPlayback(scope, seconds) {
     state.mosaic = 'auto'; elements.mosaicSelect.value = 'auto'; applyMosaic();
     if (!state.tiles.has(scope.camera)) await openCamera(scope.camera, 'Recording');
   }
-  state.surveillance = false; updateSurveillance();
+  await leaveFullscreen();
   setMode('playback');
   if (seconds === null) {
     elements.startDateTime.value = ''; elements.endDateTime.value = '';
@@ -921,7 +920,7 @@ async function selectServer(id) {
   try {
     const serverInfo = await apiJson(`/api/server?${query({ server: id })}`);
     state.server = serverInfo;
-    elements.timeZone.textContent = `Fuso · ${serverInfo.timeZone}`;
+
     setupMosaics(serverInfo.initialMosaic || 'auto');
     const result = await apiJson(`/api/cameras?${query({ server: id })}`);
     state.cameras = result.cameras || [];
@@ -970,9 +969,7 @@ function drawCameraList() {
       : status?.working === true && status.activeTime !== null
         ? `Funcionando há ${formatDuration(status.activeTime)}`
         : '';
-    const action = isOpen ? 'Fechar' : 'Abrir';
     button.setAttribute('aria-label', `Câmera ${camera.name}; ${description}${statusLabel ? `; ${statusDetail || statusLabel}` : ''}`);
-    button.title = `${action} câmera ${camera.name} · ${description}${statusLabel ? ` · ${statusDetail || statusLabel}` : ''}`;
     button.innerHTML = '<span class="camera-icon" aria-hidden="true"><svg class="camera-symbol" viewBox="0 0 28 22" aria-hidden="true" focusable="false"><rect x="2.5" y="4.5" width="15.5" height="13" rx="2.3"></rect><path d="m18 8.3 5.3-2.6a1.1 1.1 0 0 1 1.6 1v8.6a1.1 1.1 0 0 1-1.6 1L18 13.7z"></path><path d="M6 8.2h3.8"></path></svg><span class="camera-health-mark" hidden>!</span></span><span class="camera-meta"><span class="camera-name"></span><span class="camera-description"></span><span class="camera-status-detail" hidden></span></span><span class="camera-add" aria-hidden="true"></span>';
     button.querySelector('.camera-name').textContent = camera.name;
     button.querySelector('.camera-description').textContent = description;
@@ -983,7 +980,6 @@ function drawCameraList() {
     button.querySelector('.camera-add').textContent = isOpen ? '×' : '+';
     button.disabled = !camera.active;
     button.setAttribute('aria-disabled', String(full));
-    if (full) button.title = `${camera.name} · libere uma posição no mosaico para abrir esta câmera`;
     button.addEventListener('click', () => isOpen ? closeCamera(camera.name) : full ? toast('O mosaico está cheio. Libere uma posição antes de abrir outra câmera.', 'error') : openCamera(camera.name));
     button.addEventListener('contextmenu', event => { event.preventDefault(); openContextMenu(event.clientX, event.clientY, { camera: camera.name, all: false }); });
     button.addEventListener('keydown', event => {
@@ -1060,10 +1056,8 @@ function createTile(cameraName, profile) {
   const cameraDescription = tile.querySelector('.tile-camera-description');
   cameraDescription.textContent = camera?.description || '';
   cameraDescription.hidden = !camera?.description;
-  tile.querySelector('.tile-video').setAttribute('aria-label', `Focar câmera ${cameraName}. Pressione F para tela cheia.`);
-  tile.querySelector('.tile-video').setAttribute('aria-keyshortcuts', 'F');
+  tile.querySelector('.tile-video').setAttribute('aria-label', `Focar câmera ${cameraName}`);
   const videoSurface = tile.querySelector('.tile-video');
-  videoSurface.title = 'Arraste para trocar de posição. Clique duas vezes ou pressione F para abrir em tela cheia';
   videoSurface.addEventListener('click', () => focusCamera(cameraName));
   videoSurface.addEventListener('dblclick', () => toggleTileFullscreen(tile, cameraName));
   tile.addEventListener('contextmenu', event => { event.preventDefault(); openContextMenu(event.clientX, event.clientY, { camera: cameraName, all: false }, { camera: cameraName, all: true }); });
@@ -1073,7 +1067,7 @@ function createTile(cameraName, profile) {
   const resetZoom = () => { zoom.scale = 1; zoom.x = 0; zoom.y = 0; applyZoom(); };
   tile.resetZoom = resetZoom;
   tile.addEventListener('wheel', event => {
-    if (document.fullscreenElement !== tile || !event.target.closest('.tile-video') || event.ctrlKey || event.metaKey) return;
+    if (!isTileEnlarged(tile) || !event.target.closest('.tile-video') || event.ctrlKey || event.metaKey) return;
     event.preventDefault();
     const nextScale = Math.max(1, Math.min(8, zoom.scale * (event.deltaY < 0 ? 1.15 : 1 / 1.15)));
     if (nextScale <= 1.001) { resetZoom(); return; }
@@ -1089,7 +1083,7 @@ function createTile(cameraName, profile) {
     applyZoom();
   }, { passive: false });
   tile.addEventListener('dblclick', event => {
-    if (document.fullscreenElement === tile) { event.preventDefault(); resetZoom(); }
+    if (isTileEnlarged(tile)) { event.preventDefault(); resetZoom(); }
   });
   tile.addEventListener('keydown', event => {
     if ((event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) && !['SELECT', 'BUTTON'].includes(event.target.tagName)) { event.preventDefault(); const rect = tile.getBoundingClientRect(); openContextMenu(rect.left + rect.width / 2, rect.top + rect.height / 2, { camera: cameraName, all: false }, { camera: cameraName, all: true }); }
@@ -1115,7 +1109,23 @@ function createTile(cameraName, profile) {
   return tile;
 }
 
+function isTileEnlarged(tile) { return document.fullscreenElement === tile || tile.classList.contains('is-enlarged'); }
+
+function closeSurveillanceTile() {
+  const tile = elements.viewerGrid.querySelector('.camera-tile.is-enlarged');
+  if (!tile) return false;
+  tile.classList.remove('is-enlarged');
+  tile.resetZoom?.();
+  return true;
+}
+
 async function toggleTileFullscreen(tile, cameraName) {
+  if (state.surveillance && document.fullscreenElement === document.documentElement) {
+    const wasEnlarged = tile.classList.contains('is-enlarged');
+    closeSurveillanceTile();
+    if (!wasEnlarged) tile.classList.add('is-enlarged');
+    return;
+  }
   if (document.fullscreenElement === tile) {
     try { await document.exitFullscreen(); }
     catch { toast(`Não foi possível sair da tela cheia de ${cameraName}.`, 'error'); }
@@ -1129,17 +1139,38 @@ async function toggleTileFullscreen(tile, cameraName) {
   catch { toast(`Não foi possível abrir ${cameraName} em tela cheia.`, 'error'); }
 }
 
+async function leaveFullscreen() {
+  closeSurveillanceTile();
+  while (document.fullscreenElement) await document.exitFullscreen();
+  state.surveillance = false; updateSurveillance();
+}
+
+async function toggleSurveillance() {
+  if (state.surveillance) { await leaveFullscreen(); return; }
+  try { await document.documentElement.requestFullscreen(); state.surveillance = true; updateSurveillance(); }
+  catch { toast('Não foi possível ativar o modo vigilância.', 'error'); return; }
+  try {
+    if (!navigator.keyboard?.lock) throw new Error('Keyboard Lock indisponível');
+    await navigator.keyboard.lock(['Escape']);
+    if (!state.surveillance || !document.fullscreenElement) navigator.keyboard.unlock();
+  } catch {
+    if (state.surveillance) toast('O navegador não permitiu controlar Esc. Para restaurar a câmera sem sair da vigilância, clique duas vezes.', 'error');
+  }
+}
+
 document.addEventListener('keydown', event => {
+  if (event.key === 'F11') { event.preventDefault(); event.stopImmediatePropagation(); return; }
   if (event.defaultPrevented || document.querySelector('dialog[open]')) return;
+  if (event.key === 'Escape' && state.surveillance && closeSurveillanceTile()) { event.preventDefault(); event.stopImmediatePropagation(); return; }
   if (event.key === 'Escape' && state.thumbnailActive) { event.preventDefault(); closeThumbnailView(); return; }
-  if (event.key === 'Escape' && state.surveillance && !document.fullscreenElement) { state.surveillance = false; updateSurveillance(); return; }
+  if (event.key === 'Escape' && state.surveillance && document.fullscreenElement === document.documentElement) { event.preventDefault(); void leaveFullscreen(); return; }
   if (event.key !== 'Escape' || !document.fullscreenElement?.classList.contains('camera-tile')) return;
   event.preventDefault();
   void document.exitFullscreen().catch(() => {});
 });
 document.addEventListener('fullscreenchange', () => {
-  if (document.fullscreenElement) return;
-  for (const tile of elements.viewerGrid.querySelectorAll('.camera-tile')) tile.resetZoom?.();
+  for (const tile of elements.viewerGrid.querySelectorAll('.camera-tile')) if (!isTileEnlarged(tile)) tile.resetZoom?.();
+  if (!document.fullscreenElement && state.surveillance) { navigator.keyboard?.unlock?.(); closeSurveillanceTile(); state.surveillance = false; updateSurveillance(); }
 });
 
 async function openCamera(cameraName, initialProfile = 'Visualization') {
@@ -1236,7 +1267,6 @@ function updateAudioSources() {
     indicator.hidden = name !== state.focused;
     indicator.classList.toggle('is-audio-on', state.audioEnabled);
     indicator.setAttribute('aria-label', state.audioEnabled ? 'Em foco, áudio ativado' : 'Em foco, áudio desativado');
-    indicator.title = state.audioEnabled ? 'Em foco, áudio ativado' : 'Em foco, áudio desativado';
   }
   if (!state.tiles.size) {
     elements.audioSource.add(new Option('Nenhuma câmera aberta', ''));
@@ -2386,6 +2416,7 @@ function createThumbnailMenu(camera) {
 }
 async function openThumbnailView(camera, interval) {
   if (!state.reviewStart || !state.tiles.has(camera)) return;
+  await leaveFullscreen();
   if (state.thumbnailCamera !== camera || state.thumbnailInterval !== interval) clearThumbnails();
   state.thumbnailCamera = camera; state.thumbnailInterval = interval;
   if (state.thumbnailAnchor === null) state.thumbnailAnchor = Math.max(state.reviewStart, Math.min(state.reviewLimitEnd ?? state.reviewEnd ?? state.timelineEnd ?? Date.now(), state.reviewEpoch ?? state.reviewStart));
@@ -2577,8 +2608,7 @@ elements.displayMenu.addEventListener('keydown', event => {
   }
   if (event.key === 'Escape') { event.preventDefault(); closeDisplayMenu(true); }
 });
-elements.surveillanceToggle.addEventListener('click', () => { state.surveillance = !state.surveillance; updateSurveillance(); });
-elements.exitSurveillance.addEventListener('click', () => { state.surveillance = false; updateSurveillance(); });
+elements.surveillanceToggle.addEventListener('click', () => { void toggleSurveillance(); });
 elements.audioSource.addEventListener('change', event => {
   focusCamera(event.target.value);
 });
@@ -2597,7 +2627,6 @@ elements.audioToggle.addEventListener('click', async () => {
 });
 elements.thumbnailPrev.addEventListener('click', () => renderThumbnailPage(state.thumbnailPage - 1));
 elements.thumbnailNext.addEventListener('click', () => renderThumbnailPage(state.thumbnailPage + 1));
-$('#thumbnailClose').addEventListener('click', () => closeThumbnailView());
 const shortcutDialog = $('#shortcutDialog');
 $('#openShortcuts').addEventListener('click', () => shortcutDialog.showModal());
 for (const dialog of document.querySelectorAll('dialog')) {
@@ -2689,7 +2718,7 @@ document.addEventListener('keydown', event => {
     g: () => setMode(state.mode === 'live' ? 'playback' : 'live'),
     t: () => setDisplayVisibility({ timeline: !state.timelineVisible }),
     d: () => setDisplayVisibility({ overlays: !state.overlaysVisible }),
-    f: () => { const player = state.tiles.get(state.focused); if (player) void toggleTileFullscreen(player.tile, state.focused); }
+    f: () => { const names = [...elements.viewerGrid.querySelectorAll('.camera-tile')].map(tile => tile.dataset.camera); if (names.length) focusCamera(names[(names.indexOf(state.focused) + 1) % names.length]); }
   };
   if (actions[key]) { event.preventDefault(); actions[key](); }
 });
@@ -2782,7 +2811,44 @@ void (async () => {
     const dialog = $('#updateDialog');
     $('#updateVersion').textContent = update.version;
     $('#ignoreUpdate').addEventListener('click', () => { void fetch('/api/update', { method: 'POST' }).catch(() => {}); });
-    $('#downloadUpdate').addEventListener('click', () => window.open(update.url, '_blank', 'noopener,noreferrer'));
+    $('#updateNotes').href = 'https://github.com/steffmartin/digifort/releases';
+    const install = $('#downloadUpdate'), actions = $('#updateActions'), area = $('#updateProgressArea');
+    const status = $('#updateStatus'), progress = $('#updateProgress');
+    install.disabled = !update.canInstall;
+    if (!update.canInstall) status.textContent = 'Instalação automática indisponível. Consulte a página da versão.';
+    if (!update.canInstall) area.hidden = false;
+    let downloading = false;
+    dialog.addEventListener('cancel', event => { if (downloading) event.preventDefault(); });
+    install.addEventListener('click', async () => {
+      downloading = true; actions.hidden = true; area.hidden = false; status.textContent = 'Preparando download…'; progress.removeAttribute('value');
+      try {
+        const start = await fetch('/api/update/download', { method: 'POST' });
+        if (!start.ok) throw new Error();
+        while (true) {
+          const response = await fetch('/api/update/download');
+          if (!response.ok) throw new Error();
+          const current = await response.json();
+          if (current.status === 'error') throw new Error(current.error);
+          if (current.status === 'ready') break;
+          if (current.total > 0) { progress.value = Math.min(100, current.received * 100 / current.total); status.textContent = `Baixando atualização… ${Math.floor(progress.value)}%`; }
+          else status.textContent = `Baixando atualização… ${(current.received / 1048576).toFixed(1)} MB`;
+          await new Promise(resolve => setTimeout(resolve, 250));
+        }
+        progress.value = 100; status.textContent = 'Download verificado. Encerrando para instalar…';
+        const apply = await fetch('/api/update/apply', { method: 'POST' });
+        if (!apply.ok) throw new Error();
+        while (true) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+          const response = await fetch('/api/update/download');
+          if (!response.ok) throw new Error();
+          const current = await response.json();
+          if (current.status === 'error') throw new Error(current.error);
+        }
+      } catch (error) {
+        downloading = false; actions.hidden = false; progress.removeAttribute('value');
+        status.textContent = error.message || 'Não foi possível preparar a atualização. Tente novamente.';
+      }
+    });
     dialog.showModal();
   } catch { /* Update checks never interrupt normal use. */ }
 })();

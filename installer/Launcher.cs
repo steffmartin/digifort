@@ -10,8 +10,8 @@ using System.Windows.Forms;
 using Microsoft.Win32;
 
 [assembly: System.Reflection.AssemblyTitle("Digifort Monitor")]
-[assembly: System.Reflection.AssemblyVersion("1.2.0.0")]
-[assembly: System.Reflection.AssemblyFileVersion("1.2.0.0")]
+[assembly: System.Reflection.AssemblyVersion("1.2.1.0")]
+[assembly: System.Reflection.AssemblyFileVersion("1.2.1.0")]
 
 internal static class Launcher
 {
@@ -25,6 +25,7 @@ internal static class Launcher
     private static int Main(string[] args)
     {
         if (Array.IndexOf(args, "--check-browser") >= 0) return FindBrowser() == null ? 1 : 0;
+        if (args.Length == 4 && args[0] == "--apply-update") return ApplyUpdate(args[1], args[2], args[3]);
 
         bool diagnostic = Array.IndexOf(args, "--diagnostico") >= 0;
         if (diagnostic) Native.AttachConsole(-1);
@@ -77,7 +78,7 @@ internal static class Launcher
         bool isEdge = String.Equals(Path.GetFileName(browserPath), "msedge.exe", StringComparison.OrdinalIgnoreCase);
         string profile = Path.GetFullPath(Path.Combine(data, isEdge ? "EdgeProfile" : "ChromeProfile"));
         Directory.CreateDirectory(profile);
-        var info = new ProcessStartInfo(nodePath, Quote(Path.Combine(root, "server.mjs")) + " --launcher");
+        var info = new ProcessStartInfo(nodePath, Quote(Path.Combine(root, "server.mjs")) + (source ? " --launcher" : " --launcher --update-capable"));
         info.WorkingDirectory = root;
         info.UseShellExecute = false;
         info.CreateNoWindow = true;
@@ -108,7 +109,25 @@ internal static class Launcher
                         catch (Exception error) { MessageBox.Show(error.Message, Title); }
                         break;
                     case null: break;
-                    default: if (diagnostic) Console.WriteLine(e.Data); break;
+                    default:
+                        if (!source && e.Data.StartsWith("DIGIFORT_UPDATE:", StringComparison.Ordinal))
+                        {
+                            try
+                            {
+                                string installer = Encoding.UTF8.GetString(Convert.FromBase64String(e.Data.Substring("DIGIFORT_UPDATE:".Length)));
+                                string directory = Path.GetDirectoryName(installer);
+                                string helper = Path.Combine(directory, "DigifortUpdateHelper.exe");
+                                File.Copy(Path.Combine(root, "DigifortMonitor.exe"), helper, false);
+                                var update = new ProcessStartInfo(helper, "--apply-update " + Quote(installer) + " " + Quote(root) + " " + Process.GetCurrentProcess().Id.ToString(CultureInfo.InvariantCulture));
+                                update.UseShellExecute = false;
+                                update.CreateNoWindow = true;
+                                Process.Start(update);
+                                closeRequested.Set();
+                            }
+                            catch (Exception error) { try { server.StandardInput.WriteLine("update-failed"); } catch (IOException) { } MessageBox.Show("Não foi possível iniciar a atualização: " + error.Message, Title, MessageBoxButtons.OK, MessageBoxIcon.Error); }
+                        }
+                        else if (diagnostic) Console.WriteLine(e.Data);
+                        break;
                 }
             };
             server.ErrorDataReceived += delegate(object sender, DataReceivedEventArgs e)
@@ -157,6 +176,31 @@ internal static class Launcher
                     server.WaitForExit();
                 }
             }
+        }
+    }
+
+    private static int ApplyUpdate(string installer, string root, string parentId)
+    {
+        try
+        {
+            int id = Int32.Parse(parentId, CultureInfo.InvariantCulture);
+            try { using (var parent = Process.GetProcessById(id)) parent.WaitForExit(); }
+            catch (ArgumentException) { }
+            var setup = new ProcessStartInfo(installer, "/SILENT /SUPPRESSMSGBOXES /NORESTART /NOCANCEL /SP- /DIR=" + Quote(root));
+            setup.UseShellExecute = false;
+            using (var process = Process.Start(setup))
+            {
+                process.WaitForExit();
+                if (process.ExitCode != 0) throw new InvalidOperationException("O instalador retornou o código " + process.ExitCode.ToString(CultureInfo.InvariantCulture) + ".");
+            }
+            Process.Start(Path.Combine(root, "DigifortMonitor.exe"));
+            try { File.Delete(installer); } catch (IOException) { }
+            return 0;
+        }
+        catch (Exception error)
+        {
+            MessageBox.Show("Não foi possível concluir a atualização: " + error.Message + "\nAbra o Digifort Monitor novamente ou reinstale a versão desejada.", Title, MessageBoxButtons.OK, MessageBoxIcon.Error);
+            return 1;
         }
     }
 

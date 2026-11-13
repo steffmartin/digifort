@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { createServer } from 'node:http';
 import { createReadStream, createWriteStream, promises as fs } from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
 import { once } from 'node:events';
 import { createInterface } from 'node:readline';
 import { pipeline } from 'node:stream/promises';
@@ -14,6 +15,7 @@ const PUBLIC_DIR = path.join(ROOT, 'public');
 const HOST = '127.0.0.1';
 const PORT = Number(process.env.PORT || 4177);
 const launcher = process.argv.includes('--launcher');
+const updateCapable = launcher && process.argv.includes('--update-capable') && process.platform === 'win32';
 const configs = new Map();
 const authStates = new Map();
 const authPromises = new Map();
@@ -44,7 +46,12 @@ async function checkUpdate() {
     let ignored = '';
     try { ignored = JSON.parse(await fs.readFile(UPDATE_FILE, 'utf8')).ignoredVersion; } catch {}
     if (versionParts(ignored)?.every((part, i) => part === latest[i])) return null;
-    return { version: latest.join('.'), url: `https://github.com/steffmartin/digifort/releases/tag/${encodeURIComponent(release.tag_name)}` };
+    const version = latest.join('.');
+    const name = `Digifort-Monitor-Setup-${version}.exe`;
+    const asset = release.assets?.find(item => item.name === name);
+    const checksums = release.assets?.find(item => item.name === 'SHA256SUMS.txt');
+    const validUrl = item => { try { const url = new URL(item.browser_download_url); return url.protocol === 'https:' && url.hostname === 'github.com' && url.pathname.startsWith('/steffmartin/digifort/releases/download/'); } catch { return false; } };
+    return { version, url: `https://github.com/steffmartin/digifort/releases/tag/${encodeURIComponent(release.tag_name)}`, canInstall: Boolean(updateCapable && validUrl(asset) && validUrl(checksums)), ...(updateCapable && validUrl(asset) && validUrl(checksums) ? { assetUrl: asset.browser_download_url, checksumUrl: checksums.browser_download_url, name } : {}) };
   } catch (error) {
     console.debug(`Verificação de atualização indisponível (${error.name || 'erro'}).`);
     return null;
@@ -53,6 +60,52 @@ async function checkUpdate() {
 
 const updateCheck = checkUpdate();
 let updateIgnored = false;
+let updateDownload = { status: 'idle', received: 0, total: 0 };
+let updateInstaller = '';
+
+async function downloadUpdate(update) {
+  let directory;
+  updateInstaller = '';
+  try {
+    const options = { headers: { 'User-Agent': 'Digifort-Monitor' }, signal: AbortSignal.timeout(300000) };
+    const sums = await fetch(update.checksumUrl, options);
+    if (!sums.ok || Number(sums.headers.get('content-length') || 0) > 65536) throw new Error('Checksum indisponível.');
+    let text = '';
+    for await (const chunk of sums.body) {
+      text += Buffer.from(chunk).toString('utf8');
+      if (text.length > 65536) throw new Error('Checksum inválido.');
+    }
+    const lines = text.split(/\r?\n/).map(line => line.match(/^([a-fA-F0-9]{64})\s+\*?([^\s]+)\s*$/)).filter(match => match && match[2] === update.name);
+    if (lines.length !== 1) throw new Error('Checksum ausente ou ambíguo.');
+    const response = await fetch(update.assetUrl, options);
+    if (!response.ok || !response.body) throw new Error('Download indisponível.');
+    const total = Number(response.headers.get('content-length') || 0);
+    const maxSize = 256 * 1024 * 1024;
+    if (!Number.isSafeInteger(total) || total < 0 || total > maxSize) throw new Error('Tamanho inválido.');
+    directory = await fs.mkdtemp(path.join(os.tmpdir(), 'digifort-update-'));
+    const target = path.join(directory, update.name);
+    const file = await fs.open(target, 'wx');
+    const hash = createHash('sha256');
+    let received = 0;
+    try {
+      updateDownload = { status: 'downloading', received, total };
+      for await (const chunk of response.body) {
+        received += chunk.length;
+        if (received > maxSize) throw new Error('Download excedeu o limite.');
+        hash.update(chunk);
+        await file.writeFile(chunk);
+        updateDownload = { status: 'downloading', received, total };
+      }
+    } finally { await file.close(); }
+    if ((total && received !== total) || hash.digest('hex') !== lines[0][1].toLowerCase()) throw new Error('SHA-256 divergente.');
+    updateInstaller = target;
+    updateDownload = { status: 'ready', received, total: total || received };
+  } catch (error) {
+    if (directory) await fs.rm(directory, { recursive: true, force: true }).catch(() => {});
+    updateDownload = { status: 'error', error: 'Não foi possível baixar ou verificar a atualização. Tente novamente.' };
+    console.debug(`Atualização indisponível (${error.name || 'erro'}).`);
+  }
+}
 
 function safeId(value) {
   return typeof value === 'string' && /^[a-zA-Z0-9_.-]{1,120}$/.test(value) && value !== '.' && value !== '..';
@@ -531,6 +584,23 @@ async function handleApi(req, res, url) {
     if (!res.writableEnded) controller.abort();
   });
   try {
+    if (url.pathname === '/api/update/download' || url.pathname === '/api/update/apply') {
+      if (req.headers.host !== `${HOST}:${PORT}` || (req.method !== 'GET' && req.headers.origin !== `http://${HOST}:${PORT}`)) return sendJson(res, 403, { error: 'Solicitação de outra origem.' });
+      if (!updateCapable) return sendJson(res, 403, { error: 'Atualização disponível somente na instalação Windows.' });
+      if (url.pathname.endsWith('/download') && req.method === 'GET') return sendJson(res, 200, updateDownload);
+      if (url.pathname.endsWith('/download') && req.method === 'POST') {
+        const update = await updateCheck;
+        if (!update?.canInstall) return sendJson(res, 400, { error: 'Instalador ou checksum indisponível.' });
+        if (updateDownload.status !== 'downloading' && updateDownload.status !== 'ready') { updateDownload = { status: 'downloading', received: 0, total: 0 }; void downloadUpdate(update); }
+        return sendJson(res, 202, updateDownload);
+      }
+      if (url.pathname.endsWith('/apply') && req.method === 'POST' && updateDownload.status === 'ready' && updateInstaller) {
+        updateDownload.status = 'applying';
+        res.once('finish', () => process.stdout.write(`DIGIFORT_UPDATE:${Buffer.from(updateInstaller, 'utf8').toString('base64')}\n`));
+        return sendJson(res, 202, { ok: true });
+      }
+      return sendJson(res, 400, { error: 'Atualização não está pronta.' });
+    }
     if (url.pathname === '/api/update') {
       if (req.headers.host !== `${HOST}:${PORT}` || (req.method !== 'GET' && req.headers.origin !== `http://${HOST}:${PORT}`)) return sendJson(res, 403, { error: 'Solicitação de outra origem.' });
       if (req.method === 'GET') return sendJson(res, 200, { update: updateIgnored ? null : await updateCheck });
@@ -768,6 +838,6 @@ if (launcher) {
     await Promise.allSettled([...mediaWriters.values()].map(writer => finishRecording(writer, true)));
     process.exit(process.exitCode || 0);
   };
-  control.on('line', line => { if (line === 'shutdown') void shutdown(); });
+  control.on('line', line => { if (line === 'shutdown') void shutdown(); else if (line === 'update-failed') updateDownload = { status: 'error', error: 'Não foi possível iniciar o instalador. Tente novamente.' }; });
   control.on('close', () => { if (server.listening) void shutdown(); });
 }

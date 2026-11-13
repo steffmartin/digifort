@@ -11,7 +11,7 @@ test('sair limpa o cache e reabrir ancora a página zero no novo horário', asyn
   const pages = [], revoked = [];
   const state = { reviewStart: 1000, reviewEnd: 100000, reviewEpoch: 2000, mode: 'playback', tiles: new Map([['A', { stop() {}, start() {} }]]), thumbnailCamera: '', thumbnailInterval: 300, thumbnailAnchor: null, thumbnailPage: 0, thumbnailActive: false, thumbnailCache: new Map(), thumbnailControllers: new Set(), thumbnailRequestId: 0 };
   const elements = { stopAll: {}, viewerGrid: { classList: { add() {}, remove() {} } }, thumbnailPanel: {}, thumbnailGrid: { replaceChildren() {} } };
-  const context = vm.createContext({ state, elements, URL: { revokeObjectURL: url => revoked.push(url) }, Promise, Math, Date, updateOverlayState() {}, updateViewHeader() {}, setDisplayVisibility() {}, requestStopRecordingSession: () => [], renderThumbnailPage: page => pages.push(page) });
+  const context = vm.createContext({ state, elements, URL: { revokeObjectURL: url => revoked.push(url) }, Promise, Math, Date, leaveFullscreen: async () => {}, updateOverlayState() {}, updateViewHeader() {}, setDisplayVisibility() {}, requestStopRecordingSession: () => [], renderThumbnailPage: page => pages.push(page) });
   vm.runInContext(clear + openClose, context);
   await context.openThumbnailView('A', 30);
   assert.equal(state.thumbnailAnchor, 2000);

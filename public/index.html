@@ -55,7 +55,6 @@
             <div id="cameraListEmpty" class="rail-empty" hidden>Selecione um servidor para carregar as câmeras.</div>
           </div>
           <div class="rail-footer">
-            <span class="server-time-zone" id="serverTimeZone">Fuso horário não definido</span>
             <span class="read-only-tag"><span aria-hidden="true">◉</span> Somente leitura</span>
             <button id="openShortcuts" class="shortcuts-help" type="button" aria-label="Atalhos de teclado" title="Atalhos de teclado">⌨</button>
           </div>
@@ -116,7 +115,7 @@
               <h3>Nenhuma câmera aberta</h3>
               <p>Escolha uma câmera na lista lateral. As câmeras configuradas como iniciais aparecem ao selecionar o servidor.</p>
             </div>
-            <div id="thumbnailPanel" class="thumbnail-panel" hidden><div id="thumbnailGrid" class="thumbnail-grid"></div><button id="thumbnailPrev" class="thumbnail-page previous" type="button" aria-label="Página anterior">‹</button><button id="thumbnailNext" class="thumbnail-page next" type="button" aria-label="Próxima página">›</button><button id="thumbnailClose" class="thumbnail-close" type="button">Voltar às câmeras</button><span id="thumbnailStatus" class="visually-hidden" role="status"></span></div>
+            <div id="thumbnailPanel" class="thumbnail-panel" hidden><div id="thumbnailGrid" class="thumbnail-grid"></div><button id="thumbnailPrev" class="thumbnail-page previous" type="button" aria-label="Página anterior">‹</button><button id="thumbnailNext" class="thumbnail-page next" type="button" aria-label="Próxima página">›</button><span id="thumbnailStatus" class="visually-hidden" role="status"></span></div>
           </section>
 
           <section id="reviewPanel" class="review-panel" aria-label="Timeline de gravações" hidden>
@@ -125,16 +124,17 @@
           </section>
         </main>
       </div>
-      <button id="exitSurveillance" class="exit-surveillance" type="button" hidden>Sair do modo vigilância · Esc</button>
       <div id="contextMenu" class="context-menu" role="menu" hidden></div>
       <dialog class="record-dialog" id="updateDialog" aria-labelledby="updateTitle">
         <form method="dialog">
           <h2 id="updateTitle">Nova versão disponível</h2>
           <p class="record-dialog-note">A versão <strong id="updateVersion"></strong> está disponível para download.</p>
-          <div class="record-dialog-actions">
-            <button value="cancel">Cancelar</button>
+          <a id="updateNotes" href="#" target="_blank" rel="noopener noreferrer">O que mudou?</a>
+          <div id="updateProgressArea" hidden><p id="updateStatus" class="record-dialog-note" role="status">Preparando download…</p><progress id="updateProgress" max="100"></progress></div>
+          <div class="record-dialog-actions" id="updateActions">
+            <button value="cancel" autofocus>Cancelar</button>
             <button id="ignoreUpdate" value="ignore">Ignorar esta versão</button>
-            <button class="record-confirm" id="downloadUpdate" value="download">Baixar</button>
+            <button class="record-confirm" id="downloadUpdate" type="button">Instalar</button>
           </div>
         </form>
       </dialog>
@@ -142,7 +142,7 @@
         <form method="dialog">
           <h2 id="shortcutDialogTitle">Atalhos de teclado</h2>
           <dl class="shortcut-list">
-            <dt>Buscar câmera</dt><dd>/</dd><dt>Ampliar ou restaurar câmera em foco</dt><dd>F</dd>
+            <dt>Buscar câmera</dt><dd>/</dd><dt>Focar próxima câmera</dt><dd>F</dd>
             <dt>Sair da ampliação ou vigilância</dt><dd>Esc</dd><dt>Pausar ou retomar todas</dt><dd>Espaço</dd>
             <dt>Alternar vigilância</dt><dd>V</dd><dt>Alternar áudio</dt><dd>A</dd>
             <dt>Alternar ao vivo e gravado</dt><dd>G</dd><dt>Mostrar ou ocultar timeline</dt><dd>T</dd>
@@ -152,6 +152,7 @@
             <dt>Navegar / abrir ou fechar câmera</dt><dd>↑ ↓ / Enter</dd>
             <dt>Capturar câmera em foco / todas</dt><dd>Ctrl+PrintScreen / Ctrl+Shift+PrintScreen</dd>
           </dl>
+          <p class="shortcut-note">Arraste uma câmera para trocar sua posição na grade. Clique duas vezes para ampliar ou restaurar a câmera.</p>
           <p class="shortcut-note">Para revisar a câmera em foco, use Ctrl+1 a Ctrl+0; para todas, acrescente Shift. A revisão de uma câmera fecha as demais.</p>
           <dl class="shortcut-list">
             <dt>30 segundos / 1 minuto / 30 minutos</dt><dd>1 / 2 / 3</dd>

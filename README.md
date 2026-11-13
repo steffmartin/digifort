@@ -12,7 +12,7 @@ O Digifort Monitor é um cliente local não oficial para visualizar câmeras de 
 
 O instalador x64 gerado pelo código atual inclui o Node.js e usa Google Chrome, Chromium compatível ou Microsoft Edge já instalado. Ele aceita Windows 10 e 11, mas o teste no Windows 10 ainda está pendente. Consulte as [notas de cada release](https://github.com/steffmartin/digifort/releases) para os requisitos do pacote publicado ou siga o [build do instalador](docs/DISTRIBUICAO.md#build-da-versão-120) para gerar o pacote localmente. Compare o SHA-256 do instalador com `SHA256SUMS.txt` antes de executar o arquivo baixado.
 
-Durante a instalação, escolha importar um `.config`, preencher os dados de um servidor ou configurar depois. Abra **Digifort Monitor** no menu Iniciar e gerencie os servidores no diálogo de configurações. O [guia de uso](docs/USO.md) explica como conectar um servidor e usar o player.
+Durante a instalação, escolha importar um `.config` ou configurar depois no aplicativo. Abra **Digifort Monitor** no menu Iniciar e gerencie os servidores no diálogo de configurações. O [guia de uso](docs/USO.md) explica como conectar um servidor e usar o player.
 
 ## Recursos e funcionamento
 

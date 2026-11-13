@@ -1,6 +1,6 @@
 # Distribuição do Digifort Monitor para Windows
 
-## Build da versão 1.2.0
+## Build da versão 1.2.1
 
 Use Windows 11 x64 com o compilador do .NET Framework 4.x e o Inno Setup 7. Na raiz do projeto, execute:
 
@@ -13,12 +13,12 @@ Use `-IsccPath` se o `ISCC.exe` estiver em um caminho personalizado. O script ba
 O instalador é distribuído sem assinatura. Para verificar o download, compare a saída do comando com a linha do instalador no arquivo de checksums:
 
 ```powershell
-Get-FileHash .\Digifort-Monitor-Setup-1.2.0.exe -Algorithm SHA256
+Get-FileHash .\Digifort-Monitor-Setup-1.2.1.exe -Algorithm SHA256
 ```
 
 ## Publicação
 
-Gere o instalador com a árvore do commit da versão na `main`. Use a tag `v1.2.0` e as [notas de versão](NOTAS-DE-VERSAO.md#120). Anexe `dist/Digifort-Monitor-Setup-1.2.0.exe` e `dist/SHA256SUMS.txt` à [release no GitHub](https://github.com/steffmartin/digifort/releases). Confira os nomes dos arquivos e o SHA-256 após a publicação.
+Gere o instalador com a árvore do commit da versão na `main`. Use a tag `v1.2.1` e as [notas de versão](NOTAS-DE-VERSAO.md#121). Anexe `dist/Digifort-Monitor-Setup-1.2.1.exe` e `dist/SHA256SUMS.txt` à [release no GitHub](https://github.com/steffmartin/digifort/releases). Confira os nomes dos arquivos e o SHA-256 após a publicação.
 
 ## Instalação e execução
 
@@ -28,7 +28,7 @@ O instalador roda por usuário em `%LOCALAPPDATA%\Programs\Digifort Monitor` e f
 
 O atalho inicia o executável gráfico e o Node distribuído no pacote. A janela em modo aplicativo abre quando o Node confirma que está escutando em `127.0.0.1:4177`. Se a porta estiver ocupada, o Digifort exibe um aviso. O inicializador acompanha a janela e usa objetos de trabalho do Windows para encerrar a árvore de processos que iniciou. Ao fechar durante uma gravação, o servidor tenta finalizar os blocos recebidos por completo. Uma gravação sem blocos completos é descartada.
 
-O programa mantém as configurações em `%LOCALAPPDATA%\Digifort Monitor\config`. O perfil dedicado do navegador e a última posição, tamanho e estado de maximização da janela ficam na pasta de dados. O diálogo de configurações do aplicativo permite criar, editar e excluir servidores; quando não há uma configuração utilizável, ele aparece automaticamente. Arquivos parciais criados pelo assistente podem ser completados no editor de sua preferência. O assistente escreve os valores preenchidos diretamente no `.config` local em JSON UTF-8.
+O programa mantém as configurações em `%LOCALAPPDATA%\Digifort Monitor\config`. O perfil dedicado do navegador e a última posição, tamanho e estado de maximização da janela ficam na pasta de dados. O diálogo de configurações do aplicativo permite criar, editar e excluir servidores; quando não há uma configuração utilizável, ele aparece automaticamente. O assistente permite importar um arquivo `.config` existente ou pular a configuração; o preenchimento dos dados é feito no aplicativo.
 
 Para depurar pelo repositório, execute `Iniciar-Digifort.bat --diagnostico`. Os atalhos da instalação abrem sem console. Ao executar o `.bat` diretamente pelo Explorador, o Windows pode exibir brevemente o console que interpreta o arquivo.
 
@@ -36,6 +36,6 @@ Para depurar pelo repositório, execute `Iniciar-Digifort.bat --diagnostico`. Os
 
 Feche o Digifort Monitor e execute o novo instalador para atualizar ou reinstalar. A pasta de dados e os `.config` existentes são preservados. O assistente de configuração inicial reaparece quando a pasta contém apenas o modelo ou está vazia.
 
-Na inicialização, a aplicação consulta a release mais recente do repositório. Quando encontra uma versão superior, oferece abrir a página da release ou ignorar aquela versão. A preferência fica em `update.json` na pasta de configurações; o aplicativo não baixa nem instala atualizações automaticamente. Falhas na consulta não interrompem o uso.
+Na inicialização, a aplicação consulta a release mais recente. Ao escolher **Instalar**, ela baixa o instalador para uma pasta temporária e verifica seu SHA-256 com o arquivo da release. Em seguida, encerra o aplicativo, executa o instalador sem perguntas e o reabre após a conclusão. Falhas no download ou na verificação mantêm o aplicativo aberto. É possível consultar as notas ou ignorar uma versão; a preferência fica em `update.json` na pasta de configurações.
 
 Na desinstalação, a resposta padrão mantém os `.config`. Se optar por excluí-los, são removidos somente os `.config` dos servidores na pasta de configuração. O modo silencioso exige `/DELETECONFIGS` para essa remoção. Capturas, gravações e o modelo `example.config` são preservados.
