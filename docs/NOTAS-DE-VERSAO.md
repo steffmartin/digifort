@@ -1,5 +1,15 @@
 # Notas de versão do Digifort Monitor
 
+## 1.2.2
+
+### Correção
+
+- A gravação local mantém o início do vídeo ao usar uma trilha de áudio silenciosa e começa diretamente em MP4, sem perguntar o formato. O menu indica quando o navegador não suporta MP4. ([#51](https://github.com/steffmartin/digifort/issues/51))
+
+### Validação e distribuição
+
+O início, a pausa, a retomada, a finalização, a gravação simultânea de quatro câmeras e o início com áudio ativado foram exercitados no Windows 11 com uma transmissão real. As medições e os limites estão nas [evidências da issue 51](EVIDENCIAS-ISSUE-51.md). Os testes automatizados cobrem os estados e as falhas da gravação. A qualidade do áudio, a instalação em máquina limpa e o Windows 10 permanecem pendentes. Confira o SHA-256 do instalador conforme [Distribuição](DISTRIBUICAO.md).
+
 ## 1.2.1
 
 ### Novidades

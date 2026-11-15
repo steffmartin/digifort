@@ -78,4 +78,5 @@ test('destino de mídia rejeita travessia e extensões incompatíveis', () => {
   assert.equal(path.basename(context.mediaTarget(config, 'camera-1.png', true).finalPath), 'camera-1.png');
   for (const filename of ['../imagem.png', 'imagem.mp4', 'imagem.png.exe', '']) assert.throws(() => context.mediaTarget(config, filename, true), /inválido/);
   assert.throws(() => context.mediaTarget({}, 'camera.mp4', false), /Defina/);
+  assert.throws(() => context.mediaTarget(config, 'camera.mpg', false), /inválido/);
 });

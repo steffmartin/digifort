@@ -1,6 +1,6 @@
 # Distribuição do Digifort Monitor para Windows
 
-## Build da versão 1.2.1
+## Build da versão 1.2.2
 
 Use Windows 11 x64 com o compilador do .NET Framework 4.x e o Inno Setup 7. Na raiz do projeto, execute:
 
@@ -13,12 +13,12 @@ Use `-IsccPath` se o `ISCC.exe` estiver em um caminho personalizado. O script ba
 O instalador é distribuído sem assinatura. Para verificar o download, compare a saída do comando com a linha do instalador no arquivo de checksums:
 
 ```powershell
-Get-FileHash .\Digifort-Monitor-Setup-1.2.1.exe -Algorithm SHA256
+Get-FileHash .\Digifort-Monitor-Setup-1.2.2.exe -Algorithm SHA256
 ```
 
 ## Publicação
 
-Gere o instalador com a árvore do commit da versão na `main`. Use a tag `v1.2.1` e as [notas de versão](NOTAS-DE-VERSAO.md#121). Anexe `dist/Digifort-Monitor-Setup-1.2.1.exe` e `dist/SHA256SUMS.txt` à [release no GitHub](https://github.com/steffmartin/digifort/releases). Confira os nomes dos arquivos e o SHA-256 após a publicação.
+Gere o instalador com a árvore do commit da versão na `main`. Use a tag `v1.2.2` e as [notas de versão](NOTAS-DE-VERSAO.md#122). Anexe `dist/Digifort-Monitor-Setup-1.2.2.exe` e `dist/SHA256SUMS.txt` à [release no GitHub](https://github.com/steffmartin/digifort/releases). Confira os nomes dos arquivos e o SHA-256 após a publicação.
 
 ## Instalação e execução
 

@@ -22,7 +22,7 @@ A estrutura fica em [index.html](../public/index.html), os estilos em [styles.cs
 - Ao iniciar, uma versão mais recente pode abrir um diálogo com opções para cancelar, ignorar a versão, consultar a release ou instalar. O download mostra progresso e mantém o diálogo modal até o aplicativo encerrar para instalação. Falhas de consulta não mostram erro na interface.
 - O diálogo de configurações permite criar, editar e excluir servidores. Ele esmaece o fundo e interrompe as transmissões enquanto está aberto; ao fechar, retoma as transmissões ou reconecta o servidor alterado. A senha existente permanece no servidor e é preservada quando o campo fica vazio. Sem uma configuração utilizável, **Fechar** encerra a janela e o servidor quando o aplicativo foi iniciado pelo inicializador gráfico.
 - No instalador, é possível importar uma configuração existente ou pular a etapa. O preenchimento dos dados é feito no aplicativo.
-- Os menus de captura devem indicar formatos indisponíveis antes do início e distinguir gravações em andamento, pausadas e concluídas.
+- Os menus de captura iniciam a gravação diretamente em MP4, indicam quando o formato está indisponível e distinguem gravações em andamento, pausadas e concluídas.
 
 ## Linguagem e validação
 

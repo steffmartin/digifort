@@ -34,7 +34,6 @@ const state = {
   audioContext: null, reviewEpoch: null, reviewStart: null, reviewEnd: null, reviewLimitEnd: null,
   timelineStart: null, timelineEnd: null,
   timelineRequestId: 0, timelineData: new Map(), timelineZoom: 1, timelineControllers: [], recordings: new Map(), recordingSession: null,
-  pendingRecordingScope: null,
   thumbnailPage: 0, thumbnailSize: 'large', thumbnailInterval: 300, thumbnailCamera: '', thumbnailAnchor: null, thumbnailActive: false, thumbnailWasStopped: false, thumbnails: [], thumbnailCache: new Map(), thumbnailRequestId: 0, thumbnailControllers: new Set()
 };
 
@@ -54,7 +53,6 @@ const elements = {
   toggleOverlayVisibility: $('#toggleOverlayVisibility'), toggleTimelineVisibility: $('#toggleTimelineVisibility'),
   surveillanceToggle: $('#surveillanceToggle'), contextMenu: $('#contextMenu'),
   thumbnailNext: $('#thumbnailNext'),
-  recordDialog: $('#recordDialog'), recordForm: $('#recordForm'), recordFormat: $('#recordFormat'), recordFormatHelp: $('#recordFormatHelp'), recordConfirm: $('#recordConfirm'),
   configDialog: $('#configDialog'), configDialogMessage: $('#configDialogMessage'), closeConfigApp: $('#closeConfigApp'),
   toastRegion: $('#toastRegion')
 };
@@ -290,6 +288,7 @@ function scopedCameraNames(scope) { return scope.all ? [...state.tiles.keys()] :
 function appendRecordingActions(menu, scope) {
   const names = scopedCameraNames(scope);
   const session = state.recordingSession;
+  const mp4Available = Boolean(recordingMime());
   const belongsToSession = session?.key === recordingScopeKey(scope);
   const active = session ? session.cameras.map(name => state.recordings.get(name)).filter(Boolean) : [];
   const actions = session ? [
@@ -297,17 +296,17 @@ function appendRecordingActions(menu, scope) {
     ['pause', 'Pausar gravação', !belongsToSession || session.status === 'starting' || !active.some(recording => recording.status === 'recording')],
     ['resume', 'Retomar gravação', !belongsToSession || !active.some(recording => recording.status === 'paused')],
     ['stop', 'Finalizar gravação', !belongsToSession || active.length === 0]
-  ] : [['start', 'Iniciar gravação', !names.length || names.some(name => !state.tiles.has(name))]];
+  ] : [['start', mp4Available ? 'Iniciar gravação' : 'Iniciar gravação (MP4 indisponível)', !mp4Available || !names.length || names.some(name => !state.tiles.has(name))]];
   if (actions.length) { const separator = document.createElement('div'); separator.className = 'context-separator'; separator.setAttribute('role', 'separator'); menu.append(separator); }
   for (const [action, label, disabled] of actions) {
     const item = document.createElement('button');
     item.type = 'button'; item.className = 'context-item'; item.setAttribute('role', 'menuitem'); item.textContent = label; item.disabled = disabled;
+    if (action === 'start' && !mp4Available) item.title = 'Este navegador não permite gravar em MP4.';
     if (session && !belongsToSession && action !== 'start') item.title = `Esta gravação foi iniciada no menu ${session.all ? 'Todas as câmeras' : 'Esta câmera'}.`;
     item.addEventListener('click', () => {
       if (item.disabled) return;
       closeContextMenu();
-      if (action === 'start') openRecordingDialog(scope);
-      else changeRecordingState(scope, action);
+      void changeRecordingState(scope, action);
     });
     menu.append(item);
   }
@@ -441,39 +440,10 @@ async function captureFrames(scope) {
   }
 }
 
-function recordingMime(format) {
-  const candidates = format === 'mp4'
-    ? ['video/mp4;codecs="avc1.42E01E,mp4a.40.2"', 'video/mp4']
-    : ['video/mpeg'];
+function recordingMime() {
+  if (typeof MediaRecorder !== 'function' || typeof MediaRecorder.isTypeSupported !== 'function') return '';
+  const candidates = ['video/mp4;codecs="avc1.42E01E,mp4a.40.2"', 'video/mp4'];
   return candidates.find(type => MediaRecorder.isTypeSupported(type)) || '';
-}
-
-function openRecordingDialog(scope) {
-  if (!state.server?.videoFolderConfigured) {
-    return toast('Defina videoFolder ou mediaFolder no arquivo de configuração do servidor.', 'error');
-  }
-  if (typeof MediaRecorder !== 'function') return toast('Este navegador não oferece gravação local de mídia.', 'error');
-  state.pendingRecordingScope = scope;
-  const mp4 = recordingMime('mp4');
-  const mpeg = recordingMime('mpeg');
-  for (const option of elements.recordFormat.options) {
-    const supported = option.value === 'mp4' ? mp4 : mpeg;
-    option.disabled = !supported;
-    option.textContent = option.value === 'mp4'
-      ? `MP4${mp4 ? '' : ' (não suportado neste navegador)'}`
-      : `MPG / MPEG${mpeg ? '' : ' (não suportado neste navegador)'}`;
-  }
-  elements.recordFormat.value = mp4 ? 'mp4' : 'mpeg';
-  updateRecordFormatHelp();
-  elements.recordDialog.showModal();
-}
-
-function updateRecordFormatHelp() {
-  const type = recordingMime(elements.recordFormat.value);
-  elements.recordFormatHelp.textContent = type
-    ? `Formato disponível neste navegador (${type}). O vídeo é recodificado a partir dos quadros exibidos.`
-    : 'Este navegador não consegue gravar o formato selecionado. Escolha um formato disponível para continuar.';
-  elements.recordConfirm.disabled = !type;
 }
 
 function setRecordingOverlay(camera, status) {
@@ -491,11 +461,22 @@ function startRecording(camera, filename, mimeType, session) {
   if (player.stopped || state.allStopped || !player.canvas.width || !player.canvas.height) throw new Error(`Aguarde a chegada do vídeo de ${camera} antes de gravar.`);
   if (typeof player.canvas.captureStream !== 'function') throw new Error('Este navegador não permite capturar os quadros exibidos.');
   const stream = player.canvas.captureStream(30);
-  if (!state.audioContext) state.audioContext = new AudioContext();
-  const destination = state.audioContext.createMediaStreamDestination();
-  stream.addTrack(destination.stream.getAudioTracks()[0]);
+  let destination, silence;
   let opened = false;
+  const cleanup = () => {
+    for (const track of stream.getTracks()) track.stop();
+    if (silence) { try { silence.stop(); } catch {} silence.disconnect(); }
+    destination?.disconnect();
+  };
   try {
+    if (!state.audioContext) state.audioContext = new AudioContext();
+    destination = state.audioContext.createMediaStreamDestination();
+    // Keep audio flowing even when no camera is audible; otherwise the MP4 muxer can discard the initial video.
+    silence = state.audioContext.createConstantSource();
+    silence.offset.value = 0;
+    silence.connect(destination);
+    silence.start();
+    stream.addTrack(destination.stream.getAudioTracks()[0]);
     const recorder = new MediaRecorder(stream, { mimeType });
     const recording = { camera, recorder, destination, status: 'recording', bytes: 0, writeChain: Promise.resolve(), writeError: null };
     recording.finished = new Promise(resolve => { recording.resolveFinished = resolve; });
@@ -524,8 +505,7 @@ function startRecording(camera, filename, mimeType, session) {
         if (opened) await postMedia('/api/media-recording', { filename, action: 'abort' }).catch(() => {});
         if (error.name !== 'AbortError') toast(error.message || 'Não foi possível finalizar o arquivo de gravação.', 'error');
       } finally {
-        for (const track of stream.getTracks()) track.stop();
-        destination.disconnect?.();
+        cleanup();
         state.recordings.delete(camera);
         setRecordingOverlay(camera, 'stopped');
         if (state.recordingSession === session && session.status !== 'starting' &&
@@ -544,8 +524,7 @@ function startRecording(camera, filename, mimeType, session) {
     setRecordingOverlay(camera, 'recording');
     return recording;
   } catch (error) {
-    for (const track of stream.getTracks()) track.stop();
-    destination.disconnect?.();
+    cleanup();
     throw error;
   }
 }
@@ -558,14 +537,13 @@ async function changeRecordingState(scope, action) {
     }
     if (state.recordingSession) return toast('Finalize a gravação atual no submenu que a iniciou antes de iniciar outra.', 'error');
     if (!names.length) return toast('Abra uma câmera antes de iniciar a gravação.', 'error');
-    const mimeType = recordingMime(elements.recordFormat.value);
-    if (!mimeType) return toast('O formato escolhido não é suportado por este navegador.', 'error');
+    const mimeType = recordingMime();
+    if (!mimeType) return toast('A gravação em MP4 não é suportada por este navegador.', 'error');
     const session = { key: recordingScopeKey(scope), all: Boolean(scope.all), cameras: names.slice(), status: 'starting' };
     const started = [];
     state.recordingSession = session;
     try {
-      const extension = mimeType.startsWith('video/mp4') ? '.mp4' : '.mpg';
-      const filenames = mediaFilenames(session.cameras, extension, mediaEpoch());
+      const filenames = mediaFilenames(session.cameras, '.mp4', mediaEpoch());
       for (const [index, camera] of session.cameras.entries()) {
         const recording = startRecording(camera, filenames[index], mimeType, session);
         if (recording) started.push(recording);
@@ -2557,16 +2535,6 @@ elements.liveMode.addEventListener('click', () => setMode('live'));
 elements.reviewMode.addEventListener('click', () => setMode('playback'));
 elements.playReview.addEventListener('click', startReview);
 for (const input of [elements.startDateTime, elements.endDateTime]) input.addEventListener('change', clearThumbnails);
-elements.recordFormat.addEventListener('change', updateRecordFormatHelp);
-elements.recordForm.addEventListener('submit', event => {
-  if (event.submitter?.value !== 'start') return;
-  event.preventDefault();
-  const scope = state.pendingRecordingScope;
-  state.pendingRecordingScope = null;
-  elements.recordDialog.close();
-  if (scope) void changeRecordingState(scope, 'start');
-});
-elements.recordDialog.addEventListener('close', () => { state.pendingRecordingScope = null; });
 elements.stopAll.addEventListener('click', toggleAllStreams);
 function selectMosaic(id) {
   const next = getMosaic(id);

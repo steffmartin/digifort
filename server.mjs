@@ -379,7 +379,7 @@ function sendJson(res, status, data) {
 function mediaTarget(config, filename, screenshot) {
   const key = screenshot ? 'screenshotFolder' : 'videoFolder';
   if (!config[key]) throw new Error(`Defina ${key} ou mediaFolder no arquivo de configuração do servidor.`);
-  const validName = screenshot ? /^[\p{L}\p{N}_-]{1,100}\.png$/u : /^[\p{L}\p{N}_-]{1,100}\.(?:mp4|mpg)$/u;
+  const validName = screenshot ? /^[\p{L}\p{N}_-]{1,100}\.png$/u : /^[\p{L}\p{N}_-]{1,100}\.mp4$/u;
   if (typeof filename !== 'string' || !validName.test(filename)) throw new Error('Nome de arquivo de mídia inválido.');
   const folder = path.resolve(config[key]);
   return { folder, finalPath: path.join(folder, filename), partPath: path.join(folder, `${filename}.part`) };

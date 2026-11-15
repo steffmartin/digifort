@@ -59,7 +59,7 @@ Para abrir miniaturas, clique com o botão direito no quadro da câmera e escolh
 
 ## Salvar capturas e gravações
 
-Use o menu de contexto de um quadro para capturar um PNG sem sobreposições ou iniciar, pausar, retomar e finalizar uma gravação local. O vídeo registra os quadros reproduzidos e pode incluir o áudio decodificado quando estiver ativo. O seletor oferece MP4 ou MPG/MPEG conforme o suporte de `MediaRecorder`. O Digifort Monitor salva os arquivos na pasta de mídia configurada. Os nomes usam o fuso do servidor, a hora atual no modo ao vivo ou a posição da reprodução na revisão.
+Use o menu de contexto de um quadro para capturar um PNG sem sobreposições ou iniciar, pausar, retomar e finalizar uma gravação local. A gravação começa diretamente em MP4 e registra os quadros reproduzidos; ela pode incluir o áudio decodificado quando estiver ativo. Se o navegador não oferecer gravação em MP4, o comando aparece indisponível. O Digifort Monitor salva os arquivos na pasta de mídia configurada. Os nomes usam o fuso do servidor, a hora atual no modo ao vivo ou a posição da reprodução na revisão.
 
 Finalize a gravação para salvar o arquivo completo. Se fechar o aplicativo durante uma gravação, o servidor tenta recuperar os blocos recebidos por inteiro. A desinstalação preserva as capturas e gravações.
 

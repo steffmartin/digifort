@@ -253,7 +253,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .record-dialog h2 { margin: 0 0 4px; font-size: 16px; font-weight: 550; }
 .record-dialog label { color: var(--muted); font-size: 10px; }
 .record-dialog select { height: 35px; border: 1px solid var(--line); background: #111b1d; color: var(--text); }
-.record-format-help, .record-dialog-note { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.6; }
+.record-dialog-note { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.6; }
 .record-dialog-actions { display: flex; flex-wrap: wrap; justify-content: end; gap: 8px; margin-top: 5px; }
 .record-dialog-actions button { min-height: 34px; padding: 0 12px; border: 1px solid var(--line); background: transparent; color: var(--text); font-size: 10px; }
 .record-dialog-actions .record-confirm { border-color: var(--review); background: var(--review); color: #1d201f; font-weight: 700; }
