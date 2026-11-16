@@ -30,7 +30,7 @@ const state = {
   servers: [], serverId: '', server: null, cameras: [], tiles: new Map(), desktopWindow: false,
   cameraStatuses: new Map(), statusTimer: null, statusRequestId: 0, statusRefreshing: false,
   mode: 'live', focused: '', audioEnabled: false,
-  allStopped: false, mosaic: 'auto', overlaysVisible: false, timelineVisible: true, surveillance: false,
+  allStopped: false, captureAll: false, mosaic: 'auto', overlaysVisible: false, timelineVisible: true, surveillance: false,
   audioContext: null, reviewEpoch: null, reviewStart: null, reviewEnd: null, reviewLimitEnd: null,
   timelineStart: null, timelineEnd: null,
   timelineRequestId: 0, timelineData: new Map(), timelineZoom: 1, timelineControllers: [], recordings: new Map(), recordingSession: null,
@@ -44,6 +44,8 @@ const elements = {
   liveMode: $('#liveMode'), reviewMode: $('#reviewMode'), reviewFields: $('#reviewFields'),
   startDateTime: $('#startDateTime'), endDateTime: $('#endDateTime'), playReview: $('#playReview'),
   audioSource: $('#audioSource'), audioToggle: $('#audioToggle'), viewerGrid: $('#viewerGrid'), emptyMonitor: $('#emptyMonitor'),
+  mediaToolbar: $('#mediaToolbar'), mediaToolbarHandle: $('#mediaToolbarHandle'),
+  captureFrame: $('#captureFrame'), recordToggle: $('#recordToggle'), finishRecording: $('#finishRecording'), captureAllSwitch: $('#captureAllSwitch'),
   viewSubtitle: $('#viewSubtitle'), stopAll: $('#stopAll'),
   reviewPanel: $('#reviewPanel'), timelineRuler: $('#timelineRuler'), timelineTracks: $('#timelineTracks'), timelineNames: $('#timelineNames'), timelineScroll: $('#timelineScroll'), timelineContent: $('#timelineContent'), timelineDays: $('#timelineDays'),
   timelinePlayhead: $('#timelinePlayhead'), timelineStatus: $('#timelineStatus'),
@@ -127,6 +129,7 @@ function updateOverlayState() {
   elements.viewerGrid.classList.toggle('overlays-hidden', !state.overlaysVisible);
   elements.reviewPanel.hidden = state.mode !== 'playback' || !state.timelineVisible || state.thumbnailActive;
   elements.thumbnailPanel.hidden = !state.thumbnailActive;
+  elements.mediaToolbar.hidden = state.thumbnailActive;
   const allVisible = state.overlaysVisible && state.timelineVisible;
   elements.overlayToggle.setAttribute('aria-pressed', String(allVisible));
   elements.overlayToggle.textContent = allVisible ? 'Ocultar tudo' : 'Mostrar tudo';
@@ -212,32 +215,13 @@ function appendPlaybackShortcuts(menu, scope) {
   }
 }
 
-function createCaptureMenu(scope) {
-  const menu = document.createElement('div');
-  menu.className = 'context-submenu';
-  menu.setAttribute('role', 'menu');
-  const capture = document.createElement('button');
-  capture.type = 'button'; capture.className = 'context-item'; capture.setAttribute('role', 'menuitem');
-  capture.textContent = 'Frame';
-  if (scope.all || scope.camera === state.focused) {
-    const hint = document.createElement('span'); hint.className = 'context-shortcut';
-    hint.textContent = scope.all ? 'Ctrl+Shift+PrintScreen' : 'Ctrl+PrintScreen';
-    capture.append(hint);
-  }
-  capture.disabled = !(scope.all ? state.tiles.size : state.tiles.has(scope.camera));
-  capture.addEventListener('click', () => { void captureFrames(scope); closeContextMenu(); });
-  menu.append(capture);
-  appendRecordingActions(menu, scope);
-  return menu;
-}
-
 function contextSeparator() {
   const separator = document.createElement('div');
   separator.className = 'context-separator'; separator.setAttribute('role', 'separator');
   return separator;
 }
 
-function createCameraScopeMenu(scope, { includeCapture = true } = {}) {
+function createCameraScopeMenu(scope) {
   const menu = document.createElement('div');
   menu.className = 'context-submenu context-scope-menu';
   menu.setAttribute('role', 'menu');
@@ -256,7 +240,6 @@ function createCameraScopeMenu(scope, { includeCapture = true } = {}) {
   }
   menu.append(createContextBranch('Gravado', () => createPlaybackMenu(scope)));
   if (cameraOpen && state.mode === 'playback') menu.append(createContextBranch('Miniaturas', () => createThumbnailMenu(scope.camera)));
-  if (includeCapture) menu.append(createContextBranch('Captura', () => createCaptureMenu(scope)));
   if (cameraOpen) {
     const close = document.createElement('button');
     close.type = 'button'; close.className = 'context-item'; close.setAttribute('role', 'menuitem'); close.textContent = 'Fechar câmera';
@@ -284,33 +267,6 @@ function appendProfileItems(menu, cameraName) {
 }
 
 function scopedCameraNames(scope) { return scope.all ? [...state.tiles.keys()] : [scope.camera].filter(name => state.tiles.has(name)); }
-
-function appendRecordingActions(menu, scope) {
-  const names = scopedCameraNames(scope);
-  const session = state.recordingSession;
-  const mp4Available = Boolean(recordingMime());
-  const belongsToSession = session?.key === recordingScopeKey(scope);
-  const active = session ? session.cameras.map(name => state.recordings.get(name)).filter(Boolean) : [];
-  const actions = session ? [
-    ['start', 'Iniciar gravação', true],
-    ['pause', 'Pausar gravação', !belongsToSession || session.status === 'starting' || !active.some(recording => recording.status === 'recording')],
-    ['resume', 'Retomar gravação', !belongsToSession || !active.some(recording => recording.status === 'paused')],
-    ['stop', 'Finalizar gravação', !belongsToSession || active.length === 0]
-  ] : [['start', mp4Available ? 'Iniciar gravação' : 'Iniciar gravação (MP4 indisponível)', !mp4Available || !names.length || names.some(name => !state.tiles.has(name))]];
-  if (actions.length) { const separator = document.createElement('div'); separator.className = 'context-separator'; separator.setAttribute('role', 'separator'); menu.append(separator); }
-  for (const [action, label, disabled] of actions) {
-    const item = document.createElement('button');
-    item.type = 'button'; item.className = 'context-item'; item.setAttribute('role', 'menuitem'); item.textContent = label; item.disabled = disabled;
-    if (action === 'start' && !mp4Available) item.title = 'Este navegador não permite gravar em MP4.';
-    if (session && !belongsToSession && action !== 'start') item.title = `Esta gravação foi iniciada no menu ${session.all ? 'Todas as câmeras' : 'Esta câmera'}.`;
-    item.addEventListener('click', () => {
-      if (item.disabled) return;
-      closeContextMenu();
-      void changeRecordingState(scope, action);
-    });
-    menu.append(item);
-  }
-}
 
 function recordingScopeKey(scope) { return scope.all ? 'all-cameras' : `camera:${scope.camera}`; }
 
@@ -510,6 +466,7 @@ function startRecording(camera, filename, mimeType, session) {
         setRecordingOverlay(camera, 'stopped');
         if (state.recordingSession === session && session.status !== 'starting' &&
             session.cameras.every(name => !state.recordings.has(name))) state.recordingSession = null;
+        updateMediaControls();
         recording.resolveFinished();
       }
     }, { once: true });
@@ -535,13 +492,14 @@ async function changeRecordingState(scope, action) {
     if (!state.server?.videoFolderConfigured) {
       return toast('Defina videoFolder ou mediaFolder no arquivo de configuração do servidor.', 'error');
     }
-    if (state.recordingSession) return toast('Finalize a gravação atual no submenu que a iniciou antes de iniciar outra.', 'error');
+    if (state.recordingSession) return toast('Finalize a gravação atual antes de iniciar outra.', 'error');
     if (!names.length) return toast('Abra uma câmera antes de iniciar a gravação.', 'error');
     const mimeType = recordingMime();
     if (!mimeType) return toast('A gravação em MP4 não é suportada por este navegador.', 'error');
     const session = { key: recordingScopeKey(scope), all: Boolean(scope.all), cameras: names.slice(), status: 'starting' };
     const started = [];
     state.recordingSession = session;
+    updateMediaControls();
     try {
       const filenames = mediaFilenames(session.cameras, '.mp4', mediaEpoch());
       for (const [index, camera] of session.cameras.entries()) {
@@ -559,6 +517,7 @@ async function changeRecordingState(scope, action) {
       if (state.recordingSession === session) state.recordingSession = null;
       if (error.name !== 'AbortError') toast(error.message || 'Não foi possível iniciar a gravação.', 'error');
     }
+    updateMediaControls();
     return;
   }
   const session = state.recordingSession;
@@ -582,6 +541,7 @@ async function changeRecordingState(scope, action) {
       }
     } catch { toast(`Não foi possível atualizar a gravação de ${camera}.`, 'error'); }
   }
+  updateMediaControls();
 }
 
 function requestStopRecordingSession() {
@@ -594,6 +554,7 @@ function requestStopRecordingSession() {
     if (recording.recorder.state !== 'inactive') recording.recorder.stop();
   }
   if (!active.length && state.recordingSession === session) state.recordingSession = null;
+  updateMediaControls();
   return active.map(recording => recording.finished);
 }
 
@@ -1089,10 +1050,17 @@ function createTile(cameraName, profile) {
 
 function isTileEnlarged(tile) { return document.fullscreenElement === tile || tile.classList.contains('is-enlarged'); }
 
+function placeMediaToolbar(tile = null) {
+  if (!elements.mediaToolbar) return;
+  (tile || elements.viewerGrid).append(elements.mediaToolbar);
+  positionMediaToolbar();
+}
+
 function closeSurveillanceTile() {
   const tile = elements.viewerGrid.querySelector('.camera-tile.is-enlarged');
   if (!tile) return false;
   tile.classList.remove('is-enlarged');
+  placeMediaToolbar();
   tile.resetZoom?.();
   return true;
 }
@@ -1101,7 +1069,7 @@ async function toggleTileFullscreen(tile, cameraName) {
   if (state.surveillance && document.fullscreenElement === document.documentElement) {
     const wasEnlarged = tile.classList.contains('is-enlarged');
     closeSurveillanceTile();
-    if (!wasEnlarged) tile.classList.add('is-enlarged');
+    if (!wasEnlarged) { tile.classList.add('is-enlarged'); placeMediaToolbar(tile); }
     return;
   }
   if (document.fullscreenElement === tile) {
@@ -1147,6 +1115,8 @@ document.addEventListener('keydown', event => {
   void document.exitFullscreen().catch(() => {});
 });
 document.addEventListener('fullscreenchange', () => {
+  const fullTile = document.fullscreenElement?.classList?.contains('camera-tile') ? document.fullscreenElement : null;
+  placeMediaToolbar(fullTile);
   for (const tile of elements.viewerGrid.querySelectorAll('.camera-tile')) if (!isTileEnlarged(tile)) tile.resetZoom?.();
   if (!document.fullscreenElement && state.surveillance) { navigator.keyboard?.unlock?.(); closeSurveillanceTile(); state.surveillance = false; updateSurveillance(); }
 });
@@ -1252,7 +1222,7 @@ function updateAudioSources() {
     elements.audioToggle.disabled = true;
     elements.audioToggle.setAttribute('aria-pressed', 'false');
     elements.audioToggle.setAttribute('aria-label', 'Ativar áudio');
-    elements.audioToggle.title = 'Ativar áudio · A';
+    setMediaControlTitle(elements.audioToggle, 'Ativar áudio · A');
     return;
   }
   for (const name of state.tiles.keys()) elements.audioSource.add(new Option(name, name));
@@ -1262,7 +1232,12 @@ function updateAudioSources() {
   elements.audioToggle.setAttribute('aria-pressed', String(state.audioEnabled));
   const audioAction = state.audioEnabled ? 'Desativar áudio' : 'Ativar áudio';
   elements.audioToggle.setAttribute('aria-label', audioAction);
-  elements.audioToggle.title = `${audioAction} · A`;
+  setMediaControlTitle(elements.audioToggle, `${audioAction} · A`);
+}
+
+function setMediaControlTitle(control, title) {
+  control.title = title;
+  if (control.parentElement?.classList.contains('media-control-hit')) control.parentElement.title = title;
 }
 
 function updateViewHeader() {
@@ -1270,11 +1245,45 @@ function updateViewHeader() {
   elements.cameraCount.textContent = String(count);
   elements.stopAll.disabled = count === 0;
   const stopAction = state.allStopped ? 'Retomar todas as câmeras' : 'Parar todas as câmeras';
-  elements.stopAll.title = `${stopAction} · Espaço`;
+  setMediaControlTitle(elements.stopAll, `${stopAction} · Espaço`);
   elements.stopAll.setAttribute('aria-label', stopAction);
   elements.stopAll.setAttribute('aria-pressed', String(state.allStopped));
   elements.stopAll.dataset.state = state.allStopped ? 'stopped' : 'active';
   elements.viewSubtitle.textContent = state.focused ? `${state.focused}${state.mode === 'live' ? ' · transmissão instantânea' : ' · horário sincronizado'}` : 'Escolha uma câmera para começar.';
+  updateMediaControls();
+}
+
+function updateMediaControls() {
+  const session = state.recordingSession;
+  const all = state.captureAll;
+  const mp4Available = Boolean(recordingMime());
+  const available = all ? Boolean(state.tiles.size) : state.tiles.has(state.focused);
+  const belongs = session && session.all === all;
+  const active = belongs && session.cameras.some(name => state.recordings.has(name));
+  const status = belongs ? session.status : 'idle';
+  const target = belongs && !all ? `de ${session.cameras[0]}` : all ? 'de todas as câmeras' : 'da câmera em foco';
+  const captureLabel = all ? 'Capturar quadros de todas as câmeras' : 'Capturar quadro da câmera em foco';
+  const captureShortcut = all ? 'Ctrl+Shift+PrintScreen' : 'Ctrl+PrintScreen';
+  elements.captureFrame.disabled = !available;
+  elements.captureFrame.setAttribute('aria-label', captureLabel);
+  elements.captureFrame.setAttribute('aria-keyshortcuts', all ? 'Control+Shift+PrintScreen' : 'Control+PrintScreen');
+  setMediaControlTitle(elements.captureFrame, `${captureLabel} · ${captureShortcut}`);
+  elements.mediaToolbar.dataset.captureAll = String(all);
+  elements.captureAllSwitch.setAttribute('aria-checked', String(all));
+  elements.captureAllSwitch.title = `${all ? 'Capturar somente a câmera em foco' : 'Capturar todas as câmeras'} · C`;
+  const action = status === 'recording' ? 'Pausar' : status === 'paused' ? 'Retomar' : 'Iniciar';
+  let label = `${action} gravação ${target}`;
+  if (!session && !mp4Available) label += ' (MP4 indisponível)';
+  if (session && !belongs) label += ' (volte ao escopo da gravação atual)';
+  elements.recordToggle.setAttribute('aria-label', label);
+  setMediaControlTitle(elements.recordToggle, `${label} · R`);
+  elements.recordToggle.dataset.state = status;
+  elements.recordToggle.disabled = session ? !belongs || !active || !['recording', 'paused'].includes(status)
+    : !mp4Available || !available;
+  const finishLabel = `Finalizar gravação ${target}`;
+  elements.finishRecording.setAttribute('aria-label', finishLabel);
+  setMediaControlTitle(elements.finishRecording, `${finishLabel} · Shift+R`);
+  elements.finishRecording.disabled = !active || !['recording', 'paused'].includes(status);
 }
 
 function setMode(mode) {
@@ -2344,7 +2353,7 @@ async function toggleAllStreams() {
     for (const player of state.tiles.values()) {
       player.stop();
       player.setState('Parado');
-      player.setMessage('Transmissão parada. Use o botão superior para retomar.');
+      player.setMessage('Transmissão parada. Use a barra de multimídia para retomar.');
     }
     state.allStopped = true;
   } else {
@@ -2529,6 +2538,113 @@ function clockTick() {
   $('#clockDate').textContent = new Intl.DateTimeFormat('pt-BR', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' }).format(now);
 }
 
+const TOOLBAR_POSITION_KEY = 'digifort.mediaToolbarPosition';
+let toolbarPosition = null, toolbarDrag = null, toolbarHideTimer = null, toolbarKeyboardFocus = false, lastInputWasKeyboard = false;
+try {
+  const saved = JSON.parse(sessionStorage.getItem(TOOLBAR_POSITION_KEY));
+  if (Number.isFinite(saved?.x) && Number.isFinite(saved?.y)) toolbarPosition = saved;
+} catch {}
+
+function positionMediaToolbar() {
+  if (elements.mediaToolbar.hidden) return;
+  const surface = document.fullscreenElement?.classList?.contains('camera-tile') ? document.fullscreenElement : elements.viewerGrid.querySelector('.camera-tile.is-enlarged') || elements.viewerGrid;
+  const grid = surface.getBoundingClientRect();
+  const bar = elements.mediaToolbar.getBoundingClientRect();
+  const desired = toolbarPosition || { x: grid.left + (grid.width - bar.width) / 2, y: grid.bottom - bar.height - 16 };
+  const x = Math.max(8, Math.min(desired.x, innerWidth - bar.width - 8));
+  const y = Math.max(8, Math.min(desired.y, innerHeight - bar.height - 8));
+  elements.mediaToolbar.style.left = `${x}px`;
+  elements.mediaToolbar.style.top = `${y}px`;
+}
+
+function saveMediaToolbarPosition(x, y) {
+  toolbarPosition = { x, y };
+  positionMediaToolbar();
+  toolbarPosition = { x: parseFloat(elements.mediaToolbar.style.left), y: parseFloat(elements.mediaToolbar.style.top) };
+  try { sessionStorage.setItem(TOOLBAR_POSITION_KEY, JSON.stringify(toolbarPosition)); } catch {}
+}
+
+function scheduleMediaToolbarHide() {
+  clearTimeout(toolbarHideTimer);
+  toolbarHideTimer = setTimeout(() => {
+    if (!toolbarDrag && !(toolbarKeyboardFocus && elements.mediaToolbar.contains(document.activeElement))) {
+      elements.mediaToolbar.classList.remove('is-visible');
+    }
+  }, 2500);
+}
+
+function showMediaToolbar() {
+  if (state.thumbnailActive) return;
+  positionMediaToolbar();
+  elements.mediaToolbar.classList.add('is-visible');
+  scheduleMediaToolbarHide();
+}
+
+elements.viewerGrid.addEventListener('pointermove', event => {
+  if (event.pointerType === 'mouse' || event.pointerType === 'pen') showMediaToolbar();
+});
+elements.viewerGrid.addEventListener('pointerleave', scheduleMediaToolbarHide);
+elements.mediaToolbar.addEventListener('pointermove', showMediaToolbar);
+document.addEventListener('keydown', () => { lastInputWasKeyboard = true; }, true);
+document.addEventListener('pointerdown', () => { lastInputWasKeyboard = false; toolbarKeyboardFocus = false; }, true);
+elements.mediaToolbar.addEventListener('focusin', () => {
+  toolbarKeyboardFocus = lastInputWasKeyboard;
+  showMediaToolbar();
+});
+elements.mediaToolbar.addEventListener('focusout', () => {
+  queueMicrotask(() => {
+    if (!elements.mediaToolbar.contains(document.activeElement)) {
+      toolbarKeyboardFocus = false;
+      scheduleMediaToolbarHide();
+    }
+  });
+});
+elements.mediaToolbarHandle.addEventListener('pointerdown', event => {
+  if (event.button !== 0) return;
+  const bar = elements.mediaToolbar.getBoundingClientRect();
+  toolbarDrag = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, left: bar.left, top: bar.top };
+  elements.mediaToolbarHandle.setPointerCapture(event.pointerId);
+  event.preventDefault();
+  showMediaToolbar();
+});
+elements.mediaToolbarHandle.addEventListener('pointermove', event => {
+  if (!toolbarDrag || event.pointerId !== toolbarDrag.pointerId) return;
+  saveMediaToolbarPosition(toolbarDrag.left + event.clientX - toolbarDrag.x, toolbarDrag.top + event.clientY - toolbarDrag.y);
+  showMediaToolbar();
+});
+function endMediaToolbarDrag(event) {
+  if (!toolbarDrag || event.pointerId !== toolbarDrag.pointerId) return;
+  toolbarDrag = null;
+  scheduleMediaToolbarHide();
+}
+elements.mediaToolbarHandle.addEventListener('pointerup', endMediaToolbarDrag);
+elements.mediaToolbarHandle.addEventListener('pointercancel', endMediaToolbarDrag);
+elements.mediaToolbarHandle.addEventListener('keydown', event => {
+  const directions = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+  const direction = directions[event.key];
+  if (!direction) return;
+  event.preventDefault();
+  const bar = elements.mediaToolbar.getBoundingClientRect();
+  const step = event.shiftKey ? 40 : 10;
+  saveMediaToolbarPosition(bar.left + direction[0] * step, bar.top + direction[1] * step);
+  showMediaToolbar();
+});
+window.addEventListener('resize', positionMediaToolbar);
+window.addEventListener('scroll', positionMediaToolbar, true);
+if (typeof ResizeObserver === 'function') new ResizeObserver(positionMediaToolbar).observe(elements.viewerGrid);
+
+elements.captureAllSwitch.addEventListener('click', () => { state.captureAll = !state.captureAll; updateMediaControls(); });
+elements.captureFrame.addEventListener('click', () => { void captureFrames({ camera: state.focused, all: state.captureAll }); });
+function selectedRecordingScope() {
+  const camera = !state.captureAll && state.recordingSession?.all === false ? state.recordingSession.cameras[0] : state.focused;
+  return { all: state.captureAll, camera };
+}
+elements.recordToggle.addEventListener('click', () => {
+  const status = state.recordingSession?.status;
+  void changeRecordingState(selectedRecordingScope(), status === 'recording' ? 'pause' : status === 'paused' ? 'resume' : 'start');
+});
+elements.finishRecording.addEventListener('click', () => { void changeRecordingState(selectedRecordingScope(), 'stop'); });
+
 elements.serverSelect.addEventListener('change', event => selectServer(event.target.value));
 elements.cameraSearch.addEventListener('input', drawCameraList);
 elements.liveMode.addEventListener('click', () => setMode('live'));
@@ -2611,7 +2727,9 @@ for (const dialog of document.querySelectorAll('dialog')) {
 
 const controlShortcuts = [
   [elements.stopAll, 'Espaço', 'Space'], [elements.surveillanceToggle, 'V', 'V'],
-  [elements.audioToggle, 'A', 'A'], [elements.liveMode, 'G', 'G'], [elements.reviewMode, 'G', 'G'],
+  [elements.audioToggle, 'A', 'A'], [elements.audioSource, 'F', 'F'], [elements.mediaToolbarHandle, 'B', 'B'],
+  [elements.recordToggle, 'R', 'R'], [elements.finishRecording, 'Shift+R', 'Shift+R'], [elements.captureAllSwitch, 'C', 'C'],
+  [elements.liveMode, 'G', 'G'], [elements.reviewMode, 'G', 'G'],
   [elements.resetGrid, 'Ctrl+Alt+R', 'Control+Alt+R'], [elements.cameraSearch, '/', '/']
 ];
 for (const [control, display, key] of controlShortcuts) {
@@ -2663,6 +2781,10 @@ document.addEventListener('keydown', event => {
     void captureFrames({ camera: state.focused, all: event.shiftKey });
     return;
   }
+  if (event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey && event.code === 'KeyR') {
+    if (!state.thumbnailActive && elements.contextMenu.hidden && !elements.finishRecording.disabled) { event.preventDefault(); elements.finishRecording.click(); }
+    return;
+  }
   if (!elements.contextMenu.hidden || event.ctrlKey || event.altKey || event.metaKey || event.shiftKey) return;
   if (state.thumbnailActive && (event.key === 'ArrowLeft' || event.key === 'ArrowRight')) {
     const button = event.key === 'ArrowLeft' ? elements.thumbnailPrev : elements.thumbnailNext;
@@ -2686,6 +2808,9 @@ document.addEventListener('keydown', event => {
     g: () => setMode(state.mode === 'live' ? 'playback' : 'live'),
     t: () => setDisplayVisibility({ timeline: !state.timelineVisible }),
     d: () => setDisplayVisibility({ overlays: !state.overlaysVisible }),
+    b: () => { if (!state.thumbnailActive) { toolbarKeyboardFocus = true; showMediaToolbar(); elements.mediaToolbarHandle.focus(); } },
+    c: () => { if (!state.thumbnailActive) elements.captureAllSwitch.click(); },
+    r: () => { if (!state.thumbnailActive && !elements.recordToggle.disabled) elements.recordToggle.click(); },
     f: () => { const names = [...elements.viewerGrid.querySelectorAll('.camera-tile')].map(tile => tile.dataset.camera); if (names.length) focusCamera(names[(names.indexOf(state.focused) + 1) % names.length]); }
   };
   if (actions[key]) { event.preventDefault(); actions[key](); }
@@ -2693,6 +2818,7 @@ document.addEventListener('keydown', event => {
 
 setupMosaics();
 updateOverlayState();
+updateMediaControls();
 clockTick();
 window.setInterval(clockTick, 1000);
 initializeServers();

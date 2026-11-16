@@ -6,7 +6,7 @@
 | --- | --- |
 | Barra superior | Mostra o servidor ativo e o estado de conexão. |
 | Painel lateral | Filtra e lista câmeras com nome, estado e ações de abertura. |
-| Controles do monitor | Alternam **Ao vivo** e **Revisão**, organizam mosaico, áudio, exibição e vigilância. |
+| Controles do monitor | Alternam **Ao vivo** e **Gravado**, organizam o mosaico e a exibição. A barra flutuante da grade reúne reprodução, vigilância, áudio, foco e captura. |
 | Grade de vídeo | Mantém foco por câmera e estados de carregamento, disponibilidade e gravação por quadro. |
 | Timeline e miniaturas | A timeline reúne as câmeras abertas; miniaturas usam a câmera escolhida no menu de contexto. |
 
@@ -18,11 +18,11 @@ A estrutura fica em [index.html](../public/index.html), os estilos em [styles.cs
 - O mosaico automático se adapta à quantidade de câmeras abertas. Ao escolher uma grade fixa menor que a quantidade atual, a interface informa quantas câmeras estão abertas. **Restaurar grade configurada** reconecta o servidor e restaura as câmeras e o mosaico iniciais.
 - A câmera em foco determina a fonte do áudio; a timeline mostra todas as câmeras abertas. O seletor **Em foco:** e a seleção do quadro alteram a mesma câmera. Trocar quadros de posição também reordena as faixas existentes sem recarregá-las. Preserve a navegação por clique, o zoom por duplo clique, a troca de foco por `F` e a saída por `Esc`. Na vigilância, amplie a câmera dentro da mesma tela cheia: o primeiro `Esc` restaura a grade e o segundo encerra a vigilância. O atalho `F11` é interceptado pelo aplicativo.
 - A lista lateral aceita setas e `Enter`; o ícone no rodapé abre a lista de atalhos. Os submenus de contexto exibem títulos e os atalhos das ações disponíveis. As opções de exibição mantêm os rótulos **Mostrar dados** e **Mostrar timeline**, com marcação indicando o estado. O fundo dos diálogos usa o mesmo fechamento que seus controles.
-- Os comandos de foco, perfil e fechamento da câmera ficam no menu de contexto. O calendário de revisão permite escolher data e hora no fuso do servidor, restringe intervalos invertidos e mantém a validação de fim posterior ao reproduzir.
+- Os comandos de foco, perfil e fechamento da câmera ficam no menu de contexto. A barra flutuante aparece sobre a grade e sobre a câmera ampliada em tela cheia com o movimento do mouse, esmaece após 2,5 segundos de inatividade e pode ser arrastada ou acessada por `B` e movida com as setas. A posição é mantida durante a sessão; o foco por teclado mantém a barra disponível. O calendário de revisão permite escolher data e hora no fuso do servidor, restringe intervalos invertidos e mantém a validação de fim posterior ao reproduzir.
 - Ao iniciar, uma versão mais recente pode abrir um diálogo com opções para cancelar, ignorar a versão, consultar a release ou instalar. O download mostra progresso e mantém o diálogo modal até o aplicativo encerrar para instalação. Falhas de consulta não mostram erro na interface.
 - O diálogo de configurações permite criar, editar e excluir servidores. Ele esmaece o fundo e interrompe as transmissões enquanto está aberto; ao fechar, retoma as transmissões ou reconecta o servidor alterado. A senha existente permanece no servidor e é preservada quando o campo fica vazio. Sem uma configuração utilizável, **Fechar** encerra a janela e o servidor quando o aplicativo foi iniciado pelo inicializador gráfico.
 - No instalador, é possível importar uma configuração existente ou pular a etapa. O preenchimento dos dados é feito no aplicativo.
-- Os menus de captura iniciam a gravação diretamente em MP4, indicam quando o formato está indisponível e distinguem gravações em andamento, pausadas e concluídas.
+- Os controles de captura da barra iniciam a gravação diretamente em MP4, indicam quando o formato está indisponível e distinguem gravações em andamento, pausadas e concluídas. O seletor alterna os três controles entre a câmera em foco e todas as câmeras; no segundo caso, os três ícones mostram `+`. A gravação de uma câmera continua controlável após a mudança de foco; o nome da câmera gravada aparece no controle.
 
 ## Linguagem e validação
 

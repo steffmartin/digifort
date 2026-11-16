@@ -62,7 +62,7 @@ function recordingHarness({ supported = true, failStart = false } = {}) {
     scopedCameraNames: scope => scope.all ? [...state.tiles.keys()] : [scope.camera].filter(name => state.tiles.has(name)),
     recordingScopeKey: scope => scope.all ? 'all-cameras' : `camera:${scope.camera}`,
     mediaEpoch: () => 1, mediaFilenames: (names, extension) => { extensions.push(extension); return names.map(() => `sintetico${extension}`); },
-    postMedia: async (_path, params) => { requests.push(params.action); return {}; }, toast: message => messages.push(message) });
+    postMedia: async (_path, params) => { requests.push(params.action); return {}; }, toast: message => messages.push(message), updateMediaControls() {} });
   vm.runInContext(section('function recordingMime(', 'function closeContextMenu('), context);
   return { context, state, elements, player, requests, messages, sources, streams, recorders, extensions };
 }
@@ -121,28 +121,48 @@ test('libera fonte e trilhas quando o navegador falha ao iniciar', async () => {
   assert.ok(h.streams[0].getTracks().every(track => track.stopped));
 });
 
-test('o comando do menu inicia diretamente, sem abrir diálogo', () => {
-  const calls = [], buttons = [];
-  const state = { tiles: new Map([['Câmera sintética', {}]]), recordingSession: null, recordings: new Map() };
-  const document = { createElement: () => ({ setAttribute() {}, addEventListener(_type, callback) { this.click = callback; } }) };
-  const context = vm.createContext({ state, document, closeContextMenu() {}, recordingMime: () => 'video/mp4',
-    changeRecordingState: (scope, action) => calls.push([scope.camera, action]), openRecordingDialog: () => calls.push(['diálogo']) });
-  vm.runInContext(section('function scopedCameraNames(', 'function addContextTitle('), context);
-  context.appendRecordingActions({ append: item => buttons.push(item) }, { camera: 'Câmera sintética' });
-  buttons.find(button => button.textContent === 'Iniciar gravação').click();
-  assert.deepEqual(calls, [['Câmera sintética', 'start']]);
+function mediaControlsHarness(supported = true) {
+  const button = () => ({ dataset: {}, setAttribute(name, value) { this[name] = value; } });
+  const elements = Object.fromEntries(['captureFrame', 'recordToggle', 'finishRecording', 'captureAllSwitch', 'mediaToolbar'].map(name => [name, button()]));
+  const state = { focused: 'B', captureAll: false, tiles: new Map([['A', {}], ['B', {}]]), recordings: new Map(), recordingSession: null };
+  const context = vm.createContext({ state, elements, recordingMime: () => supported ? 'video/mp4' : '', setMediaControlTitle: (control, title) => { control.title = title; } });
+  vm.runInContext(section('function updateMediaControls(', 'function setMode('), context);
+  return { state, elements, update: () => context.updateMediaControls() };
+}
+
+test('controles mantêm acesso à gravação original após trocar o foco', () => {
+  const h = mediaControlsHarness();
+  h.state.recordingSession = { all: false, cameras: ['A'], status: 'recording' };
+  h.state.recordings.set('A', {});
+  h.update();
+  assert.equal(h.elements.recordToggle.disabled, false);
+  assert.equal(h.elements.finishRecording.disabled, false);
+  assert.match(h.elements.recordToggle.title, /Pausar gravação de A/);
+  h.state.captureAll = true;
+  h.update();
+  assert.equal(h.elements.recordToggle.disabled, true);
+  assert.equal(h.elements.finishRecording.disabled, true);
+  assert.equal(h.elements.mediaToolbar.dataset.captureAll, 'true');
+  h.state.captureAll = false;
+  h.state.recordingSession.status = 'paused';
+  h.update();
+  assert.equal(h.elements.finishRecording.disabled, false);
+  assert.match(h.elements.recordToggle.title, /Retomar gravação de A/);
 });
 
-test('o menu explica quando MP4 está indisponível', () => {
-  const buttons = [];
-  const state = { tiles: new Map([['Câmera sintética', {}]]), recordingSession: null, recordings: new Map() };
-  const document = { createElement: () => ({ setAttribute() {}, addEventListener() {} }) };
-  const context = vm.createContext({ state, document, recordingMime: () => '' });
-  vm.runInContext(section('function scopedCameraNames(', 'function addContextTitle('), context);
-  context.appendRecordingActions({ append: item => buttons.push(item) }, { camera: 'Câmera sintética' });
-  const start = buttons.find(button => button.textContent?.includes('MP4'));
-  assert.equal(start.disabled, true);
-  assert.match(start.title, /MP4/);
+test('controles informam indisponibilidade de MP4 e respeitam o escopo de todas as câmeras', () => {
+  const h = mediaControlsHarness(false);
+  h.update();
+  assert.equal(h.elements.recordToggle.disabled, true);
+  assert.match(h.elements.recordToggle.title, /MP4 indisponível/);
+  h.state.recordingSession = { all: true, cameras: ['A', 'B'], status: 'recording' };
+  h.state.recordings.set('A', {});
+  h.update();
+  assert.equal(h.elements.recordToggle.disabled, true);
+  assert.equal(h.elements.finishRecording.disabled, true);
+  h.state.captureAll = true;
+  h.update();
+  assert.equal(h.elements.finishRecording.disabled, false);
 });
 
 test('áudio ativado durante a gravação também chega ao destino do arquivo', () => {

@@ -33,9 +33,11 @@ Mantenha os arquivos reais na pasta local de configurações e use somente dados
 
 ## Monitorar ao vivo
 
-Selecione **Ao vivo**, busque uma câmera na lateral e clique nela para abrir o vídeo na grade. Câmeras adicionadas manualmente começam com o perfil `Visualization`. No menu de contexto do quadro, escolha o perfil, defina a câmera em foco, feche-a ou inicie uma captura. Abra uma câmera em tela cheia com duplo clique ou `F`. Use `Esc` para voltar à grade ou sair do modo vigilância.
+Selecione **Ao vivo**, busque uma câmera na lateral e clique nela para abrir o vídeo na grade. Câmeras adicionadas manualmente começam com o perfil `Visualization`. No menu de contexto do quadro, escolha o perfil, defina a câmera em foco ou feche-a. Abra uma câmera em tela cheia com duplo clique; `F` alterna a câmera em foco. Use `Esc` para voltar à grade ou sair do modo vigilância.
 
-Selecione uma câmera no quadro ou em **Em foco:**. A câmera em foco determina a fonte do áudio. Para ouvir, ative o botão de áudio ao lado do seletor; ao mudar o foco, o áudio ativo acompanha a nova câmera. O player aceita AAC, G.711 e G.726 conforme o fluxo recebido. H.264 e H.265/HEVC são decodificados com WebCodecs e dependem do perfil aceito pelo navegador.
+Mova o mouse sobre a grade para mostrar a barra de multimídia. Ela começa no centro inferior da grade, desaparece após 2,5 segundos sem movimento ou após a saída do mouse e reaparece quando o mouse volta a se mover sobre a grade. Arraste a alça para reposicioná-la; a posição é mantida durante a sessão. Pelo teclado, `B` acessa a alça e as setas movem a barra (`Shift` aumenta o passo). Os nomes das ações e seus atalhos aparecem ao passar o mouse sobre os controles.
+
+Selecione uma câmera no quadro ou em **Em foco:** na barra. A câmera em foco determina a fonte do áudio. Para ouvir, ative o botão de áudio; ao mudar o foco, o áudio ativo acompanha a nova câmera. A barra também pausa ou retoma todas as transmissões e alterna o modo vigilância. O player aceita AAC, G.711 e G.726 conforme o fluxo recebido. H.264 e H.265/HEVC são decodificados com WebCodecs e dependem do perfil aceito pelo navegador.
 
 ### Mosaico inicial
 
@@ -59,7 +61,7 @@ Para abrir miniaturas, clique com o botão direito no quadro da câmera e escolh
 
 ## Salvar capturas e gravações
 
-Use o menu de contexto de um quadro para capturar um PNG sem sobreposições ou iniciar, pausar, retomar e finalizar uma gravação local. A gravação começa diretamente em MP4 e registra os quadros reproduzidos; ela pode incluir o áudio decodificado quando estiver ativo. Se o navegador não oferecer gravação em MP4, o comando aparece indisponível. O Digifort Monitor salva os arquivos na pasta de mídia configurada. Os nomes usam o fuso do servidor, a hora atual no modo ao vivo ou a posição da reprodução na revisão.
+Na barra de multimídia, use os controles de captura para salvar um PNG sem sobreposições ou iniciar, pausar, retomar e finalizar uma gravação local. Por padrão, eles atuam na câmera em foco; ative o seletor ao lado ou pressione `C` para usar todas as câmeras abertas. Nesse modo, os três ícones de captura mostram um sinal de `+`. Use `R` para iniciar, pausar ou retomar a gravação e `Shift+R` para finalizá-la. Uma gravação iniciada para uma câmera continua acessível no mesmo escopo mesmo se o foco mudar; o nome da câmera gravada aparece na descrição do botão. Para controlar uma gravação em andamento, mantenha o seletor no escopo em que ela foi iniciada. A gravação começa diretamente em MP4 e registra os quadros reproduzidos; ela pode incluir o áudio decodificado quando estiver ativo. Se o navegador não oferecer gravação em MP4, o comando aparece indisponível. O Digifort Monitor salva os arquivos na pasta de mídia configurada. Os nomes usam o fuso do servidor, a hora atual no modo ao vivo ou a posição da reprodução na revisão.
 
 Finalize a gravação para salvar o arquivo completo. Se fechar o aplicativo durante uma gravação, o servidor tenta recuperar os blocos recebidos por inteiro. A desinstalação preserva as capturas e gravações.
 

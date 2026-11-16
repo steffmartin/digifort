@@ -9,12 +9,13 @@ const code = source.slice(source.indexOf('function isTileEnlarged('), source.ind
 function scenario() {
   const listeners = {};
   const flags = new Set();
-  const tile = { classList: { contains: name => flags.has(name), add: name => flags.add(name), remove: name => flags.delete(name) }, resetZoom() {} };
+  const tile = { classList: { contains: name => name === 'camera-tile' || flags.has(name), add: name => flags.add(name), remove: name => flags.delete(name) }, resetZoom() {} };
   const root = { requestFullscreen: async () => { document.fullscreenElement = root; } };
   const state = { surveillance: true, thumbnailActive: false };
   const document = { documentElement: root, fullscreenElement: root, fullscreenEnabled: true,
     addEventListener: (type, fn) => { listeners[type] = fn; }, querySelector: () => null,
     exitFullscreen: async () => { document.fullscreenElement = null; listeners.fullscreenchange(); } };
+  tile.requestFullscreen = async () => { document.fullscreenElement = tile; };
   const elements = { viewerGrid: { querySelector: () => flags.has('is-enlarged') ? tile : null, querySelectorAll: () => [tile] } };
   const calls = [];
   const navigator = { keyboard: { lock: async keys => calls.push([...keys]), unlock: () => calls.push('unlock') } };
@@ -23,6 +24,22 @@ function scenario() {
   const key = key => { const event = { key, defaultPrevented: false, preventDefault() { this.defaultPrevented = true; }, stopImmediatePropagation() { this.stopped = true; } }; listeners.keydown(event); return event; };
   return { context, state, document, tile, key, calls, navigator };
 }
+
+test('fora da vigilância, duplo clique ou Esc fecha a câmera em tela cheia', async () => {
+  const { context, state, document, tile, key } = scenario();
+  state.surveillance = false;
+  document.fullscreenElement = null;
+  await context.toggleTileFullscreen(tile, 'Entrada');
+  assert.equal(document.fullscreenElement, tile);
+  await context.toggleTileFullscreen(tile, 'Entrada');
+  assert.equal(document.fullscreenElement, null);
+  await context.toggleTileFullscreen(tile, 'Entrada');
+  assert.equal(document.fullscreenElement, tile);
+  key('Escape');
+  await Promise.resolve();
+  assert.equal(document.fullscreenElement, null);
+  assert.equal(state.surveillance, false);
+});
 
 test('vigilância preserva tela cheia ao restaurar câmera por duplo clique ou Esc', async () => {
   const { context, state, document, tile, key } = scenario();
@@ -40,6 +57,16 @@ test('vigilância preserva tela cheia ao restaurar câmera por duplo clique ou E
   assert.equal(document.fullscreenElement, document.documentElement);
   key('Escape');
   await Promise.resolve();
+  assert.equal(document.fullscreenElement, null);
+  assert.equal(state.surveillance, false);
+});
+
+test('atalho de vigilância encerra a tela cheia mesmo com câmera ampliada', async () => {
+  const { context, state, document, tile } = scenario();
+  await context.toggleTileFullscreen(tile, 'Entrada');
+  assert.equal(tile.classList.contains('is-enlarged'), true);
+  await context.toggleSurveillance();
+  assert.equal(tile.classList.contains('is-enlarged'), false);
   assert.equal(document.fullscreenElement, null);
   assert.equal(state.surveillance, false);
 });
