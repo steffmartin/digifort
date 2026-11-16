@@ -103,7 +103,9 @@
               </div>
               <div class="media-toolbar-group audio-control-wrap">
                 <label class="field-label" for="audioSource">Em foco:</label><span class="media-control-hit" title="Alternar câmera em foco · F"><select id="audioSource" disabled aria-label="Câmera em foco" title="Alternar câmera em foco · F"><option value="">Nenhuma câmera aberta</option></select></span>
+                <span class="media-control-hit" id="seekBackWrap" hidden title="Retroceder 15 segundos · ←"><button id="seekBack" class="icon-button" type="button" aria-label="Retroceder 15 segundos" aria-keyshortcuts="ArrowLeft" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 3 12l8 7zM20 5l-8 7 8 7z"></path></svg></button></span>
                 <span class="media-control-hit" title="Parar todas as câmeras · Espaço"><button class="icon-button stop-all-button" id="stopAll" type="button" title="Parar todas as câmeras · Espaço" aria-label="Parar todas as câmeras" aria-pressed="false" data-state="active" disabled><svg viewBox="0 0 20 20" aria-hidden="true"><path class="pause-icon" d="M6 5v10M14 5v10"></path><path class="play-icon" d="M7 4.5v11l9-5.5-9-5.5Z"></path></svg></button></span>
+                <span class="media-control-hit" id="seekForwardWrap" hidden title="Avançar 15 segundos · →"><button id="seekForward" class="icon-button" type="button" aria-label="Avançar 15 segundos" aria-keyshortcuts="ArrowRight" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 5 8 7-8 7zM13 5l8 7-8 7z"></path></svg></button></span>
                 <span class="media-control-hit" title="Ativar áudio · A"><button id="audioToggle" class="icon-button audio-toggle" type="button" aria-label="Ativar áudio" title="Ativar áudio · A" aria-pressed="false" disabled><svg class="speaker-icon" viewBox="0 0 20 20" aria-hidden="true"><path class="speaker-body" d="M3 8v4h3l4 3V5L6 8H3Z"></path><path class="speaker-waves" d="M13 7.2a4 4 0 0 1 0 5.6M15 5a7 7 0 0 1 0 10"></path><path class="speaker-muted" d="m13 8 4 4m0-4-4 4"></path></svg></button></span>
               </div>
               <div class="media-toolbar-group" role="group" aria-label="Captura">
@@ -157,6 +159,7 @@
             <dt>Capturar câmera em foco / todas</dt><dd>Ctrl+PrintScreen / Ctrl+Shift+PrintScreen</dd>
             <dt>Iniciar, pausar ou retomar gravação</dt><dd>R</dd><dt>Finalizar gravação</dt><dd>Shift+R</dd>
             <dt>Alternar captura de todas as câmeras</dt><dd>C</dd>
+            <dt>Retroceder / avançar na gravação</dt><dd>← / →</dd>
           </dl>
           <p class="shortcut-note">Arraste uma câmera para trocar sua posição na grade. Clique duas vezes para ampliar ou restaurar a câmera.</p>
           <p class="shortcut-note">Para revisar a câmera em foco, use Ctrl+1 a Ctrl+0; para todas, acrescente Shift. A revisão de uma câmera fecha as demais.</p>
@@ -189,6 +192,7 @@
             <label>Senha <span class="password-field"><input name="password" type="password" autocomplete="new-password" /><button id="toggleConfigPassword" type="button" aria-label="Mostrar senha" aria-pressed="false" title="Mostrar senha"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"></path><circle cx="12" cy="12" r="3"></circle><path class="password-eye-slash" d="M4 4l16 16"></path></svg></button></span><small id="passwordHint"></small></label>
             <label>Fuso horário IANA <input name="timeZone" required value="America/Sao_Paulo" /></label>
             <label>Limite de câmeras (0 = sem limite) <input name="maxCams" type="number" min="0" step="1" value="0" required /></label>
+            <label>Intervalo de avanço e retrocesso (segundos) <input name="seekSeconds" type="number" min="1" max="8640000000000" step="1" value="15" required /></label>
             <label>Mosaico inicial <select name="initialMosaic" id="configMosaic"></select></label>
             <label>Pasta de mídia <input name="mediaFolder" /></label>
             <label>Pasta de screenshots <input name="screenshotFolder" /></label>

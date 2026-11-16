@@ -25,6 +25,8 @@ test('configuração aplica padrões e usa pasta de mídia como fallback', () =>
   assert.equal(config.userAgent, 'teste');
   assert.equal(config.initialMosaic, 'auto');
   assert.equal(config.maxCams, 0);
+  assert.equal(config.seekSeconds, 15);
+  assert.equal(context.parseConfig('teste', { ...valid(), seekSeconds: 30 }).seekSeconds, 30);
   assert.equal(config.screenshotFolder, 'midia');
   assert.equal(config.videoFolder, 'midia');
   assert.equal(config.useBasicAuth, false);
@@ -38,6 +40,8 @@ test('configuração rejeita endereços inseguros e dados inválidos', () => {
     [{ initialCameras: { A: 'outro' } }, /perfil/],
     [{ initialCameras: { A: 'Recording', B: 'Visualization' }, maxCams: 1 }, /excede/],
     [{ maxCams: -1 }, /maxCams/],
+    [{ seekSeconds: 0 }, /seekSeconds/],
+    [{ seekSeconds: 1.5 }, /seekSeconds/],
     [{ useBasicAuth: 'true' }, /useBasicAuth/],
     [{ mediaFolder: 42 }, /mediaFolder/]
   ];

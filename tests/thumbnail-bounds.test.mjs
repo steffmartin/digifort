@@ -10,7 +10,7 @@ test('limite final sem data manual permanece fixo após ocultar e recarregar a t
   let now = 100000;
   const state = { mode: 'playback', server: { timeZone: 'UTC' }, tiles: new Map([['A', { restart() {} }]]), timelineVisible: true, timelineData: new Map() };
   const elements = { startDateTime: { value: 'start' }, endDateTime: { value: '' } };
-  const context = vm.createContext({ state, elements, Date: { now: () => now }, inputToEpoch: () => 1000, clearThumbnails() {}, clearTimeline() { state.timelineStart = state.timelineEnd = null; }, loadTimeline() {}, drawTimeline() {}, toast() {} });
+  const context = vm.createContext({ state, elements, Date: { now: () => now }, inputToEpoch: () => 1000, clearThumbnails() {}, clearTimeline() { state.timelineStart = state.timelineEnd = null; }, loadTimeline() {}, drawTimeline() {}, updateViewHeader() {}, toast() {} });
   vm.runInContext(functions, context);
   context.startReview();
   assert.equal(state.timelineEnd, 100000);

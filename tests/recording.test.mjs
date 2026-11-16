@@ -123,7 +123,7 @@ test('libera fonte e trilhas quando o navegador falha ao iniciar', async () => {
 
 function mediaControlsHarness(supported = true) {
   const button = () => ({ dataset: {}, setAttribute(name, value) { this[name] = value; } });
-  const elements = Object.fromEntries(['captureFrame', 'recordToggle', 'finishRecording', 'captureAllSwitch', 'mediaToolbar'].map(name => [name, button()]));
+  const elements = Object.fromEntries(['captureFrame', 'recordToggle', 'finishRecording', 'captureAllSwitch', 'mediaToolbar', 'seekBack', 'seekForward', 'seekBackWrap', 'seekForwardWrap'].map(name => [name, button()]));
   const state = { focused: 'B', captureAll: false, tiles: new Map([['A', {}], ['B', {}]]), recordings: new Map(), recordingSession: null };
   const context = vm.createContext({ state, elements, recordingMime: () => supported ? 'video/mp4' : '', setMediaControlTitle: (control, title) => { control.title = title; } });
   vm.runInContext(section('function updateMediaControls(', 'function setMode('), context);

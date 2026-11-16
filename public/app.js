@@ -45,6 +45,7 @@ const elements = {
   startDateTime: $('#startDateTime'), endDateTime: $('#endDateTime'), playReview: $('#playReview'),
   audioSource: $('#audioSource'), audioToggle: $('#audioToggle'), viewerGrid: $('#viewerGrid'), emptyMonitor: $('#emptyMonitor'),
   mediaToolbar: $('#mediaToolbar'), mediaToolbarHandle: $('#mediaToolbarHandle'),
+  seekBack: $('#seekBack'), seekForward: $('#seekForward'), seekBackWrap: $('#seekBackWrap'), seekForwardWrap: $('#seekForwardWrap'),
   captureFrame: $('#captureFrame'), recordToggle: $('#recordToggle'), finishRecording: $('#finishRecording'), captureAllSwitch: $('#captureAllSwitch'),
   viewSubtitle: $('#viewSubtitle'), stopAll: $('#stopAll'),
   reviewPanel: $('#reviewPanel'), timelineRuler: $('#timelineRuler'), timelineTracks: $('#timelineTracks'), timelineNames: $('#timelineNames'), timelineScroll: $('#timelineScroll'), timelineContent: $('#timelineContent'), timelineDays: $('#timelineDays'),
@@ -708,6 +709,7 @@ async function loadConfigForm(id) {
       if (typeof fields[name] === 'string') configForm.elements[name].value = fields[name];
     }
     configForm.elements.maxCams.value = fields.maxCams ?? 0;
+    configForm.elements.seekSeconds.value = fields.seekSeconds ?? 15;
     configForm.elements.id.value = id;
     configForm.elements.useBasicAuth.checked = fields.useBasicAuth === true;
     configForm.elements.initialCameras.value = Object.entries(fields.initialCameras || {}).map(([name, profile]) => `${name} | ${profile}`).join('\n');
@@ -757,7 +759,7 @@ async function saveConfig() {
     }
     initialCameras[parts[0]] = parts[1];
   }
-  const fields = { name: f.name.value, serverAddress: f.serverAddress.value, userAgent: f.userAgent.value, username: f.username.value, timeZone: f.timeZone.value, mediaFolder: f.mediaFolder.value, screenshotFolder: f.screenshotFolder.value, videoFolder: f.videoFolder.value, initialMosaic: f.initialMosaic.value, maxCams: Number(f.maxCams.value), useBasicAuth: f.useBasicAuth.checked, initialCameras };
+  const fields = { name: f.name.value, serverAddress: f.serverAddress.value, userAgent: f.userAgent.value, username: f.username.value, timeZone: f.timeZone.value, mediaFolder: f.mediaFolder.value, screenshotFolder: f.screenshotFolder.value, videoFolder: f.videoFolder.value, initialMosaic: f.initialMosaic.value, maxCams: Number(f.maxCams.value), seekSeconds: Number(f.seekSeconds.value), useBasicAuth: f.useBasicAuth.checked, initialCameras };
   if (f.password.value || !configChoice.value) fields.password = f.password.value;
   f.password.value = '';
   try {
@@ -1257,6 +1259,15 @@ function updateMediaControls() {
   const session = state.recordingSession;
   const all = state.captureAll;
   const mp4Available = Boolean(recordingMime());
+  const seekReady = state.mode === 'playback' && Number.isFinite(state.reviewStart) && state.tiles.size > 0;
+  const seekSeconds = state.server?.seekSeconds ?? 15;
+  for (const [button, wrap, action, key] of [[elements.seekBack, elements.seekBackWrap, 'Retroceder', '←'], [elements.seekForward, elements.seekForwardWrap, 'Avançar', '→']]) {
+    wrap.hidden = state.mode !== 'playback';
+    button.disabled = !seekReady;
+    const label = `${action} ${seekSeconds} ${seekSeconds === 1 ? 'segundo' : 'segundos'}`;
+    button.setAttribute('aria-label', label);
+    setMediaControlTitle(button, `${label} · ${key}`);
+  }
   const available = all ? Boolean(state.tiles.size) : state.tiles.has(state.focused);
   const belongs = session && session.all === all;
   const active = belongs && session.cameras.some(name => state.recordings.has(name));
@@ -1345,6 +1356,7 @@ function startReview() {
   }
   for (const player of state.tiles.values()) player.restart();
   loadFocusedTimeline();
+  updateViewHeader();
 }
 
 function loadFocusedTimeline() {
@@ -1364,6 +1376,12 @@ function seekReview(epoch) {
   state.reviewEpoch = Math.max(state.reviewStart, Math.min(end, epoch));
   updateTimelinePlayhead(state.reviewEpoch);
   for (const player of state.tiles.values()) player.restart();
+}
+
+function skipReview(direction) {
+  if (state.mode !== 'playback' || !Number.isFinite(state.reviewStart) || !state.tiles.size) return;
+  const seconds = state.server?.seekSeconds ?? 15;
+  seekReview((state.reviewEpoch ?? state.reviewStart) + direction * seconds * 1000);
 }
 
 function epochToApi(epoch, timeZone) {
@@ -2650,6 +2668,8 @@ elements.cameraSearch.addEventListener('input', drawCameraList);
 elements.liveMode.addEventListener('click', () => setMode('live'));
 elements.reviewMode.addEventListener('click', () => setMode('playback'));
 elements.playReview.addEventListener('click', startReview);
+elements.seekBack.addEventListener('click', () => skipReview(-1));
+elements.seekForward.addEventListener('click', () => skipReview(1));
 for (const input of [elements.startDateTime, elements.endDateTime]) input.addEventListener('change', clearThumbnails);
 elements.stopAll.addEventListener('click', toggleAllStreams);
 function selectMosaic(id) {
@@ -2789,6 +2809,11 @@ document.addEventListener('keydown', event => {
   if (state.thumbnailActive && (event.key === 'ArrowLeft' || event.key === 'ArrowRight')) {
     const button = event.key === 'ArrowLeft' ? elements.thumbnailPrev : elements.thumbnailNext;
     event.preventDefault(); if (!button.disabled) button.click(); return;
+  }
+  if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+    const button = event.key === 'ArrowLeft' ? elements.seekBack : elements.seekForward;
+    if (!button.disabled && !button.closest('[hidden]')) { event.preventDefault(); button.click(); }
+    return;
   }
   if ((event.key === 'ArrowDown' || event.key === 'ArrowUp') &&
       (event.target === document.body || event.target === document.documentElement)) {

@@ -37,7 +37,7 @@ Selecione **Ao vivo**, busque uma câmera na lateral e clique nela para abrir o 
 
 Mova o mouse sobre a grade para mostrar a barra de multimídia. Ela começa no centro inferior da grade, desaparece após 2,5 segundos sem movimento ou após a saída do mouse e reaparece quando o mouse volta a se mover sobre a grade. Arraste a alça para reposicioná-la; a posição é mantida durante a sessão. Pelo teclado, `B` acessa a alça e as setas movem a barra (`Shift` aumenta o passo). Os nomes das ações e seus atalhos aparecem ao passar o mouse sobre os controles.
 
-Selecione uma câmera no quadro ou em **Em foco:** na barra. A câmera em foco determina a fonte do áudio. Para ouvir, ative o botão de áudio; ao mudar o foco, o áudio ativo acompanha a nova câmera. A barra também pausa ou retoma todas as transmissões e alterna o modo vigilância. O player aceita AAC, G.711 e G.726 conforme o fluxo recebido. H.264 e H.265/HEVC são decodificados com WebCodecs e dependem do perfil aceito pelo navegador.
+Selecione uma câmera no quadro ou em **Em foco:** na barra. A câmera em foco determina a fonte do áudio. Para ouvir, ative o botão de áudio; ao mudar o foco, o áudio ativo acompanha a nova câmera. A barra também pausa ou retoma todas as transmissões e alterna o modo vigilância. Em **Gravado**, os botões junto à reprodução avançam ou retrocedem todas as câmeras pelo intervalo configurado, limitado ao período da revisão; use também as setas esquerda e direita. O padrão é 15 segundos e pode ser alterado nas configurações do servidor ou no campo `seekSeconds` do arquivo de configuração. O player aceita AAC, G.711 e G.726 conforme o fluxo recebido. H.264 e H.265/HEVC são decodificados com WebCodecs e dependem do perfil aceito pelo navegador.
 
 ### Mosaico inicial
 

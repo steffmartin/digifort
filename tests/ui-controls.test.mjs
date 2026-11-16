@@ -52,7 +52,7 @@ test('revisão rejeita período invertido e não reinicia câmeras', () => {
   let restarts = 0;
   const state = { tiles: new Map([['A', { restart: () => restarts++ }]]), server: { timeZone: 'UTC' } };
   const elements = { startDateTime: { value: '2024-01-02T10:00' }, endDateTime: { value: '2024-01-02T09:00' } };
-  const context = vm.createContext({ state, elements, Intl, Date, toast: message => messages.push(message), clearThumbnails() {}, loadFocusedTimeline() {} });
+  const context = vm.createContext({ state, elements, Intl, Date, toast: message => messages.push(message), clearThumbnails() {}, loadFocusedTimeline() {}, updateViewHeader() {} });
   vm.runInContext(section('function startReview(', 'function loadFocusedTimeline(') + section('function inputToEpoch(', 'function parseFrameEpoch('), context);
   context.startReview();
   assert.match(messages[0], /fim precisa ser posterior/);

@@ -23,6 +23,7 @@ A estrutura fica em [index.html](../public/index.html), os estilos em [styles.cs
 - O diálogo de configurações permite criar, editar e excluir servidores. Ele esmaece o fundo e interrompe as transmissões enquanto está aberto; ao fechar, retoma as transmissões ou reconecta o servidor alterado. A senha existente permanece no servidor e é preservada quando o campo fica vazio. Sem uma configuração utilizável, **Fechar** encerra a janela e o servidor quando o aplicativo foi iniciado pelo inicializador gráfico.
 - No instalador, é possível importar uma configuração existente ou pular a etapa. O preenchimento dos dados é feito no aplicativo.
 - Os controles de captura da barra iniciam a gravação diretamente em MP4, indicam quando o formato está indisponível e distinguem gravações em andamento, pausadas e concluídas. O seletor alterna os três controles entre a câmera em foco e todas as câmeras; no segundo caso, os três ícones mostram `+`. A gravação de uma câmera continua controlável após a mudança de foco; o nome da câmera gravada aparece no controle.
+- Em Gravado, os controles ao lado da reprodução avançam ou retrocedem todas as câmeras pelo intervalo configurado; permanecem indisponíveis até iniciar a revisão e ficam ocultos ao vivo. Nas miniaturas, as setas continuam mudando de página.
 
 ## Linguagem e validação
 

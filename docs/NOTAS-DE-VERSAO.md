@@ -1,5 +1,16 @@
 # Notas de versão do Digifort Monitor
 
+## 1.3.0
+
+### Novidades
+
+- Barra flutuante e arrastável para reprodução, vigilância, áudio, foco e captura de uma ou todas as câmeras, também disponível ao ampliar uma câmera. Os controles mostram seus atalhos ao passar o mouse. ([#49](https://github.com/steffmartin/digifort/issues/49))
+- Na revisão, avance ou retroceda todas as câmeras pelo intervalo configurado, com padrão de 15 segundos, usando os botões ou as setas do teclado. ([#50](https://github.com/steffmartin/digifort/issues/50))
+
+### Validação e distribuição
+
+A suíte automatizada cobre os saltos, limites de revisão, gravação e transições de tela cheia. A barra e os saltos foram exercitados no Chromium com câmeras e gravações simuladas; a integração desta versão com câmeras reais, a instalação em máquina limpa e o Windows 10 permanecem pendentes. Confira o SHA-256 do instalador conforme [Distribuição](DISTRIBUICAO.md).
+
 ## 1.2.2
 
 ### Correção
