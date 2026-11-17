@@ -22,17 +22,6 @@ Antes da mudança para 1.2.0, um build com versão 1.1.0 foi instalado e desinst
 
 O [plano arquivado](historico/PLANO-INICIAL.md#handoff--falha-de-transporte-em-getcameras) registra o `FETCH_ERROR` observado em `GetCameras` e a diferença entre a chamada do Node e a resposta informada no navegador. Consulte o histórico e a issue correspondente antes de reproduzir. Use uma configuração sintética e confirme a origem do processo que ocupa a porta local. Registre códigos e categorias de erro sem valores de autenticação ou payloads de mídia.
 
-## Tempo de funcionamento das câmeras (issue #55)
-
-A [issue #55](https://github.com/steffmartin/digifort/issues/55) permanece aberta: foi relatado que uma câmera ativada recentemente exibe o mesmo tempo de funcionamento que as demais. O comportamento original foi mantido: com `Working` verdadeiro, a interface exibe `ActiveTime` como duração; com `Working` falso, exibe `InactiveTime` como tempo parado.
-
-Duas alternativas foram tentadas e abandonadas:
-
-- Contar o tempo a partir da transição de indisponível para funcionando observada pelo aplicativo. Isso não recupera o tempo anterior à sessão e pode deixar passar interrupções entre consultas; não resolveu a necessidade de conhecer o tempo real.
-- Exibir `ActiveTime - InactiveTime` quando `Working` é verdadeiro. O usuário informou que a alteração não surtiu efeito. O manual da API descreve `InactiveTime` como zerado quando a câmera volta a funcionar, o que pode explicar por que a subtração não altera o resultado.
-
-O manual descreve `ActiveTime` como segundos desde a ativação ou atualização do objeto, não necessariamente o tempo contínuo de funcionamento. Não foi examinada uma resposta real do servidor do usuário; ainda é necessário identificar uma fonte confiável para esse tempo, sem registrar credenciais nem dados sensíveis.
-
 ## Rotina de manutenção
 
 1. Leia [AGENTS.md](../AGENTS.md) e consulte o guia correspondente ao fluxo alterado.
