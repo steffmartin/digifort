@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
 import vm from 'node:vm';
+import { EventEmitter } from 'node:events';
 
 const source = readFileSync(new URL('../server.mjs', import.meta.url), 'utf8');
 function section(start, end) {
@@ -79,4 +80,36 @@ test('destino de mídia rejeita travessia e extensões incompatíveis', () => {
   for (const filename of ['../imagem.png', 'imagem.mp4', 'imagem.png.exe', '']) assert.throws(() => context.mediaTarget(config, filename, true), /inválido/);
   assert.throws(() => context.mediaTarget({}, 'camera.mp4', false), /Defina/);
   assert.throws(() => context.mediaTarget(config, 'camera.mpg', false), /inválido/);
+});
+
+
+test('canal de mídia aceita somente token e origem esperados e fecha o listener após uso', async () => {
+  let channel, forwarded;
+  class FakeServer extends EventEmitter {
+    listen(_port, host, callback) { assert.equal(host, '127.0.0.1'); callback(); }
+    address() { return { port: 31000 }; }
+    close() { this.closed = true; }
+  }
+  const timers = [];
+  const context = vm.createContext({ HOST: '127.0.0.1', PORT: 4177, URL, URLSearchParams, streamChannels: new Set(),
+    randomBytes: () => ({ toString: () => 'a'.repeat(48) }),
+    createServer: handler => { channel = new FakeServer(); channel.handler = handler; return channel; },
+    setTimeout: fn => { const timer = { fn, unref() {} }; timers.push(timer); return timer; }, clearTimeout() {},
+    handleApi: (_req, _res, url) => { forwarded = url; } });
+  vm.runInContext(section('async function createStreamChannel(', 'function staticFile('), context);
+  const result = await context.createStreamChannel('stream', new URLSearchParams({ server: 'test', camera: 'synthetic' }));
+  assert.equal(result.port, 31000);
+  const response = () => ({ headers: {}, setHeader(key, value) { this.headers[key] = value; }, writeHead(code) { this.code = code; return this; }, end() {} });
+  const req = { method: 'GET', url: `/${result.token}`, headers: { origin: 'http://evil.invalid', host: '127.0.0.1:31000' } };
+  const denied = response(); channel.handler(req, denied); assert.equal(denied.code, 403);
+  req.headers.origin = 'http://127.0.0.1:4177'; req.url = '/wrong';
+  const invalid = response(); channel.handler(req, invalid); assert.equal(invalid.code, 403);
+  req.url = `/${result.token}`;
+  const accepted = response(); channel.handler(req, accepted);
+  assert.equal(channel.closed, true);
+  assert.equal(accepted.headers['Access-Control-Allow-Origin'], 'http://127.0.0.1:4177');
+  assert.equal(forwarded.pathname, '/api/stream');
+  assert.equal(forwarded.searchParams.get('camera'), 'synthetic');
+  channel.emit('close');
+  assert.equal(context.streamChannels.size, 0);
 });

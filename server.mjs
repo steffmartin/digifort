@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { createServer } from 'node:http';
 import { createReadStream, createWriteStream, promises as fs } from 'node:fs';
 import path from 'node:path';
@@ -21,6 +21,7 @@ const authStates = new Map();
 const authPromises = new Map();
 const mediaWriters = new Map();
 const mediaRequests = new Set();
+const streamChannels = new Set();
 const UPDATE_FILE = path.join(CONFIG_DIR, 'update.json');
 const RELEASE_API = 'https://api.github.com/repos/steffmartin/digifort/releases/latest';
 let shuttingDown = false;
@@ -629,6 +630,17 @@ async function handleApi(req, res, url) {
       const command = url.pathname === '/api/config-folder' ? 'DIGIFORT_OPEN_CONFIG' : 'DIGIFORT_CLOSE_APP';
       return res.once('finish', () => process.stdout.write(`${command}\n`)).writeHead(204).end();
     }
+    if (url.pathname === '/api/stream-channel') {
+      if (req.method !== 'GET' || req.headers.host !== `${HOST}:${PORT}` || req.headers['sec-fetch-site'] !== 'same-origin') return sendJson(res, 403, { error: 'Solicitação de outra origem.' });
+      const id = queryValue(url, 'server');
+      if (activeServerId !== id) throw new Error('Selecione novamente o servidor antes de continuar.');
+      const kind = queryValue(url, 'kind');
+      if (!['stream', 'audio-stream'].includes(kind)) return sendJson(res, 400, { error: 'Tipo de transmissão inválido.' });
+      const params = new URLSearchParams(url.searchParams);
+      params.delete('kind');
+      const channel = await createStreamChannel(kind, params);
+      return sendJson(res, 200, channel);
+    }
     if (url.pathname === '/api/grid') {
       if (req.headers.host !== `${HOST}:${PORT}` || req.headers.origin !== `http://${HOST}:${PORT}`) return sendJson(res, 403, { error: 'Solicitação de outra origem.' });
       if (req.method !== 'PUT') return sendJson(res, 405, { error: 'Método não disponível.' });
@@ -797,6 +809,35 @@ function WritableStreamFromServerResponse(res) {
   });
 }
 
+async function createStreamChannel(kind, params) {
+  const token = randomBytes(24).toString('hex');
+  const origin = `http://${HOST}:${PORT}`;
+  let timer;
+  const channel = createServer((req, res) => {
+    if (req.method !== 'GET' || req.headers.origin !== origin || req.url !== `/${token}` || req.headers.host !== `${HOST}:${channel.address()?.port}`) {
+      res.writeHead(403).end();
+      return;
+    }
+    clearTimeout(timer);
+    channel.close();
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Vary', 'Origin');
+    const target = new URL(`/api/${kind}?${params}`, origin);
+    void handleApi(req, res, target);
+  });
+  streamChannels.add(channel);
+  channel.once('close', () => { clearTimeout(timer); streamChannels.delete(channel); });
+  try {
+    await new Promise((resolve, reject) => { channel.once('error', reject); channel.listen(0, HOST, resolve); });
+    timer = setTimeout(() => channel.close(), 15000);
+    timer.unref();
+    return { port: channel.address().port, token };
+  } catch (error) {
+    streamChannels.delete(channel);
+    throw error;
+  }
+}
+
 function staticFile(res, pathname) {
   const normalized = pathname === '/' ? '/index.html' : pathname;
   let decodedPath;
@@ -812,7 +853,7 @@ function staticFile(res, pathname) {
       'Content-Type': types[ext] || 'application/octet-stream',
       'Cache-Control': 'no-store',
       'X-Content-Type-Options': 'nosniff',
-      'Content-Security-Policy': "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self' blob: data:; connect-src 'self'; media-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"
+      'Content-Security-Policy': `default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self' blob: data:; connect-src 'self' http://127.0.0.1:*; media-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'`
     });
     createReadStream(filePath).pipe(res);
   }).catch(() => sendJson(res, 404, { error: 'Arquivo não encontrado.' }));
@@ -854,6 +895,7 @@ if (launcher) {
     const pendingMedia = Promise.allSettled(mediaRequests);
     await Promise.race([pendingMedia, delay(750)]);
     server.closeAllConnections();
+    for (const channel of streamChannels) { channel.close(); channel.closeAllConnections(); }
     await pendingMedia;
     await Promise.allSettled([...mediaWriters.values()].map(writer => finishRecording(writer, true)));
     process.exit(process.exitCode || 0);

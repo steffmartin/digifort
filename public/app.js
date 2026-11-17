@@ -1471,6 +1471,18 @@ function parseApiTimestamp(value) {
   } catch { return null; }
 }
 
+async function openMediaStream(kind, params, signal) {
+  const response = await fetch(`/api/stream-channel?${query({ ...params, kind })}`, { signal, cache: 'no-store' });
+  if (!response.ok) {
+    let message = 'Não foi possível abrir a transmissão.';
+    try { message = (await response.json()).error || message; } catch {}
+    throw new Error(message);
+  }
+  const channel = await response.json();
+  if (!Number.isInteger(channel.port) || channel.port < 1 || channel.port > 65535 || !/^[a-f0-9]{48}$/.test(channel.token)) throw new Error('Canal de transmissão inválido.');
+  return fetch(`http://127.0.0.1:${channel.port}/${channel.token}`, { signal, cache: 'no-store' });
+}
+
 class CameraPlayer {
   constructor(name, tile, profile) {
     this.name = name;
@@ -1523,7 +1535,7 @@ class CameraPlayer {
     this.setState(state.mode === 'live' ? 'Ao vivo' : 'Gravado');
     this.setMessage('Conectando ao stream…');
     try {
-      const response = await fetch(`/api/stream?${query(params)}`, { signal: this.abortController.signal, cache: 'no-store' });
+      const response = await openMediaStream('stream', params, this.abortController.signal);
       if (token !== this.requestToken) return;
       if (!response.ok) {
         let message = 'Não foi possível abrir esta câmera.';
@@ -1571,7 +1583,7 @@ class CameraPlayer {
       Object.assign(params, { startDate: start.date, startTime: start.time, endDate: end?.date, endTime: end?.time });
     }
     try {
-      const response = await fetch(`/api/audio-stream?${query(params)}`, { signal: controller.signal, cache: 'no-store' });
+      const response = await openMediaStream('audio-stream', params, controller.signal);
       if (token !== this.audioStreamToken || !state.audioEnabled || state.focused !== this.name) return;
       if (!response.ok || !response.body || !(response.headers.get('content-type') || '').toLowerCase().includes('multipart/')) {
         let message = 'Não foi possível abrir o áudio desta câmera.';

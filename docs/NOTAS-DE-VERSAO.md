@@ -4,6 +4,8 @@
 
 ### Novidades e correções
 
+- As transmissões deixam de disputar o limite de conexões HTTP da interface, mantendo o salvamento da grade disponível com várias câmeras. ([#59](https://github.com/steffmartin/digifort/issues/59))
+
 - O controle de vigilância reflete a tela cheia atual e retorna à grade antes de sair da vigilância. ([#57](https://github.com/steffmartin/digifort/issues/57))
 - O menu de contexto funciona na câmera ampliada, inclusive dentro da vigilância. ([#58](https://github.com/steffmartin/digifort/issues/58))
 - Prévia intermediária sob demanda entre miniaturas, com cache durante a sessão e navegação para o instante correspondente. ([#56](https://github.com/steffmartin/digifort/issues/56))
@@ -12,7 +14,7 @@
 
 ### Validação e distribuição
 
-A suíte automatizada cobre os estados de tela cheia, a configuração da grade e o carregamento e cache das prévias. Uma variante com identidade e pastas isoladas foi instalada e desinstalada; os arquivos instalados e a versão do Node foram verificados. A validação visual destes fluxos e a integração com câmeras reais permanecem pendentes, assim como a instalação em máquina limpa e no Windows 10. O tempo de funcionamento das câmeras continua em investigação na [issue #55](https://github.com/steffmartin/digifort/issues/55). Confira o SHA-256 do instalador conforme [Distribuição](DISTRIBUICAO.md).
+A suíte automatizada cobre os estados de tela cheia, a configuração da grade e o carregamento e cache das prévias. O salvamento da grade foi validado no Chromium com 32 transmissões de vídeo e uma de áudio sintéticas simultâneas. Uma variante com identidade e pastas isoladas foi instalada e desinstalada; os arquivos instalados e a versão do Node foram verificados. A validação visual dos demais fluxos e a integração com câmeras reais permanecem pendentes, assim como a instalação em máquina limpa e no Windows 10. O tempo de funcionamento das câmeras continua em investigação na [issue #55](https://github.com/steffmartin/digifort/issues/55). Confira o SHA-256 do instalador conforme [Distribuição](DISTRIBUICAO.md).
 
 ## 1.3.0
 
