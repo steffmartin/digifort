@@ -52,7 +52,7 @@ const elements = {
   timelinePlayhead: $('#timelinePlayhead'), timelineStatus: $('#timelineStatus'),
   thumbnailPanel: $('#thumbnailPanel'), thumbnailGrid: $('#thumbnailGrid'), thumbnailStatus: $('#thumbnailStatus'),
   thumbnailPrev: $('#thumbnailPrev'),
-  mosaicSelect: $('#mosaicSelect'), resetGrid: $('#resetGrid'), mosaicPreview: $('#mosaicPreview'), overlayToggle: $('#overlayToggle'), displayControl: $('#displayControl'), displayMenuToggle: $('#displayMenuToggle'), displayMenu: $('#displayMenu'),
+  mosaicSelect: $('#mosaicSelect'), saveGrid: $('#saveGrid'), resetGrid: $('#resetGrid'), mosaicPreview: $('#mosaicPreview'), overlayToggle: $('#overlayToggle'), displayControl: $('#displayControl'), displayMenuToggle: $('#displayMenuToggle'), displayMenu: $('#displayMenu'),
   toggleOverlayVisibility: $('#toggleOverlayVisibility'), toggleTimelineVisibility: $('#toggleTimelineVisibility'),
   surveillanceToggle: $('#surveillanceToggle'), contextMenu: $('#contextMenu'),
   thumbnailNext: $('#thumbnailNext'),
@@ -60,11 +60,14 @@ const elements = {
   toastRegion: $('#toastRegion')
 };
 
+const contextMenuHome = elements.contextMenu.parentElement;
+
 // The current thumbnail grid starts at 150px wide; request half, current, and double size.
 const THUMBNAIL_SIZES = { small: [75, 51], medium: [150, 102], large: [300, 205] };
 const MOSAICS = [
   { id: 'auto', name: 'Grade automática', columns: 0, capacity: Infinity, previewCapacity: 8 },
   { id: '3x3-six', name: '3 × 3 · 6 câmeras', columns: 3, capacity: 6, slots: [[1,1,2,2],[1,3,1,1],[2,3,1,1],[3,1,1,1],[3,2,1,1],[3,3,1,1]] },
+  { id: '4x4-six', name: '4 × 4 · 6 câmeras', columns: 4, capacity: 6, slots: [[1,1,2,2],[1,3,2,2],[3,1,2,1],[3,2,2,1],[3,3,2,1],[3,4,2,1]] },
   { id: '4x4-eight', name: '4 × 4 · 8 câmeras', columns: 4, capacity: 8, slots: [[1,1,3,3],[1,4,1,1],[2,4,1,1],[3,4,1,1],[4,1,1,1],[4,2,1,1],[4,3,1,1],[4,4,1,1]] },
   { id: '4x4-ten', name: '4 × 4 · 10 câmeras', columns: 4, capacity: 10, slots: [[1,1,2,2],[1,3,2,2],[3,1,1,1],[3,2,1,1],[3,3,1,1],[3,4,1,1],[4,1,1,1],[4,2,1,1],[4,3,1,1],[4,4,1,1]] },
   { id: '4x4-thirteen-a', name: '4 × 4 · 13 câmeras A', columns: 4, capacity: 13, slots: [[1,1,2,2],[1,3,1,1],[1,4,1,1],[2,3,1,1],[2,4,1,1],[3,1,1,1],[3,2,1,1],[3,3,1,1],[3,4,1,1],[4,1,1,1],[4,2,1,1],[4,3,1,1],[4,4,1,1]] },
@@ -178,10 +181,17 @@ function reorderTiles() {
 
 function updateSurveillance() {
   document.body.classList.toggle('is-surveillance', state.surveillance);
-  elements.surveillanceToggle.setAttribute('aria-pressed', String(state.surveillance));
-  const surveillanceAction = state.surveillance ? 'Sair do modo vigilância' : 'Ativar modo vigilância';
+  const fullTile = document.fullscreenElement?.classList?.contains('camera-tile');
+  const enlarged = elements.viewerGrid.querySelector('.camera-tile.is-enlarged');
+  const exitingCamera = Boolean(fullTile || enlarged);
+  const exiting = exitingCamera || state.surveillance;
+  const surveillanceAction = exitingCamera ? 'Sair da tela cheia da câmera' : state.surveillance ? 'Sair do modo vigilância' : 'Ativar modo vigilância';
+  elements.surveillanceToggle.setAttribute('aria-pressed', String(exiting));
   elements.surveillanceToggle.setAttribute('aria-label', surveillanceAction);
   elements.surveillanceToggle.title = `${surveillanceAction} · V`;
+  elements.surveillanceToggle.querySelector('path').setAttribute('d', exiting
+    ? 'M3 8h5V3M21 8h-5V3M3 16h5v5M21 16h-5v5'
+    : 'M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5');
 }
 
 const PLAYBACK_SHORTCUTS = [
@@ -315,6 +325,8 @@ function positionSubmenu(wrapper, submenu) {
 
 function openContextMenu(x, y, cameraScope, allScope = null) {
   const root = elements.contextMenu;
+  const fullTile = document.fullscreenElement?.classList?.contains('camera-tile') ? document.fullscreenElement : elements.viewerGrid.querySelector('.camera-tile.is-enlarged');
+  (fullTile || contextMenuHome).append(root);
   state.contextInvoker = document.activeElement;
   state.contextCamera = cameraScope.camera;
   root.replaceChildren(); root.removeAttribute('aria-label'); root.hidden = false;
@@ -562,6 +574,7 @@ function requestStopRecordingSession() {
 function closeContextMenu(restoreFocus = false) {
   const invoker = state.contextInvoker;
   elements.contextMenu.hidden = true; elements.contextMenu.replaceChildren();
+  contextMenuHome.append(elements.contextMenu);
   if (restoreFocus && invoker?.isConnected) invoker.focus();
 }
 
@@ -1001,7 +1014,7 @@ function createTile(cameraName, profile) {
   const videoSurface = tile.querySelector('.tile-video');
   videoSurface.addEventListener('click', () => focusCamera(cameraName));
   videoSurface.addEventListener('dblclick', () => toggleTileFullscreen(tile, cameraName));
-  tile.addEventListener('contextmenu', event => { event.preventDefault(); openContextMenu(event.clientX, event.clientY, { camera: cameraName, all: false }, { camera: cameraName, all: true }); });
+  tile.addEventListener('contextmenu', event => { if (event.target.closest('.context-menu')) return; event.preventDefault(); openContextMenu(event.clientX, event.clientY, { camera: cameraName, all: false }, { camera: cameraName, all: true }); });
   const canvas = tile.querySelector('.tile-canvas');
   const zoom = { scale: 1, x: 0, y: 0 };
   const applyZoom = () => { canvas.style.transform = `translate(${zoom.x}px, ${zoom.y}px) scale(${zoom.scale})`; };
@@ -1061,9 +1074,11 @@ function placeMediaToolbar(tile = null) {
 function closeSurveillanceTile() {
   const tile = elements.viewerGrid.querySelector('.camera-tile.is-enlarged');
   if (!tile) return false;
+  closeContextMenu();
   tile.classList.remove('is-enlarged');
   placeMediaToolbar();
   tile.resetZoom?.();
+  updateSurveillance();
   return true;
 }
 
@@ -1072,6 +1087,7 @@ async function toggleTileFullscreen(tile, cameraName) {
     const wasEnlarged = tile.classList.contains('is-enlarged');
     closeSurveillanceTile();
     if (!wasEnlarged) { tile.classList.add('is-enlarged'); placeMediaToolbar(tile); }
+    updateSurveillance();
     return;
   }
   if (document.fullscreenElement === tile) {
@@ -1094,7 +1110,13 @@ async function leaveFullscreen() {
 }
 
 async function toggleSurveillance() {
+  if (state.surveillance && closeSurveillanceTile()) return;
   if (state.surveillance) { await leaveFullscreen(); return; }
+  if (document.fullscreenElement?.classList?.contains('camera-tile')) {
+    try { await document.exitFullscreen(); }
+    catch { toast('Não foi possível sair da tela cheia da câmera.', 'error'); }
+    return;
+  }
   try { await document.documentElement.requestFullscreen(); state.surveillance = true; updateSurveillance(); }
   catch { toast('Não foi possível ativar o modo vigilância.', 'error'); return; }
   try {
@@ -1118,9 +1140,11 @@ document.addEventListener('keydown', event => {
 });
 document.addEventListener('fullscreenchange', () => {
   const fullTile = document.fullscreenElement?.classList?.contains('camera-tile') ? document.fullscreenElement : null;
+  closeContextMenu();
   placeMediaToolbar(fullTile);
   for (const tile of elements.viewerGrid.querySelectorAll('.camera-tile')) if (!isTileEnlarged(tile)) tile.resetZoom?.();
-  if (!document.fullscreenElement && state.surveillance) { navigator.keyboard?.unlock?.(); closeSurveillanceTile(); state.surveillance = false; updateSurveillance(); }
+  if (!document.fullscreenElement && state.surveillance) { navigator.keyboard?.unlock?.(); closeSurveillanceTile(); state.surveillance = false; }
+  updateSurveillance();
 });
 
 async function openCamera(cameraName, initialProfile = 'Visualization') {
@@ -1151,6 +1175,10 @@ async function closeCamera(cameraName) {
   const player = state.tiles.get(cameraName);
   if (!player) return;
   if (state.thumbnailActive) closeThumbnailView();
+  if (document.fullscreenElement === player.tile) {
+    try { await document.exitFullscreen(); }
+    catch { toast('Não foi possível sair da tela cheia da câmera.', 'error'); return; }
+  } else if (player.tile.classList.contains('is-enlarged')) closeSurveillanceTile();
   const recording = state.recordings.get(cameraName);
   if (recording) {
     await Promise.all(requestStopRecordingSession());
@@ -2458,10 +2486,12 @@ async function renderThumbnailPage(page) {
   elements.thumbnailPrev.disabled = !pageItems.length || pageItems[0] - interval < state.reviewStart;
   elements.thumbnailNext.disabled = !pageItems.length || pageItems[pageItems.length - 1] + interval > end;
   elements.thumbnailStatus.textContent = `Carregando ${pageItems.length} miniaturas de ${camera}.`;
-  const cards = pageItems.map(epoch => {
+  const cards = pageItems.map((epoch, index) => {
     const card = document.createElement('button');
     card.type = 'button';
     card.className = 'thumbnail-card';
+    card.style.gridColumn = String(index % columns + 1);
+    card.style.gridRow = String(Math.floor(index / columns) + 1);
     card.dataset.loadState = 'loading';
     card.setAttribute('aria-busy', 'true');
     card.setAttribute('aria-label', `Revisar ${camera} a partir de ${formatClock(epoch)}`);
@@ -2485,6 +2515,72 @@ async function renderThumbnailPage(page) {
     card.addEventListener('click', () => { closeThumbnailView(false); state.allStopped = false; seekReview(epoch); updateViewHeader(); });
     elements.thumbnailGrid.append(card);
     return { epoch, card, image, spinner, placeholder };
+  });
+  // The transparent hit area overlays only the space between consecutive cards.
+  pageItems.slice(0, -1).forEach((epoch, index) => {
+    const vertical = columns === 1;
+    if (!vertical && index % columns === columns - 1) return;
+    const midpoint = epoch + (pageItems[index + 1] - epoch) / 2;
+    const sneakWidth = Math.round(width / 2), sneakHeight = Math.round(height / 2);
+    const trigger = document.createElement('button');
+    trigger.type = 'button';
+    trigger.className = `thumbnail-sneak${vertical ? ' is-vertical' : ''}`;
+    trigger.style.gridColumn = String(index % columns + 1);
+    trigger.style.gridRow = String(Math.floor(index / columns) + 1);
+    trigger.style.setProperty('--sneak-width', `${Math.max(1, (rect.width - (columns - 1) * 4) / columns / 2)}px`);
+    trigger.dataset.loadState = 'idle';
+    trigger.setAttribute('aria-label', `Revisar ${camera} a partir de ${formatClock(midpoint)}`);
+    const preview = document.createElement('span'); preview.className = 'thumbnail-sneak-preview';
+    const media = document.createElement('span'); media.className = 'thumbnail-sneak-media';
+    const spinner = document.createElement('span'); spinner.className = 'thumbnail-spinner';
+    const image = document.createElement('img'); image.alt = ''; image.hidden = true;
+    const placeholder = document.createElement('span'); placeholder.className = 'thumbnail-placeholder'; placeholder.textContent = 'Miniatura indisponível'; placeholder.hidden = true;
+    const label = document.createElement('span'); label.className = 'thumbnail-sneak-time'; label.textContent = formatClock(midpoint);
+    media.append(spinner, image, placeholder); preview.append(media, label); trigger.append(preview);
+    const load = async () => {
+      if (trigger.dataset.loadState !== 'idle' || requestId !== state.thumbnailRequestId) return;
+      trigger.dataset.loadState = 'loading'; trigger.setAttribute('aria-busy', 'true');
+      const finish = success => {
+        if (requestId !== state.thumbnailRequestId) return;
+        trigger.dataset.loadState = success ? 'loaded' : 'error';
+        trigger.setAttribute('aria-busy', 'false'); spinner.hidden = true; image.hidden = !success; placeholder.hidden = success;
+      };
+      const key = `sneak:${midpoint}:${sneakWidth}x${sneakHeight}`;
+      const cached = state.thumbnailCache.get(key);
+      if (cached) { image.src = cached; finish(true); return; }
+      const controller = new AbortController(); state.thumbnailControllers.add(controller);
+      try {
+        const api = epochToApi(midpoint, state.server.timeZone);
+        const response = await fetch(`/api/snapshot?${query({ server: state.serverId, camera, date: api.date, time: api.time, width: sneakWidth, height: sneakHeight })}`, { cache: 'no-store', signal: controller.signal });
+        if (requestId !== state.thumbnailRequestId) return;
+        if (!response.ok) { finish(false); return; }
+        const blob = await response.blob();
+        if (requestId !== state.thumbnailRequestId) return;
+        if (!blob.size || (blob.type && !blob.type.startsWith('image/'))) { finish(false); return; }
+        const objectUrl = URL.createObjectURL(blob);
+        await new Promise(resolve => {
+          let settled = false;
+          const done = success => {
+            if (settled) return; settled = true;
+            controller.signal.removeEventListener('abort', cancelled);
+            if (success && requestId === state.thumbnailRequestId) state.thumbnailCache.set(key, objectUrl);
+            else URL.revokeObjectURL(objectUrl);
+            finish(success); resolve();
+          };
+          const cancelled = () => done(false);
+          controller.signal.addEventListener('abort', cancelled, { once: true });
+          image.addEventListener('load', () => done(true), { once: true });
+          image.addEventListener('error', () => done(false), { once: true });
+          if (controller.signal.aborted) cancelled(); else image.src = objectUrl;
+        });
+      } catch (error) {
+        if (error.name !== 'AbortError') finish(false);
+      } finally { state.thumbnailControllers.delete(controller); }
+    };
+    trigger.addEventListener('pointerenter', load);
+    trigger.addEventListener('focus', load);
+    trigger.addEventListener('click', () => { closeThumbnailView(false); state.allStopped = false; seekReview(midpoint); updateViewHeader(); });
+    elements.thumbnailGrid.append(trigger);
   });
   let cursor = 0;
   const finishCard = (item, success) => {
@@ -2688,6 +2784,21 @@ function selectMosaic(id) {
   state.mosaic = next.id; elements.mosaicSelect.value = next.id; applyMosaic();
 }
 elements.mosaicSelect.addEventListener('change', event => selectMosaic(event.target.value));
+elements.saveGrid.addEventListener('click', async () => {
+  if (!state.serverId || !state.server) return;
+  const serverId = state.serverId;
+  const initialMosaic = state.mosaic;
+  const initialCameras = Object.fromEntries([...state.tiles].map(([name, player]) => [name, state.mode === 'playback' ? player.lastLiveProfile || 'Visualization' : player.profile]));
+  elements.saveGrid.disabled = true;
+  try {
+    const response = await fetch(`/api/grid?${query({ server: serverId })}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ initialCameras, initialMosaic }) });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || 'Não foi possível salvar a grade.');
+    if (state.serverId === serverId && state.server) Object.assign(state.server, { initialCameras, initialMosaic });
+    toast('Grade salva na configuração do servidor.');
+  } catch (error) { toast(error.message, 'error'); }
+  finally { elements.saveGrid.disabled = false; }
+});
 elements.resetGrid.addEventListener('click', async () => {
   if (!state.serverId) return;
   elements.resetGrid.disabled = true;

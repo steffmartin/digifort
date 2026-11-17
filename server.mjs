@@ -173,7 +173,7 @@ function parseConfig(id, value) {
   const seekSeconds = value.seekSeconds ?? 15;
   if (!Number.isSafeInteger(seekSeconds) || seekSeconds < 1 || seekSeconds > 8640000000000) throw new Error('seekSeconds deve ser um inteiro positivo válido.');
   if (maxCams && Object.keys(initialCameras).length > maxCams) throw new Error('initialCameras excede o limite maxCams da configuração.');
-  const mosaicIds = new Set(['auto', '3x3-six', '4x4-eight', '4x4-ten', '4x4-thirteen-a', '4x4-thirteen-b', '4x4-center']);
+  const mosaicIds = new Set(['auto', '3x3-six', '4x4-six', '4x4-eight', '4x4-ten', '4x4-thirteen-a', '4x4-thirteen-b', '4x4-center']);
   const initialMosaic = mosaicIds.has(value.initialMosaic) ? value.initialMosaic : 'auto';
   for (const key of ['mediaFolder', 'screenshotFolder', 'videoFolder']) {
     if (value[key] !== undefined && typeof value[key] !== 'string') throw new Error(`${key} deve ser um caminho de pasta ou uma string vazia.`);
@@ -629,6 +629,24 @@ async function handleApi(req, res, url) {
       const command = url.pathname === '/api/config-folder' ? 'DIGIFORT_OPEN_CONFIG' : 'DIGIFORT_CLOSE_APP';
       return res.once('finish', () => process.stdout.write(`${command}\n`)).writeHead(204).end();
     }
+    if (url.pathname === '/api/grid') {
+      if (req.headers.host !== `${HOST}:${PORT}` || req.headers.origin !== `http://${HOST}:${PORT}`) return sendJson(res, 403, { error: 'Solicitação de outra origem.' });
+      if (req.method !== 'PUT') return sendJson(res, 405, { error: 'Método não disponível.' });
+      const id = queryValue(url, 'server');
+      if (!safeId(id) || id.toLowerCase() === 'example' || activeServerId !== id) throw new Error('Selecione novamente o servidor antes de continuar.');
+      let body = '';
+      for await (const chunk of req) { body += chunk; if (body.length > 65536) throw new Error('Configuração muito grande.'); }
+      let fields;
+      try { fields = JSON.parse(body); } catch { throw new Error('Configuração JSON inválida.'); }
+      if (!fields || typeof fields !== 'object' || Array.isArray(fields) || !Object.hasOwn(fields, 'initialCameras') || !Object.hasOwn(fields, 'initialMosaic')) throw new Error('Configuração de grade inválida.');
+      const previous = await readConfig(id);
+      const value = { ...previous, initialCameras: fields.initialCameras, initialMosaic: fields.initialMosaic };
+      const parsed = parseConfig(id, value);
+      if (parsed.initialMosaic !== fields.initialMosaic) throw new Error('Configuração de grade inválida.');
+      await fs.writeFile(path.join(CONFIG_DIR, `${id}.config`), JSON.stringify(value, null, 2) + '\n');
+      configs.set(id, parsed);
+      return sendJson(res, 200, { ok: true });
+    }
     if (url.pathname === '/api/config') {
       if (req.headers.host !== `${HOST}:${PORT}` || (req.method !== 'GET' && req.headers.origin !== `http://${HOST}:${PORT}`)) return sendJson(res, 403, { error: 'Solicitação de outra origem.' });
       const id = queryValue(url, 'server');
@@ -713,7 +731,7 @@ async function handleApi(req, res, url) {
       return res.end();
     }
     if (url.pathname === '/api/snapshot') {
-      const snapshotSizes = { '75x51': ['75', '51'], '150x102': ['150', '102'], '300x205': ['300', '205'], '352x240': ['352', '240'] };
+      const snapshotSizes = { '38x26': ['38', '26'], '150x103': ['150', '103'], '75x51': ['75', '51'], '150x102': ['150', '102'], '300x205': ['300', '205'], '352x240': ['352', '240'] };
       const requested = `${queryValue(url, 'width') || '352'}x${queryValue(url, 'height') || '240'}`;
       const [width, height] = snapshotSizes[requested] || snapshotSizes['352x240'];
       const response = await apiFetch(id, config, 'Cameras/Playback/GetSnapshot', {

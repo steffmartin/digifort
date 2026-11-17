@@ -8,7 +8,7 @@ const clear = source.slice(source.indexOf('function cancelThumbnailPage()'), sou
 const render = source.slice(source.indexOf('async function renderThumbnailPage('), source.indexOf('function clockTick()'));
 
 class Element {
-  constructor() { this.style = {}; this.dataset = {}; this.children = []; }
+  constructor() { this.style = { setProperty(name, value) { this[name] = value; } }; this.dataset = {}; this.children = []; }
   setAttribute() {}
   addEventListener() {}
   append(...children) { this.children.push(...children); }

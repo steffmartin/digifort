@@ -1,5 +1,19 @@
 # Notas de versão do Digifort Monitor
 
+## 1.4.0
+
+### Novidades e correções
+
+- O controle de vigilância reflete a tela cheia atual e retorna à grade antes de sair da vigilância. ([#57](https://github.com/steffmartin/digifort/issues/57))
+- O menu de contexto funciona na câmera ampliada, inclusive dentro da vigilância. ([#58](https://github.com/steffmartin/digifort/issues/58))
+- Prévia intermediária sob demanda entre miniaturas, com cache durante a sessão e navegação para o instante correspondente. ([#56](https://github.com/steffmartin/digifort/issues/56))
+- Nova grade 4 × 4 para seis câmeras, com duas câmeras grandes sobre quatro menores, e atalhos de grades ajustados. ([#53](https://github.com/steffmartin/digifort/issues/53))
+- Salvamento da grade atual na configuração do servidor. ([#54](https://github.com/steffmartin/digifort/issues/54))
+
+### Validação e distribuição
+
+A suíte automatizada cobre os estados de tela cheia, a configuração da grade e o carregamento e cache das prévias. Uma variante com identidade e pastas isoladas foi instalada e desinstalada; os arquivos instalados e a versão do Node foram verificados. A validação visual destes fluxos e a integração com câmeras reais permanecem pendentes, assim como a instalação em máquina limpa e no Windows 10. O tempo de funcionamento das câmeras continua em investigação na [issue #55](https://github.com/steffmartin/digifort/issues/55). Confira o SHA-256 do instalador conforme [Distribuição](DISTRIBUICAO.md).
+
 ## 1.3.0
 
 ### Novidades

@@ -92,3 +92,12 @@ test('troca de fonte de áudio interrompe a anterior e respeita pausa', async ()
   await context.audioSourceChanged('B', 'B');
   assert.deepEqual(calls, []);
 });
+
+
+test('mosaico de seis câmeras organiza duas grandes sobre quatro pequenas', () => {
+  const context = vm.createContext({ state: {} });
+  vm.runInContext(section('const MOSAICS =', 'function setupMosaics(') + '\nthis.mosaics = MOSAICS;', context);
+  const mosaic = context.mosaics.find(item => item.id === '4x4-six');
+  assert.equal(context.mosaics.indexOf(mosaic), 2);
+  assert.deepEqual(Array.from(mosaic.slots, slot => Array.from(slot)), [[1,1,2,2],[1,3,2,2],[3,1,2,1],[3,2,2,1],[3,3,2,1],[3,4,2,1]]);
+});

@@ -24,6 +24,7 @@ test('configuração aplica padrões e usa pasta de mídia como fallback', () =>
   assert.equal(config.serverAddress, 'http://127.0.0.1:9999');
   assert.equal(config.userAgent, 'teste');
   assert.equal(config.initialMosaic, 'auto');
+  assert.equal(context.parseConfig('teste', { ...valid(), initialMosaic: '4x4-six' }).initialMosaic, '4x4-six');
   assert.equal(config.maxCams, 0);
   assert.equal(config.seekSeconds, 15);
   assert.equal(context.parseConfig('teste', { ...valid(), seekSeconds: 30 }).seekSeconds, 30);
@@ -46,4 +47,30 @@ test('configuração rejeita endereços inseguros e dados inválidos', () => {
     [{ mediaFolder: 42 }, /mediaFolder/]
   ];
   for (const [override, error] of invalid) assert.throws(() => context.parseConfig('teste', { ...valid(), ...override }), error);
+});
+
+
+test('salvar grade preserva configuração e sessão e rejeita outra origem', async () => {
+  const route = section("    if (url.pathname === '/api/grid') {", "    if (url.pathname === '/api/config') {");
+  let saved;
+  const previous = { ...valid(), extra: 'preservado', initialMosaic: 'auto' };
+  const cache = new Map();
+  const sandbox = vm.createContext({
+    HOST: '127.0.0.1', PORT: 4177, CONFIG_DIR: '/synthetic', activeServerId: 'teste', configs: cache,
+    path: { join: (...parts) => parts.join('/') }, safeId: context.safeId, parseConfig: context.parseConfig,
+    queryValue: url => url.server, readConfig: async () => previous,
+    fs: { writeFile: async (_path, text) => { saved = JSON.parse(text); } },
+    sendJson: (_res, status, body) => ({ status, body })
+  });
+  vm.runInContext(`this.handle = async (req, res, url) => { ${route} };`, sandbox);
+  const fields = { initialCameras: { B: 'Recording', A: 'Visualization' }, initialMosaic: '4x4-six' };
+  const req = { method: 'PUT', headers: { host: '127.0.0.1:4177', origin: 'http://127.0.0.1:4177' }, async *[Symbol.asyncIterator]() { yield JSON.stringify(fields); } };
+  const result = await sandbox.handle(req, {}, { pathname: '/api/grid', server: 'teste' });
+  assert.equal(result.status, 200);
+  assert.equal(saved.extra, 'preservado');
+  assert.equal(saved.password, previous.password);
+  assert.deepEqual(Object.keys(saved.initialCameras), ['B', 'A']);
+  assert.equal(cache.get('teste').initialMosaic, '4x4-six');
+  req.headers.origin = 'http://evil.invalid';
+  assert.equal((await sandbox.handle(req, {}, { pathname: '/api/grid', server: 'teste' })).status, 403);
 });

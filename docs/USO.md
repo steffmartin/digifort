@@ -33,7 +33,7 @@ Mantenha os arquivos reais na pasta local de configurações e use somente dados
 
 ## Monitorar ao vivo
 
-Selecione **Ao vivo**, busque uma câmera na lateral e clique nela para abrir o vídeo na grade. Câmeras adicionadas manualmente começam com o perfil `Visualization`. No menu de contexto do quadro, escolha o perfil, defina a câmera em foco ou feche-a. Abra uma câmera em tela cheia com duplo clique; `F` alterna a câmera em foco. Use `Esc` para voltar à grade ou sair do modo vigilância.
+Selecione **Ao vivo**, busque uma câmera na lateral e clique nela para abrir o vídeo na grade. Câmeras adicionadas manualmente começam com o perfil `Visualization`. No menu de contexto do quadro, escolha o perfil, defina a câmera em foco ou feche-a. Abra uma câmera em tela cheia com duplo clique; `F` alterna a câmera em foco. Use `Esc` ou o botão de tela cheia da barra para voltar à grade ou sair do modo vigilância. Ao ampliar uma câmera durante a vigilância, a primeira ação retorna à grade e a seguinte encerra a vigilância. O menu de contexto também está disponível na câmera ampliada.
 
 Mova o mouse sobre a grade para mostrar a barra de multimídia. Ela começa no centro inferior da grade, desaparece após 2,5 segundos sem movimento ou após a saída do mouse e reaparece quando o mouse volta a se mover sobre a grade. Arraste a alça para reposicioná-la; a posição é mantida durante a sessão. Pelo teclado, `B` acessa a alça e as setas movem a barra (`Shift` aumenta o passo). Os nomes das ações e seus atalhos aparecem ao passar o mouse sobre os controles.
 
@@ -41,12 +41,13 @@ Selecione uma câmera no quadro ou em **Em foco:** na barra. A câmera em foco d
 
 ### Mosaico inicial
 
-Use um dos valores abaixo em `initialMosaic`. Se estiver ausente ou for desconhecido, inclusive para grades removidas, o aplicativo usa a grade automática silenciosamente. Se a capacidade da grade inicial exceder `maxCams`, também usa a grade automática. A alteração pelo seletor vale para a sessão atual. O botão **Restaurar grade configurada** ou `Ctrl+Alt+R` reconecta o servidor e restaura o mosaico e as câmeras iniciais; gravações locais em andamento são finalizadas.
+Use um dos valores abaixo em `initialMosaic`. Se estiver ausente ou for desconhecido, inclusive para grades removidas, o aplicativo usa a grade automática silenciosamente. Se a capacidade da grade inicial exceder `maxCams`, também usa a grade automática. A alteração pelo seletor vale para a sessão atual. Use **Salvar grade atual** para guardar as câmeras abertas, sua ordem, seus perfis ao vivo e o mosaico na configuração do servidor. O botão **Restaurar grade configurada** ou `Ctrl+Alt+R` reconecta o servidor e restaura o mosaico e as câmeras iniciais; gravações locais em andamento são finalizadas.
 
 | ID | Grade |
 | --- | --- |
 | `auto` | Grade automática |
 | `3x3-six` | 3 × 3 · 6 câmeras |
+| `4x4-six` | 4 × 4 · 6 câmeras |
 | `4x4-eight` | 4 × 4 · 8 câmeras |
 | `4x4-ten` | 4 × 4 · 10 câmeras |
 | `4x4-thirteen-a` | 4 × 4 · 13 câmeras A |
@@ -57,7 +58,7 @@ Use um dos valores abaixo em `initialMosaic`. Se estiver ausente ou for desconhe
 
 Abra **Revisão**, informe o início e, se desejar, o fim no fuso do servidor. Os campos aceitam edição direta ou seleção no calendário; escolha a hora e clique em **Confirmar**. O fim deve ser posterior ao início para reproduzir. Clique em **Reproduzir**. A timeline mostra os intervalos de vídeo e áudio de cada câmera aberta. Sem fim informado, o limite da timeline é fixado no instante em que a revisão começa; para incluir gravações posteriores, clique novamente em **Reproduzir**. Clique em uma faixa para navegar em todas as câmeras. Use a roda do mouse sobre a timeline para ajustar o zoom no ponto indicado e arraste para navegar quando houver zoom.
 
-Para abrir miniaturas, clique com o botão direito no quadro da câmera e escolha **Esta câmera > Miniaturas**, o tamanho e o intervalo. As miniaturas começam no tamanho grande. Use as setas esquerda e direita para mudar de página ou `Ctrl+Shift+Alt+1` a `Ctrl+Shift+Alt+0` para abri-las na câmera em foco, com intervalos de 5 segundos a 5 horas na ordem do menu. As imagens carregadas são reutilizadas ao navegar entre páginas durante a sessão de miniaturas; o cache é descartado ao sair dela ou alterar parâmetros relevantes. As transmissões pausam enquanto as miniaturas ocupam a grade; clique em uma imagem para retomar todas a partir daquele instante ou use **Voltar às câmeras**. Use **Opções de exibição** para controlar dados sobrepostos e timeline.
+Para abrir miniaturas, clique com o botão direito no quadro da câmera e escolha **Esta câmera > Miniaturas**, o tamanho e o intervalo. As miniaturas começam no tamanho grande. Use as setas esquerda e direita para mudar de página ou `Ctrl+Shift+Alt+1` a `Ctrl+Shift+Alt+0` para abri-las na câmera em foco, com intervalos de 5 segundos a 5 horas na ordem do menu. Passe o mouse entre duas miniaturas consecutivas na mesma linha para carregar uma prévia menor do instante intermediário; clique nela, inclusive quando a imagem estiver indisponível, para revisar esse instante. Em uma coluna, use o espaço entre as miniaturas. As imagens carregadas, inclusive as prévias intermediárias, são reutilizadas ao navegar entre páginas durante a sessão de miniaturas; o cache é descartado ao sair dela ou alterar parâmetros relevantes. As transmissões pausam enquanto as miniaturas ocupam a grade; clique em uma imagem para retomar todas a partir daquele instante ou use **Voltar às câmeras**. Use **Opções de exibição** para controlar dados sobrepostos e timeline.
 
 ## Salvar capturas e gravações
 
@@ -71,4 +72,6 @@ Abra **Atalhos de teclado** no rodapé da lista de câmeras para consultar os co
 
 Para revisar a câmera em foco, use `Ctrl+1` a `Ctrl+0`; acrescente `Shift` para revisar todas. A ordem é 30 segundos, 1 minuto, 30 minutos, 1 hora, 6 horas, 12 horas, 1 dia, 2 dias, 3 dias e 1 semana. Como no menu de contexto, revisar apenas a câmera em foco fecha as demais e seleciona a grade automática.
 
-Na lista lateral, use as setas para navegar entre câmeras e Enter para abrir ou fechar. Para selecionar mosaicos, use `Ctrl+Alt+A` para automático e `Ctrl+Alt+1` a `Ctrl+Alt+6` para as seis grades fixas na ordem do seletor. Use `Ctrl+PrintScreen` para capturar a câmera em foco ou `Ctrl+Shift+PrintScreen` para todas.
+Na lista lateral, use as setas para navegar entre câmeras e Enter para abrir ou fechar. Para selecionar mosaicos, use `Ctrl+Alt+A` para automático e `Ctrl+Alt+1` a `Ctrl+Alt+7` para as sete grades fixas na ordem do seletor. Use `Ctrl+PrintScreen` para capturar a câmera em foco ou `Ctrl+Shift+PrintScreen` para todas.
+
+Para câmeras funcionando, o tempo exibido usa `ActiveTime`; para câmeras indisponíveis, o tempo parado usa `InactiveTime`. O tempo de funcionamento pode não corresponder ao tempo real da câmera; a investigação continua na [issue #55](https://github.com/steffmartin/digifort/issues/55).

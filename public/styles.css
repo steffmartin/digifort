@@ -141,7 +141,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .mosaic-control select { max-width: 155px; height: 31px; border: 1px solid var(--line); background: #111b1d; font-size: 10px; }
 .mosaic-preview { width: 22px; height: 22px; flex: 0 0 22px; display: grid; grid-template-columns: repeat(var(--preview-columns, 3), 1fr); grid-template-rows: repeat(var(--preview-rows, 3), 1fr); gap: 1px; }
 .mosaic-preview i { min-width: 0; min-height: 0; background: #4f8077; border: 1px solid #80b0a5; }
-.reset-grid svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.reset-grid svg, .save-grid svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 .display-control { position: relative; z-index: 16; flex: 0 0 auto; display: inline-flex; }
 .overlay-toggle, .display-menu-toggle { min-height: 31px; border: 1px solid var(--line); background: transparent; color: var(--muted); font-size: 9px; }
 .overlay-toggle { padding: 0 9px; border-right: 0; white-space: nowrap; }
@@ -419,3 +419,16 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 
 #updateNotes { color: var(--live); font-size: 10px; }
 #updateProgressArea progress { width: 100%; margin-top: 8px; accent-color: var(--live); }
+
+/* A prévia ocupa apenas a região entre quadros e não altera a paginação. */
+.thumbnail-grid { position: relative; }
+.thumbnail-sneak { z-index: 2; justify-self: end; align-self: center; transform: translateX(50%); width: 20px; height: 60%; min-height: 20px; padding: 0; border: 0; background: transparent; cursor: pointer; }
+.thumbnail-sneak.is-vertical { justify-self: center; align-self: end; transform: translateY(50%); width: 60%; height: 20px; }
+.thumbnail-sneak-preview { display: none; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: var(--sneak-width); max-width: 45vw; border: 1px solid var(--review); background: #0b1416; box-shadow: 0 3px 12px #000b; color: var(--text); }
+.thumbnail-sneak:hover .thumbnail-sneak-preview, .thumbnail-sneak:focus-visible .thumbnail-sneak-preview { display: block; }
+.thumbnail-sneak-media { position: relative; display: grid; place-items: center; width: 100%; aspect-ratio: 150 / 102; overflow: hidden; background: #071012; }
+.thumbnail-sneak-media img { width: 100%; height: 100%; object-fit: contain; }
+.thumbnail-sneak-media img[hidden], .thumbnail-sneak-media .thumbnail-spinner[hidden], .thumbnail-sneak-media .thumbnail-placeholder[hidden] { display: none; }
+.thumbnail-sneak-media .thumbnail-spinner { width: 18px; height: 18px; border: 2px solid #405255; border-top-color: var(--review); border-radius: 50%; animation: thumbnail-spin .8s linear infinite; }
+.thumbnail-sneak-media .thumbnail-placeholder { padding: 3px; color: var(--muted); font-size: 9px; text-align: center; }
+.thumbnail-sneak-time { display: block; padding: 3px; color: var(--muted); font: 9px var(--mono); text-align: center; }
