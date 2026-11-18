@@ -29,7 +29,7 @@ function getG726Config(headers, type) {
 const state = {
   servers: [], serverId: '', server: null, cameras: [], tiles: new Map(), desktopWindow: false,
   cameraStatuses: new Map(), statusTimer: null, statusRequestId: 0, statusRefreshing: false,
-  mode: 'live', focused: '', audioEnabled: false,
+  mode: 'live', focused: '', audioEnabled: false, presenceEnabled: false,
   allStopped: false, captureAll: false, mosaic: 'auto', overlaysVisible: false, timelineVisible: true, surveillance: false,
   audioContext: null, reviewEpoch: null, reviewStart: null, reviewEnd: null, reviewLimitEnd: null,
   timelineStart: null, timelineEnd: null,
@@ -43,7 +43,7 @@ const elements = {
   cameraCount: $('#cameraCount'), availableCount: $('#availableCount'),
   liveMode: $('#liveMode'), reviewMode: $('#reviewMode'), reviewFields: $('#reviewFields'),
   startDateTime: $('#startDateTime'), endDateTime: $('#endDateTime'), playReview: $('#playReview'),
-  audioSource: $('#audioSource'), audioToggle: $('#audioToggle'), viewerGrid: $('#viewerGrid'), emptyMonitor: $('#emptyMonitor'),
+  audioSource: $('#audioSource'), audioToggle: $('#audioToggle'), presenceToggle: $('#presenceToggle'), viewerGrid: $('#viewerGrid'), emptyMonitor: $('#emptyMonitor'),
   mediaToolbar: $('#mediaToolbar'), mediaToolbarHandle: $('#mediaToolbarHandle'),
   seekBack: $('#seekBack'), seekForward: $('#seekForward'), seekBackWrap: $('#seekBackWrap'), seekForwardWrap: $('#seekForwardWrap'),
   captureFrame: $('#captureFrame'), recordToggle: $('#recordToggle'), finishRecording: $('#finishRecording'), captureAllSwitch: $('#captureAllSwitch'),
@@ -512,6 +512,7 @@ async function changeRecordingState(scope, action) {
     const session = { key: recordingScopeKey(scope), all: Boolean(scope.all), cameras: names.slice(), status: 'starting' };
     const started = [];
     state.recordingSession = session;
+    stopPresenceWorker();
     updateMediaControls();
     try {
       const filenames = mediaFilenames(session.cameras, '.mp4', mediaEpoch());
@@ -1001,7 +1002,7 @@ function createTile(cameraName, profile) {
     <div class="tile-video" tabindex="0" role="button" aria-label="Focar câmera">
       <canvas class="tile-canvas"></canvas>
       <div class="tile-overlay">
-        <div class="tile-topline"><div class="tile-camera-meta"><span class="tile-camera-name"></span><span class="tile-camera-description"></span></div><span class="tile-state"><span class="tile-audio-indicator" hidden><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 8h3l4-3v10l-4-3H3z"></path><path class="tile-audio-on" d="M13 7c1.7 1.6 1.7 4.4 0 6m2-8c3 2.8 3 7.2 0 10"></path><path class="tile-audio-off" d="m13 8 4 4m0-4-4 4"></path></svg></span><span class="tile-state-text">Conectando</span></span></div>
+        <div class="tile-topline"><div class="tile-camera-meta"><span class="tile-camera-name"></span><span class="tile-camera-description"></span></div><span class="tile-state"><span class="tile-state-text">Conectando</span></span></div>
         <div class="tile-message" hidden></div>
         <div class="tile-bottomline"><span class="tile-timecode">--:--:--</span><span class="tile-codec"></span></div>
       </div>
@@ -1195,6 +1196,8 @@ async function closeCamera(cameraName) {
   if (!state.tiles.size) {
     elements.emptyMonitor.hidden = false;
     state.audioEnabled = false;
+    state.presenceEnabled = false;
+    stopPresenceWorker();
   }
   if (!state.tiles.size) state.allStopped = false;
   applyMosaic();
@@ -1218,6 +1221,8 @@ async function closeAllTiles() {
   elements.emptyMonitor.hidden = false;
   state.focused = '';
   state.audioEnabled = false;
+  state.presenceEnabled = false;
+  stopPresenceWorker();
   state.allStopped = false;
   updateAudioSources();
   drawCameraList();
@@ -1227,7 +1232,7 @@ async function closeAllTiles() {
 function focusCamera(cameraName) {
   if (!state.tiles.has(cameraName)) return;
   const previousFocus = state.focused;
-  if (previousFocus !== cameraName) clearThumbnails();
+  if (previousFocus !== cameraName) { clearThumbnails(); stopPresenceWorker(); }
   state.focused = cameraName;
   for (const [name, player] of state.tiles) {
     player.tile.classList.toggle('is-focused', name === cameraName);
@@ -1238,14 +1243,100 @@ function focusCamera(cameraName) {
 
 }
 
-function updateAudioSources() {
-  elements.audioSource.replaceChildren();
-  for (const [name, player] of state.tiles) {
-    const indicator = player.tile.querySelector('.tile-audio-indicator');
-    indicator.hidden = name !== state.focused;
-    indicator.classList.toggle('is-audio-on', state.audioEnabled);
-    indicator.setAttribute('aria-label', state.audioEnabled ? 'Em foco, áudio ativado' : 'Em foco, áudio desativado');
+let presenceWorker = null;
+let presenceReady = false;
+let presenceBusy = false;
+let presenceAudio = null;
+let lastPresenceSound = 0;
+let presenceDetected = false;
+
+function presenceAvailable() {
+  const player = state.tiles.get(state.focused);
+  return state.presenceEnabled && state.mode === 'live' && !state.recordingSession &&
+    !state.allStopped && !state.thumbnailActive && player && !player.stopped;
+}
+function updatePresenceControl() {
+  const button = elements.presenceToggle;
+  button.disabled = !state.tiles.size;
+  button.setAttribute('aria-pressed', String(state.presenceEnabled));
+  const label = `${state.presenceEnabled ? 'Desativar' : 'Ativar'} alarme de presença`;
+  button.setAttribute('aria-label', label);
+  setMediaControlTitle(button, `${label} · P`);
+}
+function stopPresenceWorker() {
+  if (presenceWorker) presenceWorker.terminate();
+  presenceWorker = null;
+  presenceReady = false;
+  presenceBusy = false;
+  presenceDetected = false;
+}
+function failPresence() {
+  stopPresenceWorker();
+  state.presenceEnabled = false;
+  updatePresenceControl();
+  toast('Não foi possível executar o alarme de presença. Alarme desativado.', 'error');
+}
+function soundPresence(count = 1) {
+  if (!presenceAudio || presenceAudio.state !== 'running') return;
+  for (let i = 0; i < count; i++) {
+    const now = presenceAudio.currentTime + i * 0.45;
+    const oscillator = presenceAudio.createOscillator();
+    const gain = presenceAudio.createGain();
+    oscillator.frequency.value = 880;
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.15, now + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.3);
+    oscillator.connect(gain).connect(presenceAudio.destination);
+    oscillator.start(now); oscillator.stop(now + 0.31);
   }
+}
+async function checkPresence() {
+  if (!presenceAvailable()) { stopPresenceWorker(); return; }
+  if (!presenceWorker) {
+    try {
+      const worker = new Worker('/presence/worker.js', { type: 'module' });
+      presenceWorker = worker;
+      worker.onerror = () => { if (presenceWorker === worker) failPresence(); };
+      worker.onmessage = event => {
+        if (presenceWorker !== worker) return;
+        const result = event.data;
+        if (result.type === 'error') return failPresence();
+        if (result.type === 'ready') { presenceReady = true; return; }
+        if (result.type !== 'result') return;
+        presenceBusy = false;
+        if (!presenceAvailable() || state.focused !== result.camera) return;
+        if (!result.found) { presenceDetected = false; return; }
+        const now = Date.now();
+        if (!presenceDetected || now - lastPresenceSound >= 15000) {
+          soundPresence(presenceDetected ? 1 : 3);
+          lastPresenceSound = now;
+        }
+        presenceDetected = true;
+      };
+      worker.postMessage({ type: 'init' });
+    } catch { failPresence(); }
+    return;
+  }
+  if (!presenceReady || presenceBusy) return;
+  const camera = state.focused;
+  const canvas = state.tiles.get(camera)?.canvas;
+  if (!canvas?.width || !canvas.height) return;
+  presenceBusy = true;
+  const worker = presenceWorker;
+  try {
+    const scale = Math.min(1, 320 / Math.max(canvas.width, canvas.height));
+    const width = Math.max(1, Math.round(canvas.width * scale));
+    const height = Math.max(1, Math.round(canvas.height * scale));
+    const bitmap = await createImageBitmap(canvas, { resizeWidth: width, resizeHeight: height, resizeQuality: 'low' });
+    if (worker !== presenceWorker || !presenceAvailable() || camera !== state.focused) { bitmap.close(); presenceBusy = false; return; }
+    worker.postMessage({ type: 'detect', camera, bitmap, width, height }, [bitmap]);
+  } catch { if (worker === presenceWorker) failPresence(); }
+}
+setInterval(() => { void checkPresence(); }, 3000);
+
+function updateAudioSources() {
+  updatePresenceControl();
+  elements.audioSource.replaceChildren();
   if (!state.tiles.size) {
     elements.audioSource.add(new Option('Nenhuma câmera aberta', ''));
     elements.audioSource.disabled = true;
@@ -1330,6 +1421,7 @@ function setMode(mode) {
   if (state.mode === 'playback' && mode !== 'playback' && state.recordings.size) requestStopRecordingSession();
   if (state.thumbnailActive) closeThumbnailView(false);
   state.mode = mode;
+  stopPresenceWorker();
   state.allStopped = false;
   const wasPlayback = mode === 'playback';
   elements.liveMode.classList.toggle('is-active', !wasPlayback);
@@ -2839,6 +2931,14 @@ elements.surveillanceToggle.addEventListener('click', () => { void toggleSurveil
 elements.audioSource.addEventListener('change', event => {
   focusCamera(event.target.value);
 });
+elements.presenceToggle.addEventListener('click', () => {
+  state.presenceEnabled = !state.presenceEnabled;
+  if (state.presenceEnabled) {
+    if (!presenceAudio) presenceAudio = new AudioContext();
+    void presenceAudio.resume().catch(failPresence);
+  } else stopPresenceWorker();
+  updatePresenceControl();
+});
 elements.audioToggle.addEventListener('click', async () => {
   if (!state.audioContext) state.audioContext = new AudioContext();
   try { await state.audioContext.resume(); } catch {}
@@ -2870,7 +2970,7 @@ for (const dialog of document.querySelectorAll('dialog')) {
 
 const controlShortcuts = [
   [elements.stopAll, 'Espaço', 'Space'], [elements.surveillanceToggle, 'V', 'V'],
-  [elements.audioToggle, 'A', 'A'], [elements.audioSource, 'F', 'F'], [elements.mediaToolbarHandle, 'B', 'B'],
+  [elements.audioToggle, 'A', 'A'], [elements.presenceToggle, 'P', 'P'], [elements.audioSource, 'F', 'F'], [elements.mediaToolbarHandle, 'B', 'B'],
   [elements.recordToggle, 'R', 'R'], [elements.finishRecording, 'Shift+R', 'Shift+R'], [elements.captureAllSwitch, 'C', 'C'],
   [elements.liveMode, 'G', 'G'], [elements.reviewMode, 'G', 'G'],
   [elements.resetGrid, 'Ctrl+Alt+R', 'Control+Alt+R'], [elements.cameraSearch, '/', '/']
@@ -2953,6 +3053,7 @@ document.addEventListener('keydown', event => {
     ' ': () => { if (!elements.stopAll.disabled) elements.stopAll.click(); },
     v: () => elements.surveillanceToggle.click(),
     a: () => { if (!elements.audioToggle.disabled) elements.audioToggle.click(); },
+    p: () => { if (!elements.presenceToggle.disabled) elements.presenceToggle.click(); },
     g: () => setMode(state.mode === 'live' ? 'playback' : 'live'),
     t: () => setDisplayVisibility({ timeline: !state.timelineVisible }),
     d: () => setDisplayVisibility({ overlays: !state.overlaysVisible }),

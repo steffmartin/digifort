@@ -1,0 +1,2 @@
+# Preserve whitespace in the unmodified MediaPipe-generated runtime.
+public/presence/wasm/vision_wasm_module_internal.js -whitespace

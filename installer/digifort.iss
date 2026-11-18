@@ -14,7 +14,7 @@
   #define ProductName "Digifort Monitor"
 #endif
 #ifndef ProductVersion
-  #define ProductVersion "1.4.0"
+  #define ProductVersion "1.5.0"
 #endif
 
 [Setup]
@@ -32,7 +32,7 @@ ArchitecturesInstallIn64BitMode=x64os
 MinVersion=10.0.10240
 OutputDir={#OutputPath}
 OutputBaseFilename=Digifort-Monitor-Setup-{#ProductVersion}
-Compression=lzma2
+Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern dynamic
 SetupIconFile={#StageDir}\camera.ico

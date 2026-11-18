@@ -62,7 +62,7 @@ function recordingHarness({ supported = true, failStart = false } = {}) {
     scopedCameraNames: scope => scope.all ? [...state.tiles.keys()] : [scope.camera].filter(name => state.tiles.has(name)),
     recordingScopeKey: scope => scope.all ? 'all-cameras' : `camera:${scope.camera}`,
     mediaEpoch: () => 1, mediaFilenames: (names, extension) => { extensions.push(extension); return names.map(() => `sintetico${extension}`); },
-    postMedia: async (_path, params) => { requests.push(params.action); return {}; }, toast: message => messages.push(message), updateMediaControls() {} });
+    postMedia: async (_path, params) => { requests.push(params.action); return {}; }, toast: message => messages.push(message), updateMediaControls() {}, stopPresenceWorker() {} });
   vm.runInContext(section('function recordingMime(', 'function closeContextMenu('), context);
   return { context, state, elements, player, requests, messages, sources, streams, recorders, extensions };
 }

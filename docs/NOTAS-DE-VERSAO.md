@@ -1,5 +1,18 @@
 # Notas de versão do Digifort Monitor
 
+## 1.5.0
+
+### Novidades
+
+- Alarme local de presença na câmera em foco, com controle na barra e atalho `P`. A detecção analisa pessoas no vídeo ao vivo, pausa durante revisão e gravação, e usa som independente do áudio da câmera. ([#52](https://github.com/steffmartin/digifort/issues/52))
+- O alarme toca três vezes na primeira detecção e uma vez a cada 15 segundos enquanto a presença continua. Uma nova detecção após ausência volta a tocar três vezes.
+- O indicador de áudio foi removido do quadro da câmera; o estado permanece visível na barra de controles.
+- O instalador usa compressão sólida LZMA2 `ultra64`.
+
+### Validação e distribuição
+
+A suíte automatizada cobre a suspensão, as falhas e a sequência sonora do alarme. A interface e o detector foram exercitados com dados sintéticos; o usuário confirmou uma detecção em teste isolado. Uma variante com identidade e pastas isoladas foi instalada e desinstalada; os arquivos do detector, o Node e a resposta do servidor local foram verificados. Precisão em diferentes câmeras, iluminação e ângulos, impacto sob carga, instalação em máquina limpa e Windows 10 permanecem pendentes. Confira o SHA-256 conforme [Distribuição](DISTRIBUICAO.md).
+
 ## 1.4.0
 
 ### Novidades e correções

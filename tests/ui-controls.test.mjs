@@ -34,7 +34,7 @@ test('alternar revisão atualiza controles, perfis e transmissões', () => {
   const player = { profile: 'Visualization', lastLiveProfile: 'Visualization', tile: { querySelector: () => attrs() }, restart: () => restarts++ };
   const state = { mode: 'live', tiles: new Map([['A', player]]), recordings: new Map(), thumbnailActive: false };
   const elements = { liveMode: attrs(), reviewMode: attrs(), reviewFields: {}, timelineStatus: {} };
-  const context = vm.createContext({ state, elements, updateOverlayState() {}, setDefaultReviewTimes() {}, clearTimeline: () => cleared++, updateViewHeader() {} });
+  const context = vm.createContext({ state, elements, updateOverlayState() {}, setDefaultReviewTimes() {}, clearTimeline: () => cleared++, updateViewHeader() {}, stopPresenceWorker() {} });
   vm.runInContext(section('function setMode(', 'function setDefaultReviewTimes('), context);
   context.setMode('playback');
   assert.equal(player.profile, 'Recording');
@@ -52,7 +52,7 @@ test('revisão rejeita período invertido e não reinicia câmeras', () => {
   let restarts = 0;
   const state = { tiles: new Map([['A', { restart: () => restarts++ }]]), server: { timeZone: 'UTC' } };
   const elements = { startDateTime: { value: '2024-01-02T10:00' }, endDateTime: { value: '2024-01-02T09:00' } };
-  const context = vm.createContext({ state, elements, Intl, Date, toast: message => messages.push(message), clearThumbnails() {}, loadFocusedTimeline() {}, updateViewHeader() {} });
+  const context = vm.createContext({ state, elements, Intl, Date, toast: message => messages.push(message), clearThumbnails() {}, loadFocusedTimeline() {}, updateViewHeader() {}, stopPresenceWorker() {} });
   vm.runInContext(section('function startReview(', 'function loadFocusedTimeline(') + section('function inputToEpoch(', 'function parseFrameEpoch('), context);
   context.startReview();
   assert.match(messages[0], /fim precisa ser posterior/);
