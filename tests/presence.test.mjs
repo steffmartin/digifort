@@ -1,12 +1,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import vm from 'node:vm';
 
 const source = readFileSync(new URL('../public/app.js', import.meta.url), 'utf8');
 const start = source.indexOf('let presenceWorker = null;');
 const end = source.indexOf('function updateAudioSources()', start);
 assert.ok(start >= 0 && end > start);
+
+test('modelo distribuído corresponde à versão licenciada do TensorFlow', () => {
+  const model = readFileSync(new URL('../public/presence/model.tflite', import.meta.url));
+  assert.equal(createHash('sha256').update(model).digest('hex'), '2e04c53bfeac0ac2a30c057c7e2a777594ce39baaac35a92f74fb1e8c4fc4e0b');
+});
 
 function harness() {
   const workers = [], messages = [];
@@ -71,6 +77,10 @@ test('nova presença toca três vezes e presença contínua repete um toque apó
   assert.equal(starts.length, 3);
   now += 1; result(true);
   assert.equal(starts.length, 4);
-  result(false); result(true);
-  assert.equal(starts.length, 7);
+  now += 3000; result(false); now += 3000; result(true);
+  assert.equal(starts.length, 4, 'uma ausência breve não deve ignorar o intervalo');
+  now += 9000; result(true);
+  assert.equal(starts.length, 5, 'uma falha breve de detecção mantém a presença contínua');
+  now += 15000; result(false); result(true);
+  assert.equal(starts.length, 8, 'uma nova presença após ausência confirmada toca três vezes');
 });

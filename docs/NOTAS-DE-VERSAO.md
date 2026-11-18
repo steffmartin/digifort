@@ -9,6 +9,11 @@
 - O indicador de áudio foi removido do quadro da câmera; o estado permanece visível na barra de controles.
 - O instalador usa compressão sólida LZMA2 `ultra64`.
 
+### Atualização do instalador
+
+- O intervalo mínimo de 15 segundos entre alertas é mantido mesmo quando a detecção oscila; uma ausência precisa durar 15 segundos para encerrar a presença.
+- O modelo foi substituído pela versão original EfficientDet-Lite0 do TensorFlow, cuja licença Apache 2.0 está documentada junto ao arquivo.
+
 ### Validação e distribuição
 
 A suíte automatizada cobre a suspensão, as falhas e a sequência sonora do alarme. A interface e o detector foram exercitados com dados sintéticos; o usuário confirmou uma detecção em teste isolado. Uma variante com identidade e pastas isoladas foi instalada e desinstalada; os arquivos do detector, o Node e a resposta do servidor local foram verificados. Precisão em diferentes câmeras, iluminação e ângulos, impacto sob carga, instalação em máquina limpa e Windows 10 permanecem pendentes. Confira o SHA-256 conforme [Distribuição](DISTRIBUICAO.md).

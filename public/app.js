@@ -1247,8 +1247,10 @@ let presenceWorker = null;
 let presenceReady = false;
 let presenceBusy = false;
 let presenceAudio = null;
-let lastPresenceSound = 0;
+let lastPresenceSound = null;
 let presenceDetected = false;
+let presenceNewPending = false;
+let lastPresenceSeen = null;
 
 function presenceAvailable() {
   const player = state.tiles.get(state.focused);
@@ -1269,6 +1271,8 @@ function stopPresenceWorker() {
   presenceReady = false;
   presenceBusy = false;
   presenceDetected = false;
+  presenceNewPending = false;
+  lastPresenceSeen = null;
 }
 function failPresence() {
   stopPresenceWorker();
@@ -1305,13 +1309,23 @@ async function checkPresence() {
         if (result.type !== 'result') return;
         presenceBusy = false;
         if (!presenceAvailable() || state.focused !== result.camera) return;
-        if (!result.found) { presenceDetected = false; return; }
         const now = Date.now();
-        if (!presenceDetected || now - lastPresenceSound >= 15000) {
-          soundPresence(presenceDetected ? 1 : 3);
-          lastPresenceSound = now;
+        if (!result.found) {
+          if (lastPresenceSeen !== null && now - lastPresenceSeen >= 15000) {
+            presenceDetected = false;
+            presenceNewPending = false;
+            lastPresenceSeen = null;
+          }
+          return;
         }
+        if (!presenceDetected) presenceNewPending = true;
         presenceDetected = true;
+        lastPresenceSeen = now;
+        if (lastPresenceSound === null || now - lastPresenceSound >= 15000) {
+          soundPresence(presenceNewPending ? 3 : 1);
+          lastPresenceSound = now;
+          presenceNewPending = false;
+        }
       };
       worker.postMessage({ type: 'init' });
     } catch { failPresence(); }

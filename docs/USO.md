@@ -62,7 +62,7 @@ Para abrir miniaturas, clique com o botão direito no quadro da câmera e escolh
 
 ## Alarme de presença
 
-Na barra de multimídia, ative o alarme ao lado do áudio ou pressione `P`. Ele acompanha a câmera em foco, começa desativado ao abrir o aplicativo e funciona somente no vídeo ao vivo. A análise local procura pessoas em imagens amostradas aproximadamente a cada três segundos; pessoas paradas também podem ser detectadas. A primeira detecção toca o som três vezes; enquanto a presença continuar sendo detectada, um toque se repete a cada 15 segundos. Quando a análise deixa de detectar pessoas e volta a encontrá-las, toca novamente três vezes. O alarme é independente do áudio da câmera.
+Na barra de multimídia, ative o alarme ao lado do áudio ou pressione `P`. Ele acompanha a câmera em foco, começa desativado ao abrir o aplicativo e funciona somente no vídeo ao vivo. A análise local procura pessoas em imagens amostradas aproximadamente a cada três segundos; pessoas paradas também podem ser detectadas. A primeira detecção toca o som três vezes; enquanto a presença continuar sendo detectada, um toque pode se repetir a cada 15 segundos. A presença é considerada encerrada após 15 segundos sem detecção; ao detectar uma nova presença, o alarme toca três vezes, respeitando o intervalo mínimo de 15 segundos desde o último alerta. O alarme é independente do áudio da câmera.
 
 O reconhecimento é suspenso durante a revisão e durante uma sessão de gravação de clipe, mesmo pausada, e retorna ao final se o alarme continuar ativado. Se ocorrer uma falha na detecção, o alarme é desativado e um aviso é exibido. A precisão varia conforme a imagem; pessoas podem não ser detectadas ou outros objetos podem ser confundidos com pessoas.
 
