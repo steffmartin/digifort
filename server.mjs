@@ -1,5 +1,6 @@
 import { createDigifortTransport } from './server/digifort.mjs';
 import { createHttpAdapter } from './server/http-adapter.mjs';
+import { finalizeMp4Duration } from './server/mp4-duration.mjs';
 import { createHash, randomBytes } from 'node:crypto';
 import { createServer } from 'node:http';
 import { spawn } from 'node:child_process';
@@ -271,6 +272,7 @@ async function finishRecording(writer, recover = false) {
       }
       await fs.truncate(partPath, completedBytes);
     }
+    await finalizeMp4Duration(partPath);
     await fs.rename(partPath, finalPath);
   } catch (error) {
     await fs.unlink(partPath).catch(() => {});

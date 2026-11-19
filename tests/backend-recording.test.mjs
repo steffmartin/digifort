@@ -9,7 +9,7 @@ import vm from 'node:vm';
 const source = readFileSync(new URL('../server.mjs', import.meta.url), 'utf8');
 const start = source.indexOf('async function finishRecording('), end = source.indexOf('async function handleMediaPost(', start);
 assert.ok(start >= 0 && end > start);
-const context = vm.createContext({ fs, once });
+const context = vm.createContext({ fs, once, finalizeMp4Duration: async () => false });
 vm.runInContext(source.slice(start, end), context);
 
 test('finalização preserva somente blocos completos ao recuperar gravação', async t => {
@@ -33,4 +33,17 @@ test('recuperação descarta gravação sem blocos completos', async t => {
   await context.finishRecording({ stream, partPath, finalPath, completedBytes: 0 }, true);
   await assert.rejects(fs.stat(partPath), { code: 'ENOENT' });
   await assert.rejects(fs.stat(finalPath), { code: 'ENOENT' });
+});
+
+test('finalização atualiza metadados antes de disponibilizar a gravação', async t => {
+  const folder = await fs.mkdtemp(path.join(os.tmpdir(), 'digifort-test-'));
+  t.after(() => fs.rm(folder, { recursive: true, force: true }));
+  const partPath = path.join(folder, 'sintetico.mp4.part'), finalPath = path.join(folder, 'sintetico.mp4');
+  const stream = createWriteStream(partPath); await once(stream, 'open');
+  await new Promise((resolve, reject) => stream.write('antes', error => error ? reject(error) : resolve()));
+  const original = context.finalizeMp4Duration;
+  context.finalizeMp4Duration = async filename => { assert.equal(filename, partPath); await fs.appendFile(filename, '-finalizado'); };
+  try { await context.finishRecording({ stream, partPath, finalPath }); }
+  finally { context.finalizeMp4Duration = original; }
+  assert.equal(await fs.readFile(finalPath, 'utf8'), 'antes-finalizado');
 });
