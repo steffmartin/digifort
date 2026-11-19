@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
+import { updateMediaControls } from '../public/monitor/media-toolbar.js';
 
 const playerSource = readFileSync(new URL('../public/media/player.js', import.meta.url), 'utf8');
 const captureSource = readFileSync(new URL('../public/media/capture.js', import.meta.url), 'utf8');
@@ -204,9 +205,7 @@ function mediaControlsHarness(supported = true) {
   const button = () => ({ dataset: {}, setAttribute(name, value) { this[name] = value; } });
   const elements = Object.fromEntries(['captureFrame', 'recordToggle', 'finishRecording', 'captureAllSwitch', 'mediaToolbar', 'seekBack', 'seekForward', 'seekBackWrap', 'seekForwardWrap'].map(name => [name, button()]));
   const state = { focused: 'B', captureAll: false, tiles: new Map([['A', {}], ['B', {}]]), recordings: new Map(), recordingSession: null };
-  const context = vm.createContext({ state, elements, recordingMime: () => supported ? 'video/mp4' : '', setMediaControlTitle: (control, title) => { control.title = title; } });
-  vm.runInContext(section('function updateMediaControls(', 'function setMode('), context);
-  return { state, elements, update: () => context.updateMediaControls() };
+  return { state, elements, update: () => updateMediaControls({ state, elements, recordingMime: () => supported ? 'video/mp4' : '' }) };
 }
 
 test('controles acompanham a câmera gravada após trocar o foco', () => {

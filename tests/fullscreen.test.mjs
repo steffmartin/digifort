@@ -17,12 +17,13 @@ function scenario() {
     exitFullscreen: async () => { document.fullscreenElement = null; listeners.fullscreenchange(); } };
   tile.requestFullscreen = async () => { document.fullscreenElement = tile; };
   const elements = { viewerGrid: { querySelector: () => flags.has('is-enlarged') ? tile : null, querySelectorAll: () => [tile] } };
-  const calls = [];
+  const calls = [], toolbarPlaces = [];
+  const mediaToolbar = { place: target => toolbarPlaces.push(target || null) };
   const navigator = { keyboard: { lock: async keys => calls.push([...keys]), unlock: () => calls.push('unlock') } };
-  const context = vm.createContext({ state, document, elements, navigator, updateSurveillance() {}, closeContextMenu() {}, toast() {} });
+  const context = vm.createContext({ state, document, elements, mediaToolbar, navigator, updateSurveillance() {}, closeContextMenu() {}, toast() {} });
   vm.runInContext(code, context);
   const key = key => { const event = { key, defaultPrevented: false, preventDefault() { this.defaultPrevented = true; }, stopImmediatePropagation() { this.stopped = true; } }; listeners.keydown(event); return event; };
-  return { context, state, document, tile, key, calls, navigator };
+  return { context, state, document, tile, key, calls, navigator, toolbarPlaces };
 }
 
 test('fora da vigilância, duplo clique ou Esc fecha a câmera em tela cheia', async () => {
@@ -42,12 +43,14 @@ test('fora da vigilância, duplo clique ou Esc fecha a câmera em tela cheia', a
 });
 
 test('vigilância preserva tela cheia ao restaurar câmera por duplo clique ou Esc', async () => {
-  const { context, state, document, tile, key } = scenario();
+  const { context, state, document, tile, key, toolbarPlaces } = scenario();
   await context.toggleTileFullscreen(tile, 'Entrada');
+  assert.equal(toolbarPlaces.at(-1), tile);
   assert.equal(tile.classList.contains('is-enlarged'), true);
   assert.equal(document.fullscreenElement, document.documentElement);
   await context.toggleTileFullscreen(tile, 'Entrada');
   assert.equal(tile.classList.contains('is-enlarged'), false);
+  assert.equal(toolbarPlaces.at(-1), null);
   assert.equal(state.surveillance, true);
   assert.equal(document.fullscreenElement, document.documentElement);
   await context.toggleTileFullscreen(tile, 'Entrada');

@@ -14,6 +14,7 @@ O [mapa da apresentação](ARQUITETURA-FRONTEND.md) registra os contratos de DOM
 
 | Módulo | Responsabilidade |
 | --- | --- |
+| [monitor/media-toolbar.js](../public/monitor/media-toolbar.js) | Visibilidade, arraste, foco, posicionamento e controles da barra multimídia. |
 | [presence/alarm.js](../public/presence/alarm.js) | Ativação, suspensão, distribuição entre workers e alertas de presença. O worker e o modelo ficam em `public/presence/`. |
 | [review/playback.js](../public/review/playback.js) e [review/time.js](../public/review/time.js) | Período, navegação sincronizada e conversão de horários no fuso do servidor. |
 | [review/timeline.js](../public/review/timeline.js) | Faixas, consultas, reordenação, zoom e arraste da timeline. |

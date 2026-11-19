@@ -1,14 +1,10 @@
 # Notas de versão do Digifort Monitor
 
-## Não publicado
-
-- A apresentação do monitor foi reorganizada em regiões e estados explícitos, preservando os controles, a aparência e os contratos de DOM. O alinhamento dos perfis e tamanhos no menu de contexto foi mantido. ([#69](https://github.com/steffmartin/digifort/issues/69))
-- A comparação visual com dados sintéticos cobriu oito resoluções e estados acionados, incluindo menus, calendário, miniaturas e diálogos. A suíte também verifica o alinhamento dos itens no Chromium. Testes com mídia real e leitor de tela não foram realizados para esta mudança.
-
 ## 1.6.0
 
 ### Novidades e correções
 
+- A apresentação do monitor foi reorganizada em regiões e estados explícitos, com a barra multimídia em módulo próprio, preservando os controles, o arraste pela janela, a aparência e os contratos de DOM. ([#69](https://github.com/steffmartin/digifort/issues/69))
 - A finalização de gravações MP4 fragmentadas preenche a duração calculada a partir dos fragmentos, permitindo a navegação no Reprodutor Multimídia do Windows 11. Arquivos incompletos ou com estrutura não reconhecida são preservados sem essa alteração. ([#66](https://github.com/steffmartin/digifort/issues/66))
 - O alarme de presença pode analisar a câmera em foco ou todas as câmeras abertas, com alertas visuais por câmera. ([#60](https://github.com/steffmartin/digifort/issues/60))
 - Transmissões ao vivo interrompidas tentam se reconectar em intervalos crescentes, até a última tentativa após cinco minutos. ([#62](https://github.com/steffmartin/digifort/issues/62))
@@ -21,7 +17,7 @@
 
 ### Validação e distribuição
 
-A suíte automatizada cobre os controles, a troca de foco, a captura, os avisos e a duração dos MP4s; a interface e os quadros da troca de câmera foram exercitados no Chromium com dados sintéticos. A correção de duração foi aprovada pelo usuário com gravação real no Reprodutor Multimídia do Windows 11. Os cinco itens anteriores também foram aprovados em teste pelo usuário. A gravação individual em segundo plano e a alteração da pasta configurada após o salvamento permanecem acompanhadas pelas [issues #72](https://github.com/steffmartin/digifort/issues/72) e [#73](https://github.com/steffmartin/digifort/issues/73). A integração da troca de foco com mídia real, a qualidade do áudio, a instalação em máquina limpa e o Windows 10 permanecem pendentes. Confira o SHA-256 conforme [Distribuição](DISTRIBUICAO.md).
+A comparação visual da interface com dados sintéticos cobriu oito resoluções e estados acionados, incluindo menus, calendário, miniaturas e diálogos; a suíte verifica o arraste da barra e o alinhamento dos menus no Chromium. Testes com mídia real e leitor de tela não foram realizados para a reorganização visual. A suíte automatizada cobre os controles, a troca de foco, a captura, os avisos e a duração dos MP4s; a interface e os quadros da troca de câmera foram exercitados no Chromium com dados sintéticos. A correção de duração foi aprovada pelo usuário com gravação real no Reprodutor Multimídia do Windows 11. Os cinco itens anteriores também foram aprovados em teste pelo usuário. A gravação individual em segundo plano e a alteração da pasta configurada após o salvamento permanecem acompanhadas pelas [issues #72](https://github.com/steffmartin/digifort/issues/72) e [#73](https://github.com/steffmartin/digifort/issues/73). A integração da troca de foco com mídia real, a qualidade do áudio, a instalação em máquina limpa e o Windows 10 permanecem pendentes. Confira o SHA-256 conforme [Distribuição](DISTRIBUICAO.md).
 
 ## 1.5.0
 

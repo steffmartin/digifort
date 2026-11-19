@@ -127,12 +127,51 @@ test('Chromium navega entre monitor, revisão e controles de presença', { timeo
         cameras: document.querySelectorAll('.camera-tile').length, tracks: document.querySelectorAll('#timelineNames > *').length, timelineShowsToolbar, badgeNoWrap };
     })()`);
     assert.deepEqual(result, { focusLabel: 'Alarme de presença: câmera em foco', review: 'true', cameras: 1, tracks: 1, timelineShowsToolbar: true, badgeNoWrap: true });
+    const toolbarBehavior = await evaluate(`(() => {
+      const bar = document.querySelector('#mediaToolbar');
+      const handle = document.querySelector('#mediaToolbarHandle');
+      document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'b', bubbles: true }));
+      const before = bar.getBoundingClientRect().left;
+      handle.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+      const after = bar.getBoundingClientRect().left;
+      const focused = document.activeElement === handle && bar.classList.contains('is-visible');
+      document.querySelector('#captureAllSwitch').click();
+      const all = bar.dataset.captureAll;
+      document.querySelector('#captureAllSwitch').click();
+      return { focused, moved: after < before, all, restored: bar.dataset.captureAll };
+    })()`);
+    assert.deepEqual(toolbarBehavior, { focused: true, moved: true, all: 'true', restored: 'false' });
+    const dragStart = await evaluate(`(() => {
+      const handle = document.querySelector('#mediaToolbarHandle').getBoundingClientRect();
+      const bar = document.querySelector('#mediaToolbar').getBoundingClientRect();
+      return { x: handle.left + handle.width / 2, y: handle.top + handle.height / 2, left: bar.left, top: bar.top };
+    })()`);
+    await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: dragStart.x, y: dragStart.y }, sessionId);
+    await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: dragStart.x, y: dragStart.y, button: 'left', buttons: 1, clickCount: 1 }, sessionId);
+    await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: dragStart.x - 60, y: dragStart.y - 40, button: 'left', buttons: 1 }, sessionId);
+    await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: dragStart.x - 60, y: dragStart.y - 40, button: 'left', buttons: 0, clickCount: 1 }, sessionId);
+    const dragged = await evaluate(`(() => { const bar = document.querySelector('#mediaToolbar').getBoundingClientRect(); return { left: bar.left, top: bar.top }; })()`);
+    assert.ok(dragged.left < dragStart.left && dragged.top < dragStart.top, 'o ponteiro deve mover a barra nos dois eixos');
+    const dragTo = async (x, y) => {
+      const start = await evaluate(`(() => { const r = document.querySelector('#mediaToolbarHandle').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; })()`);
+      await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: start.x, y: start.y }, sessionId);
+      await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: start.x, y: start.y, button: 'left', buttons: 1, clickCount: 1 }, sessionId);
+      await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y, button: 'left', buttons: 1 }, sessionId);
+      await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', buttons: 0, clickCount: 1 }, sessionId);
+      return evaluate(`(() => { const r = document.querySelector('#mediaToolbar').getBoundingClientRect(); return { left: r.left, top: r.top, right: r.right, bottom: r.bottom, width: innerWidth, height: innerHeight }; })()`);
+    };
+    const topLeft = await dragTo(0, 0);
+    assert.ok(topLeft.left >= 8 && topLeft.left <= 9 && topLeft.top >= 8 && topLeft.top <= 9, 'arraste alcança o canto superior sem sair da janela');
+    const bottomRight = await dragTo(topLeft.width + 100, topLeft.height + 100);
+    assert.ok(Math.abs(bottomRight.right - (bottomRight.width - 8)) < 1 && Math.abs(bottomRight.bottom - (bottomRight.height - 8)) < 1, 'arraste alcança o canto inferior sem sair da janela');
     const contextAlignment = await evaluate(`(() => {
       const openCameraMenu = () => {
         document.querySelector('.tile-video').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 300, clientY: 200 }));
         document.querySelector('#contextMenu > .context-branch > button').click();
       };
       const alignment = item => ({ justify: getComputedStyle(item).justifyContent, gap: getComputedStyle(item).columnGap });
+      const toolbar = document.querySelector('#mediaToolbar');
+      const originalPosition = { left: toolbar.style.left, top: toolbar.style.top };
       document.querySelector('#liveMode').click();
       openCameraMenu();
       const profile = alignment(document.querySelector('.context-scope-menu:not([hidden]) .thumbnail-size-item'));
@@ -145,9 +184,9 @@ test('Chromium navega entre monitor, revisão e controles de presença', { timeo
       const thumbnail = alignment([...document.querySelectorAll('.context-submenu:not([hidden]) .thumbnail-size-item')]
         .find(item => item.textContent === 'Pequeno'));
       document.body.click();
-      return { profile, thumbnail };
+      return { profile, thumbnail, positionPreserved: toolbar.style.left === originalPosition.left && toolbar.style.top === originalPosition.top };
     })()`);
-    assert.deepEqual(contextAlignment, { profile: { justify: 'flex-start', gap: '8px' }, thumbnail: { justify: 'flex-start', gap: '8px' } });
+    assert.deepEqual(contextAlignment, { profile: { justify: 'flex-start', gap: '8px' }, thumbnail: { justify: 'flex-start', gap: '8px' }, positionPreserved: true });
     const dialogs = await evaluate(`(async () => {
       const wait = async predicate => {
         const deadline = Date.now() + 5000;
@@ -170,6 +209,33 @@ test('Chromium navega entre monitor, revisão e controles de presença', { timeo
       return { shortcutsOpen, configOpen, closed: !shortcuts.open && !config.open };
     })()`);
     assert.deepEqual(dialogs, { shortcutsOpen: true, configOpen: true, closed: true });
+    const deletionCheck = await evaluate(`(() => {
+      const sheet = [...document.styleSheets].find(item => item.href && item.href.endsWith('/styles.css'));
+      const selectors = ['.app-dialog', '.media-toolbar'];
+      const removed = [];
+      const read = () => ({
+        updateShadow: getComputedStyle(document.querySelector('#updateDialog')).boxShadow,
+        shortcutsShadow: getComputedStyle(document.querySelector('#shortcutDialog')).boxShadow,
+        toolbarPosition: getComputedStyle(document.querySelector('#mediaToolbar')).position,
+        topbarHeight: getComputedStyle(document.querySelector('.topbar')).height
+      });
+      const before = read();
+      try {
+        for (const selector of selectors) {
+          const index = [...sheet.cssRules].findIndex(rule => rule.selectorText === selector);
+          if (index < 0) throw new Error('Regra ausente: ' + selector);
+          removed.push({ index, text: sheet.cssRules[index].cssText });
+          sheet.deleteRule(index);
+        }
+        const without = read();
+        return { dialogShared: before.updateShadow !== without.updateShadow && before.shortcutsShadow !== without.shortcutsShadow,
+          toolbarShared: before.toolbarPosition === 'fixed' && without.toolbarPosition !== 'fixed',
+          unrelatedUnchanged: before.topbarHeight === without.topbarHeight };
+      } finally {
+        for (const rule of removed.reverse()) sheet.insertRule(rule.text, rule.index);
+      }
+    })()`);
+    assert.deepEqual(deletionCheck, { dialogShared: true, toolbarShared: true, unrelatedUnchanged: true });
     const captureSwitch = await evaluate(`(async () => {
       const { createMediaCapture } = await import('/media/capture.js');
       const originalRecorder = window.MediaRecorder, originalFetch = window.fetch, originalCapture = HTMLCanvasElement.prototype.captureStream;
@@ -219,18 +285,23 @@ test('Chromium navega entre monitor, revisão e controles de presença', { timeo
       while (!document.fullscreenElement && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 25));
       const entered = Boolean(document.fullscreenElement);
       const tile = document.querySelector('.camera-tile');
+      const bar = document.querySelector('#mediaToolbar');
+      const initialPosition = { left: bar.style.left, top: bar.style.top };
       tile.querySelector('.tile-video').dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
       const enlarged = tile.classList.contains('is-enlarged');
+      const toolbarInTile = bar.parentElement === tile;
+      const positionInTile = bar.style.left === initialPosition.left && bar.style.top === initialPosition.top;
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
       const restored = !tile.classList.contains('is-enlarged') && Boolean(document.fullscreenElement);
+      const toolbarRestored = bar.parentElement === document.querySelector('#viewerGrid') && bar.style.left === initialPosition.left && bar.style.top === initialPosition.top;
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
       deadline = Date.now() + 5000;
       while (document.fullscreenElement && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 25));
       const exited = !document.fullscreenElement;
       if (!exited) await document.exitFullscreen();
-      return { entered, enlarged, restored, exited };
+      return { entered, enlarged, restored, exited, toolbarInTile, positionInTile, toolbarRestored };
     })()`, true);
-    assert.deepEqual(surveillance, { entered: true, enlarged: true, restored: true, exited: true });
+    assert.deepEqual(surveillance, { entered: true, enlarged: true, restored: true, exited: true, toolbarInTile: true, positionInTile: true, toolbarRestored: true });
     const accessibility = await send('Accessibility.getFullAXTree', {}, sessionId);
     const accessibleNames = accessibility.nodes.filter(node => !node.ignored).map(node => node.name?.value).filter(Boolean);
     assert.ok(accessibleNames.includes('Câmeras'));
