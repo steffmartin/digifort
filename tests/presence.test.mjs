@@ -3,11 +3,33 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import vm from 'node:vm';
+import { createPresenceAlarm } from '../public/presence/alarm.js';
 
-const source = readFileSync(new URL('../public/app.js', import.meta.url), 'utf8');
+const source = readFileSync(new URL('../public/presence/alarm.js', import.meta.url), 'utf8');
 const start = source.indexOf('const presenceWorkers = [];');
-const end = source.indexOf('function updateAudioSources()', start);
+const end = source.indexOf('function toggle()', start);
 assert.ok(start >= 0 && end > start);
+
+test('interface do alarme alterna foco, todas as câmeras e desativado', async t => {
+  t.mock.method(globalThis, 'setTimeout', () => 0);
+  let resumes = 0;
+  globalThis.AudioContext = class {
+    async resume() { resumes++; }
+  };
+  t.after(() => { delete globalThis.AudioContext; });
+  const state = { presenceEnabled: false, presenceAll: false, mode: 'live', recordingSession: null,
+    allStopped: false, thumbnailActive: false, focused: 'A', tiles: new Map([['A', { stopped: false }]]) };
+  const attributes = {};
+  const button = { dataset: {}, setAttribute: (name, value) => { attributes[name] = value; } };
+  const alarm = createPresenceAlarm({ state, elements: { presenceToggle: button }, setMediaControlTitle() {}, toast() {} });
+  alarm.toggle();
+  assert.equal(attributes['aria-label'], 'Alarme de presença: câmera em foco');
+  alarm.toggle();
+  assert.equal(attributes['aria-label'], 'Alarme de presença: todas as câmeras');
+  alarm.toggle();
+  assert.equal(attributes['aria-label'], 'Alarme de presença: desativado');
+  assert.equal(resumes, 2);
+});
 
 test('modelo distribuído corresponde à versão licenciada do TensorFlow', () => {
   const model = readFileSync(new URL('../public/presence/model.tflite', import.meta.url));
@@ -55,6 +77,30 @@ test('falha do detector desativa o alarme e avisa', async () => {
   assert.equal(h.state.presenceEnabled, false);
   assert.equal(h.workers[0].terminated, true);
   assert.match(h.messages[0], /desativado/i);
+});
+
+test('miniaturas suspendem a análise e retomar recria o detector', async () => {
+  const h = harness();
+  await h.context.checkPresence();
+  h.state.thumbnailActive = true;
+  await h.context.checkPresence();
+  assert.equal(h.workers[0].terminated, true);
+  h.state.thumbnailActive = false;
+  await h.context.checkPresence();
+  assert.equal(h.workers.length, 2);
+});
+
+test('resultado de câmera que perdeu o foco é descartado', async () => {
+  const h = harness();
+  h.state.tiles.set('B', { stopped: false, presenceFrameAt: Date.now(), canvas: { width: 320, height: 180 } });
+  await h.context.checkPresence();
+  const worker = h.workers[0];
+  worker.onmessage({ data: { type: 'ready' } });
+  await h.context.checkPresence();
+  assert.equal(worker.sent.camera, 'A');
+  h.state.focused = 'B';
+  worker.onmessage({ data: { type: 'result', camera: 'A', found: true } });
+  assert.equal(vm.runInContext('presenceCameras.size', h.context), 0);
 });
 
 test('nova presença toca três vezes e presença contínua repete um toque após 15 segundos', async () => {
