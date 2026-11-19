@@ -19,9 +19,10 @@ Durante a instalação, escolha importar um `.config` ou configurar depois no ap
 - **Ao vivo**. Filtre a lista de câmeras, monte um mosaico e escolha o perfil de cada transmissão.
 - **Revisão**. Consulte faixas de vídeo e áudio por câmera, navegue com zoom na timeline e use miniaturas paginadas no mosaico.
 - **Áudio e vídeo**. Reproduza H.264, H.265/HEVC, AAC, G.711 e G.726 conforme o suporte do navegador e o perfil enviado pelo servidor.
+- **Alarme de presença**. Detecte pessoas na câmera em foco ou em todas as câmeras abertas, com análise local e alertas sonoros e visuais.
 - **Captura local**. Salve PNGs sem sobreposições e grave em MP4 os quadros reproduzidos pelo navegador.
 - **Configuração e teclado**. Gerencie servidores e limites de câmeras no aplicativo e consulte os atalhos no rodapé da lista de câmeras.
-- **Atualizações**. Na inicialização, o aplicativo verifica a release mais recente e oferece acesso à página de download quando há uma versão nova.
+- **Atualizações**. Na inicialização, o aplicativo verifica a release mais recente e oferece instalação quando ela estiver disponível.
 
 O servidor local Node.js atende a interface e encaminha chamadas de leitura à HTTP API do Digifort. A decodificação ocorre no navegador. O [guia de continuidade](docs/CONTINUIDADE.md) descreve a arquitetura e os limites da validação.
 
@@ -47,8 +48,11 @@ npm test
 
 | Caminho | Conteúdo |
 | --- | --- |
-| [`server.mjs`](server.mjs) | Servidor local, configurações, autenticação e integração com o Digifort |
-| [`public/`](public/) | Interface, player e módulo WASM usado em execução |
+| [`server.mjs`](server.mjs) | Servidor local, rotas HTTP, configurações e arquivos de mídia |
+| [`server/`](server/) | Transporte Digifort, sessão e adaptador HTTP |
+| [`public/app.js`](public/app.js) e [`public/monitor/`](public/monitor/) | Inicialização e coordenação da interface do monitor |
+| [`public/media/`](public/media/), [`public/review/`](public/review/) e [`public/presence/`](public/presence/) | Player, captura, revisão, miniaturas e alarme de presença |
+| [`public/wasm/`](public/wasm/) | Runtime WASM do decodificador G.726 |
 | [`config/example.config`](config/example.config) | Modelo de configuração por servidor |
 | [`installer/`](installer/) e [`scripts/`](scripts/) | Inicializador, instalador e ferramentas de build |
 | [`wasm/g726/`](wasm/g726/) | Código e instruções de build do decodificador G.726 |

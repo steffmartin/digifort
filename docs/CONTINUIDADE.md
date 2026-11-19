@@ -1,6 +1,6 @@
 # Continuidade do Digifort Monitor
 
-A linha de trabalho atual mantém a versão 1.4.0 do instalador Windows. O histórico da implementação inicial está no [plano arquivado](historico/PLANO-INICIAL.md). Consulte as [notas de versão](NOTAS-DE-VERSAO.md) para o que foi entregue e as [issues](https://github.com/steffmartin/digifort/issues) para o estado de propostas e bugs.
+A versão do código atual está em [package.json](../package.json). O histórico da implementação inicial está no [plano arquivado](historico/PLANO-INICIAL.md). Consulte as [notas de versão](NOTAS-DE-VERSAO.md) para o que foi entregue e as [issues](https://github.com/steffmartin/digifort/issues) para o estado de propostas e bugs.
 
 ## Arquitetura vigente
 
@@ -12,9 +12,18 @@ A linha de trabalho atual mantém a versão 1.4.0 do instalador Windows. O hist�
 
 O [shell do monitor](../public/monitor/shell.js) coordena câmera, foco, mosaico e modos. A inicialização em [app.js](../public/app.js) reúne os módulos de presença, revisão, timeline, miniaturas, captura e player; cada um recebe uma interface restrita aos dados necessários. O [manual e a transcrição OpenAPI](api/README.md) ficam juntos. Use o manual para distinguir tipos e restrições documentados de exemplos e lacunas do schema. Os testes usam dados sintéticos para verificar configuração, autenticação, protocolo, gravação e módulos do cliente; eles não substituem testes integrados com o Digifort.
 
+| Módulo | Responsabilidade |
+| --- | --- |
+| [presence/alarm.js](../public/presence/alarm.js) | Ativação, suspensão, distribuição entre workers e alertas de presença. O worker e o modelo ficam em `public/presence/`. |
+| [review/playback.js](../public/review/playback.js) e [review/time.js](../public/review/time.js) | Período, navegação sincronizada e conversão de horários no fuso do servidor. |
+| [review/timeline.js](../public/review/timeline.js) | Faixas, consultas, reordenação, zoom e arraste da timeline. |
+| [review/thumbnails.js](../public/review/thumbnails.js) | Paginação, prévias, cache e cancelamento de miniaturas. |
+| [media/capture.js](../public/media/capture.js) | Capturas PNG e ciclo de vida da gravação MP4. |
+| [media/player.js](../public/media/player.js) | Transmissões, demux multipart, decodificação e reconexão do player. |
+
 ## Validação e limites
 
-Na versão 1.2.2, a gravação em MP4 foi exercitada com transmissão real, incluindo pausa, retomada, áudio ativado e quatro câmeras simultâneas. A medição do início e os limites do teste estão nas [evidências da issue 51](EVIDENCIAS-ISSUE-51.md); a qualidade do áudio não foi avaliada.
+Na versão 1.2.2, a gravação em MP4 foi exercitada com transmissão real, incluindo pausa, retomada, áudio ativado e quatro câmeras simultâneas. A qualidade do áudio não foi avaliada.
 
 No Windows 11 local, foram validados o assistente, a importação e o preenchimento parcial, a preservação de arquivos em reinstalação e desinstalação, o aviso de porta ocupada, a janela única, o encerramento pelo diálogo e a restauração da geometria. A execução com `PATH` restrito usou o Node incluído no pacote. Na integração posterior, o instalador foi compilado e a criação de configuração, o diálogo e as grades foram verificados com dados sintéticos. A instalação e a desinstalação foram verificadas com identidade de produto, pasta e dados isolados; o runtime instalado serviu a interface e o ícone. A interrupção antes da abertura do assistente também foi verificada. A revisão com câmeras reais foi exercitada: faixas de múltiplas câmeras, zoom, navegação, miniaturas e reordenação da grade. Uma consulta de 24 horas confirmou a conversão dos timestamps recebidos após a correção de milissegundos. Ainda faltam validar o pacote integrado em máquina limpa e no Windows 10 e ampliar a validação dos fluxos combinados de HEVC, áudio e captura.
 
