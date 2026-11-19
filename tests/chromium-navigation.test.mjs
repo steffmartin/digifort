@@ -39,6 +39,7 @@ function createProtocol(process) {
     pending.clear();
   };
   process.once('exit', rejectPending);
+  process.once('error', rejectPending);
   const send = (method, params = {}, sessionId) => new Promise((resolve, reject) => {
     const requestId = ++id;
     pending.set(requestId, { resolve, reject });
@@ -92,8 +93,8 @@ test('Chromium navega entre monitor, revisão e controles de presença', { timeo
     const loaded = send.waitForEvent('Page.loadEventFired', sessionId);
     await send('Page.navigate', { url: `http://127.0.0.1:${server.address().port}/` }, sessionId);
     await loaded;
-    const evaluate = async expression => {
-      const result = await send('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true }, sessionId);
+    const evaluate = async (expression, userGesture = false) => {
+      const result = await send('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true, userGesture }, sessionId);
       if (result.exceptionDetails) throw new Error(result.exceptionDetails.text);
       return result.result.value;
     };
@@ -119,10 +120,30 @@ test('Chromium navega entre monitor, revisão e controles de presença', { timeo
         cameras: document.querySelectorAll('.camera-tile').length, tracks: document.querySelectorAll('#timelineNames > *').length };
     })()`);
     assert.deepEqual(result, { focusLabel: 'Alarme de presença: câmera em foco', review: 'true', cameras: 1, tracks: 1 });
+    const surveillance = await evaluate(`(async () => {
+      document.querySelector('#liveMode').click();
+      document.querySelector('#surveillanceToggle').click();
+      let deadline = Date.now() + 5000;
+      while (!document.fullscreenElement && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 25));
+      const entered = Boolean(document.fullscreenElement);
+      const tile = document.querySelector('.camera-tile');
+      tile.querySelector('.tile-video').dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+      const enlarged = tile.classList.contains('is-enlarged');
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      const restored = !tile.classList.contains('is-enlarged') && Boolean(document.fullscreenElement);
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      deadline = Date.now() + 5000;
+      while (document.fullscreenElement && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 25));
+      const exited = !document.fullscreenElement;
+      if (!exited) await document.exitFullscreen();
+      return { entered, enlarged, restored, exited };
+    })()`, true);
+    assert.deepEqual(surveillance, { entered: true, enlarged: true, restored: true, exited: true });
   } finally {
     try { await send('Browser.close'); } catch {}
     if (browser.exitCode === null) browser.kill();
     await new Promise(resolve => server.close(resolve));
+    if (!path.resolve(profile).startsWith(path.resolve(os.tmpdir()) + path.sep) || !path.basename(profile).startsWith('digifort-chromium-test-')) throw new Error('Perfil temporário fora da pasta esperada.');
     await rm(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   }
 });

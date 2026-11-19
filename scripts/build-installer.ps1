@@ -48,7 +48,7 @@ try {
 }
 & (Join-Path $PSScriptRoot 'build-launcher.ps1') -OutputDirectory $stage.FullName
 Copy-Item -LiteralPath (Join-Path $root 'server.mjs'), (Join-Path $root 'package.json'), (Join-Path $root 'config\example.config') -Destination $stage.FullName
-Copy-Item -LiteralPath (Join-Path $root 'public') -Recurse -Destination $stage.FullName
+Copy-Item -LiteralPath (Join-Path $root 'public'), (Join-Path $root 'server') -Recurse -Destination $stage.FullName
 
 $script = Join-Path $root 'installer\digifort.iss'
 & $IsccPath --no-signing --no-ide-signtools "/DStageDir=$($stage.FullName)" "/DOutputPath=$($dist.FullName)" "/DProductVersion=$version" $script

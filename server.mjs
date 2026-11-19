@@ -1,3 +1,5 @@
+import { createDigifortTransport } from './server/digifort.mjs';
+import { createHttpAdapter } from './server/http-adapter.mjs';
 import { createHash, randomBytes } from 'node:crypto';
 import { createServer } from 'node:http';
 import { createReadStream, createWriteStream, promises as fs } from 'node:fs';
@@ -17,8 +19,7 @@ const PORT = Number(process.env.PORT || 4177);
 const launcher = process.argv.includes('--launcher');
 const updateCapable = launcher && process.argv.includes('--update-capable') && process.platform === 'win32';
 const configs = new Map();
-const authStates = new Map();
-const authPromises = new Map();
+const transport = createDigifortTransport({ adapter: createHttpAdapter() });
 const mediaWriters = new Map();
 const mediaRequests = new Set();
 const streamChannels = new Set();
@@ -26,7 +27,6 @@ const UPDATE_FILE = path.join(CONFIG_DIR, 'update.json');
 const RELEASE_API = 'https://api.github.com/repos/steffmartin/digifort/releases/latest';
 let shuttingDown = false;
 let activeServerId = '';
-let authGeneration = 0;
 
 const safeError = (message, status = 400) => ({ status, body: { error: message } });
 
@@ -219,153 +219,9 @@ async function serverOptions() {
 
 function activateServer(id) {
   if (activeServerId === id) return;
-  authGeneration += 1;
-  for (const [serverId, state] of authStates) {
-    if (state.timer) clearInterval(state.timer);
-    authStates.delete(serverId);
-  }
-  authPromises.clear();
+  transport.activate(id);
   for (const serverId of configs.keys()) if (serverId !== id) configs.delete(serverId);
   activeServerId = id;
-}
-
-function md5(value) {
-  return createHash('md5').update(value, 'utf8').digest('hex').toUpperCase();
-}
-
-function makeAuthData(nonce, username, password) {
-  return md5(`${nonce}:${username.toUpperCase()}:${md5(password)}`);
-}
-
-function apiUrl(config, route, params = {}) {
-  const url = new URL(`${config.serverAddress}/Interface/${route}`);
-  const authParams = config.useBasicAuth
-    ? { AuthUser: config.username, AuthPass: config.password }
-    : {};
-  for (const [key, value] of Object.entries({ ...params, ...authParams })) {
-    if (value !== undefined && value !== null && value !== '') url.searchParams.set(key, String(value));
-  }
-  return url;
-}
-
-const DIGIFORT_REQUEST_HEADERS = Object.freeze({
-  'Accept-Language': 'pt-BR,pt;q=0.9',
-  'Accept-Encoding': 'gzip, deflate'
-});
-
-const AUTH_QUERY_KEYS = /^(authuser|authpass|authsession|authdata|username|password|passwd|token|nonce|authorization)$/i;
-const PRIVATE_QUERY_KEYS = /^(camera|startdate|starttime|enddate|endtime)$/i;
-
-function safeApiTarget(url) {
-  const parsed = new URL(url);
-  const query = new URLSearchParams();
-  for (const [key, value] of parsed.searchParams) {
-    query.append(key, AUTH_QUERY_KEYS.test(key) || PRIVATE_QUERY_KEYS.test(key) ? '[REDACTED]' : value);
-  }
-  const target = `${parsed.pathname}${query.size ? `?${query}` : ''}`;
-  return target.replace(/[\r\n]/g, '').slice(0, 1600);
-}
-
-async function fetchDigifort(config, url, options = {}, operation = 'upstream_request') {
-  const method = String(options.method || 'GET').toUpperCase();
-  const target = safeApiTarget(url);
-  const headers = new Headers({ ...DIGIFORT_REQUEST_HEADERS, 'User-Agent': config.userAgent });
-  new Headers(options.headers).forEach((value, key) => headers.set(key, value));
-  try {
-    const response = await fetch(url, { ...options, headers });
-    return response;
-  } catch (error) {
-    const causeCode = error?.cause?.code;
-    const safeCode = typeof causeCode === 'string' && /^[a-z0-9_]+$/i.test(causeCode)
-      ? causeCode
-      : error?.name === 'TimeoutError' ? 'TIMEOUT' : 'FETCH_ERROR';
-    process.stderr.write(`[api:transport-error] ${method} ${target} ${operation} ${safeCode}\n`);
-    throw new Error(`Falha de transporte na etapa ${operation} (${safeCode}).`);
-  }
-}
-
-function extractSession(payload) {
-  const response = payload?.Response ?? payload?.response ?? payload;
-  const session = response?.Data?.Session ?? response?.data?.session ?? response?.Session ?? response?.session;
-  const id = session?.ID ?? session?.Id ?? session?.id;
-  const nonce = session?.NOnce ?? session?.Nonce ?? session?.nonce;
-  if (id === undefined || !nonce) throw new Error('A autenticação segura não retornou uma sessão válida.');
-  return { id: String(id), nonce: String(nonce) };
-}
-
-async function readJsonResponse(response) {
-  const text = await response.text();
-  if (!response.ok) throw new Error('O servidor Digifort não aceitou a solicitação.');
-  try {
-    const data = JSON.parse(text);
-    const result = data?.Response ?? data?.response ?? data;
-    const code = result?.Code ?? result?.code;
-    if (code !== undefined && Number(code) !== 0) throw new Error('O servidor Digifort recusou a solicitação.');
-    return data;
-  } catch (error) {
-    if (error.message.startsWith('O servidor Digifort')) throw error;
-    throw new Error('O servidor Digifort retornou uma resposta inválida.');
-  }
-}
-
-async function createAuthState(id, config) {
-  const generation = authGeneration;
-  const response = await fetchDigifort(config, apiUrl(config, 'CreateAuthSession', { ResponseFormat: 'JSON' }), { signal: AbortSignal.timeout(12000) }, 'CreateAuthSession');
-  const payload = await readJsonResponse(response);
-  if (generation !== authGeneration || activeServerId !== id) throw new Error('Selecione novamente o servidor antes de continuar.');
-  const session = extractSession(payload);
-  const state = { ...session, authData: makeAuthData(session.nonce, config.username, config.password), timer: null };
-  state.timer = setInterval(async () => {
-    try {
-      const url = apiUrl(config, 'UpdateAuthSession', { AuthSession: state.id, AuthData: state.authData, ResponseFormat: 'JSON' });
-      const keepAlive = await fetchDigifort(config, url, { signal: AbortSignal.timeout(10000) }, 'UpdateAuthSession');
-      if (!keepAlive.ok) {
-        clearInterval(state.timer);
-        authStates.delete(id);
-      }
-    } catch {
-      clearInterval(state.timer);
-      authStates.delete(id);
-    }
-  }, 25000);
-  state.timer.unref?.();
-  const previous = authStates.get(id);
-  if (previous?.timer) clearInterval(previous.timer);
-  authStates.set(id, state);
-  return state;
-}
-
-async function authState(id, config, refresh = false) {
-  if (!refresh && authStates.has(id)) return authStates.get(id);
-  if (authPromises.has(id)) return authPromises.get(id);
-  const pending = createAuthState(id, config);
-  authPromises.set(id, pending);
-  pending.finally(() => { if (authPromises.get(id) === pending) authPromises.delete(id); }).catch(() => {});
-  return pending;
-}
-
-async function apiFetch(id, config, route, params, signal) {
-  if (config.useBasicAuth) {
-    const url = apiUrl(config, route, params);
-    return fetchDigifort(config, url, { signal }, route.replaceAll('/', '_'));
-  }
-  let session = await authState(id, config);
-  for (let attempt = 0; attempt < 2; attempt += 1) {
-    const url = apiUrl(config, route, { ...params, AuthSession: session.id, AuthData: session.authData });
-    const response = await fetchDigifort(config, url, { signal }, route.replaceAll('/', '_'));
-    if ((response.status === 401 || response.status === 403) && attempt === 0) {
-      await response.body?.cancel().catch(() => {});
-      if (authStates.get(id) === session) {
-        authStates.delete(id);
-        session = await authState(id, config, true);
-      } else {
-        session = await authState(id, config);
-      }
-      continue;
-    }
-    return response;
-  }
-  throw new Error('A sessão segura do servidor expirou. Selecione o servidor novamente.');
 }
 
 function sendJson(res, status, data) {
@@ -491,94 +347,6 @@ function queryValue(url, key, required = true) {
   const value = url.searchParams.get(key);
   if (required && !value) throw new Error(`Parâmetro ausente: ${key}.`);
   return value;
-}
-
-function findCameras(payload) {
-  const found = new Map();
-  const walk = value => {
-    if (!value || typeof value !== 'object') return;
-    if (Array.isArray(value)) {
-      value.forEach(walk);
-      return;
-    }
-    const name = value.NAME ?? value.Name ?? value.name;
-    if (typeof name === 'string' && name.trim()) {
-      const description = value.DESCRIPTION ?? value.Description ?? value.description ?? '';
-      const active = value.ACTIVE ?? value.Active ?? value.active;
-      const profiles = value.MEDIAPROFILES ?? value.MediaProfiles ?? value.mediaProfiles ?? '';
-      found.set(name, {
-        name,
-        description: typeof description === 'string' ? description : '',
-        active: active === undefined ? true : String(active).toUpperCase() !== 'FALSE',
-        profiles: typeof profiles === 'string' ? profiles.split(',').map(x => x.trim()).filter(Boolean) : []
-      });
-    }
-    Object.values(value).forEach(walk);
-  };
-  walk(payload);
-  if (!found.size && payload && typeof payload === 'object') {
-    const flat = payload.Response?.Data ?? payload.Data ?? payload;
-    const keys = Object.keys(flat);
-    const prefixSet = new Set(keys.map(key => key.match(/^(CAMERA_\d+)_NAME$/i)?.[1]).filter(Boolean));
-    for (const prefix of prefixSet) {
-      const get = suffix => flat[`${prefix}_${suffix}`] ?? flat[`${prefix}_${suffix.toLowerCase()}`];
-      const name = get('NAME');
-      if (name) found.set(String(name), { name: String(name), description: String(get('DESCRIPTION') ?? ''), active: String(get('ACTIVE') ?? 'TRUE').toUpperCase() !== 'FALSE', profiles: String(get('MEDIAPROFILES') ?? '').split(',').filter(Boolean) });
-    }
-  }
-  return [...found.values()].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
-}
-
-function findCameraStatuses(payload) {
-  const found = new Map();
-  const getField = (object, name) => {
-    const entry = Object.entries(object).find(([key]) => key.toLowerCase() === name.toLowerCase());
-    return entry?.[1];
-  };
-  const toBoolean = value => {
-    if (typeof value === 'boolean') return value;
-    if (typeof value === 'number') return value === 1 ? true : value === 0 ? false : null;
-    if (typeof value !== 'string') return null;
-    const normalized = value.trim().toLowerCase();
-    if (['true', '1', 'yes'].includes(normalized)) return true;
-    if (['false', '0', 'no'].includes(normalized)) return false;
-    return null;
-  };
-  const toSeconds = value => {
-    if (value === undefined || value === null || value === '') return null;
-    const seconds = Number(value);
-    return Number.isFinite(seconds) && seconds >= 0 ? seconds : null;
-  };
-  const add = (name, working, activeTime, inactiveTime) => {
-    if (typeof name !== 'string' || !name.trim()) return;
-    found.set(name, {
-      working: toBoolean(working),
-      activeTime: toSeconds(activeTime),
-      inactiveTime: toSeconds(inactiveTime)
-    });
-  };
-  const walk = value => {
-    if (!value || typeof value !== 'object') return;
-    if (Array.isArray(value)) {
-      value.forEach(walk);
-      return;
-    }
-    const name = getField(value, 'Name');
-    if (typeof name === 'string') {
-      add(name, getField(value, 'Working'), getField(value, 'ActiveTime'), getField(value, 'InactiveTime'));
-    }
-    Object.values(value).forEach(walk);
-  };
-  walk(payload);
-  if (!found.size && payload && typeof payload === 'object') {
-    const flat = payload.Response?.Data ?? payload.Data ?? payload;
-    const prefixes = new Set(Object.keys(flat).map(key => key.match(/^(CAMERA_\d+)_NAME$/i)?.[1]).filter(Boolean));
-    for (const prefix of prefixes) {
-      const get = suffix => flat[`${prefix}_${suffix}`] ?? flat[`${prefix}_${suffix.toLowerCase()}`];
-      add(get('NAME'), get('WORKING'), get('ACTIVETIME'), get('INACTIVETIME'));
-    }
-  }
-  return [...found].map(([name, status]) => ({ name, ...status }));
 }
 
 async function handleApi(req, res, url) {
@@ -711,19 +479,10 @@ async function handleApi(req, res, url) {
     if (activeServerId !== id) throw new Error('Selecione novamente o servidor antes de continuar.');
     const config = await getConfig(id);
     if (url.pathname === '/api/cameras') {
-      const response = await apiFetch(id, config, 'Cameras/GetCameras', {
-        Fields: 'Name,Description,Active,MediaProfiles',
-        ResponseFormat: 'JSON'
-      }, controller.signal);
-      const payload = await readJsonResponse(response);
-      return sendJson(res, 200, { cameras: findCameras(payload) });
+      return sendJson(res, 200, { cameras: await transport.cameras(id, config, controller.signal) });
     }
     if (url.pathname === '/api/camera-status') {
-      const response = await apiFetch(id, config, 'Cameras/GetStatus', {
-        ResponseFormat: 'JSON'
-      }, controller.signal);
-      const payload = await readJsonResponse(response);
-      return sendJson(res, 200, { statuses: findCameraStatuses(payload) });
+      return sendJson(res, 200, { statuses: await transport.statuses(id, config, controller.signal) });
     }
     if (url.pathname === '/api/timeline') {
       const camera = queryValue(url, 'camera');
@@ -731,7 +490,7 @@ async function handleApi(req, res, url) {
       const startTime = queryValue(url, 'startTime');
       const endDate = queryValue(url, 'endDate', false);
       const endTime = queryValue(url, 'endTime', false);
-      const response = await apiFetch(id, config, 'Cameras/Playback/GetTimelineData', {
+      const response = await transport.request(id, config, 'Cameras/Playback/GetTimelineData', {
         Camera: camera, StartDate: startDate, StartTime: startTime,
         EndDate: endDate, EndTime: endTime, Video: 'TRUE', Audio: 'TRUE', Metadata: 'FALSE', ResponseFormat: 'Text'
       }, controller.signal);
@@ -746,7 +505,7 @@ async function handleApi(req, res, url) {
       const snapshotSizes = { '38x26': ['38', '26'], '150x103': ['150', '103'], '75x51': ['75', '51'], '150x102': ['150', '102'], '300x205': ['300', '205'], '352x240': ['352', '240'] };
       const requested = `${queryValue(url, 'width') || '352'}x${queryValue(url, 'height') || '240'}`;
       const [width, height] = snapshotSizes[requested] || snapshotSizes['352x240'];
-      const response = await apiFetch(id, config, 'Cameras/Playback/GetSnapshot', {
+      const response = await transport.request(id, config, 'Cameras/Playback/GetSnapshot', {
         Camera: queryValue(url, 'camera'), Date: queryValue(url, 'date'), Time: queryValue(url, 'time'),
         Width: width, Height: height, KeepAspectRatio: 'TRUE', Quality: '55', ResponseFormat: 'Text'
       }, controller.signal);
@@ -765,11 +524,11 @@ async function handleApi(req, res, url) {
       if (mode === 'live') {
         const profile = queryValue(url, 'profile', false) || 'Visualization';
         if (!['Visualization', 'Recording'].includes(profile)) throw new Error('Perfil ao vivo inválido.');
-        response = await apiFetch(id, config, 'Cameras/GetMediaStream', {
+        response = await transport.request(id, config, 'Cameras/GetMediaStream', {
           Camera: camera, Profile: profile, Audio: audio ? 'TRUE' : 'FALSE', Video: audioOnly ? 'FALSE' : 'TRUE', TimestampHeader: 'TRUE', ResponseFormat: 'Text'
         }, controller.signal);
       } else if (mode === 'playback') {
-        response = await apiFetch(id, config, 'Cameras/Playback/GetMediaStream', {
+        response = await transport.request(id, config, 'Cameras/Playback/GetMediaStream', {
           Camera: camera, StartDate: queryValue(url, 'startDate'), StartTime: queryValue(url, 'startTime'),
           EndDate: queryValue(url, 'endDate', false), EndTime: queryValue(url, 'endTime', false),
           Audio: audio ? 'TRUE' : 'FALSE', Push: 'FALSE', ResponseFormat: 'Text'
