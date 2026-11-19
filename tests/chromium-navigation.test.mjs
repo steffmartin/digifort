@@ -127,6 +127,48 @@ test('Chromium navega entre monitor, revisão e controles de presença', { timeo
         cameras: document.querySelectorAll('.camera-tile').length, tracks: document.querySelectorAll('#timelineNames > *').length, timelineShowsToolbar, badgeNoWrap };
     })()`);
     assert.deepEqual(result, { focusLabel: 'Alarme de presença: câmera em foco', review: 'true', cameras: 1, tracks: 1, timelineShowsToolbar: true, badgeNoWrap: true });
+    const captureSwitch = await evaluate(`(async () => {
+      const { createMediaCapture } = await import('/media/capture.js');
+      const originalRecorder = window.MediaRecorder, originalFetch = window.fetch, originalCapture = HTMLCanvasElement.prototype.captureStream;
+      let recordedCanvas, recorderCount = 0;
+      try {
+        HTMLCanvasElement.prototype.captureStream = function () {
+          recordedCanvas = this;
+          return { tracks: [{ stop() {} }], addTrack(track) { this.tracks.push(track); }, getTracks() { return this.tracks; } };
+        };
+        window.MediaRecorder = class {
+          static isTypeSupported() { return true; }
+          constructor() { recorderCount++; this.handlers = {}; this.state = 'inactive'; }
+          addEventListener(name, callback) { this.handlers[name] = callback; }
+          start() { this.state = 'recording'; }
+          stop() { this.state = 'inactive'; this.handlers.dataavailable({ data: new Blob(['synthetic']) }); this.handlers.stop(); }
+        };
+        window.fetch = async () => ({ ok: true, json: async () => ({}) });
+        const player = (name, width, height, color) => {
+          const canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height;
+          const ctx = canvas.getContext('2d'); ctx.fillStyle = color; ctx.fillRect(0, 0, width, height);
+          const badge = document.createElement('span');
+          return { name, canvas, tile: { querySelector: () => badge }, setState() {} };
+        };
+        const a = player('A', 160, 90, 'red'), b = player('B', 120, 90, 'blue');
+        const audioContext = { createMediaStreamDestination: () => ({ stream: { getAudioTracks: () => [{ stop() {} }] }, disconnect() {} }),
+          createConstantSource: () => ({ offset: {}, connect() {}, start() {}, stop() {}, disconnect() {} }) };
+        const state = { mode: 'live', serverId: 'synthetic', server: { videoFolderConfigured: true, timeZone: 'UTC' }, tiles: new Map([['A', a], ['B', b]]), audioContext };
+        const capture = createMediaCapture({ state, epochToInput: () => '2026-01-01T00:00:00', query: p => new URLSearchParams(p), toast() {},
+          scopedCameraNames: s => [s.camera], recordingScopeKey: s => 'camera:' + s.camera, stopPresenceWorker() {}, updateMediaControls() {} });
+        await capture.changeRecordingState({ camera: 'A' }, 'start');
+        const before = [...recordedCanvas.getContext('2d').getImageData(80, 45, 1, 1).data];
+        const recording = capture.recordings.get('A');
+        capture.focusChanged('B');
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        const after = [...recordedCanvas.getContext('2d').getImageData(80, 45, 1, 1).data];
+        const border = [...recordedCanvas.getContext('2d').getImageData(0, 45, 1, 1).data];
+        await capture.changeRecordingState({ camera: 'B' }, 'stop');
+        await recording.finished;
+        return { before, after, border, recorderCount, width: recordedCanvas.width, height: recordedCanvas.height };
+      } finally { window.MediaRecorder = originalRecorder; window.fetch = originalFetch; HTMLCanvasElement.prototype.captureStream = originalCapture; }
+    })()`);
+    assert.deepEqual(captureSwitch, { before: [255, 0, 0, 255], after: [0, 0, 255, 255], border: [0, 0, 0, 255], recorderCount: 1, width: 160, height: 90 });
     const surveillance = await evaluate(`(async () => {
       document.querySelector('#liveMode').click();
       document.querySelector('#surveillanceToggle').click();

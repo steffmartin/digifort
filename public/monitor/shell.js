@@ -998,6 +998,7 @@ function focusCamera(cameraName) {
   const previousFocus = state.focused;
   if (previousFocus !== cameraName) { clearThumbnails(); presenceAlarm.focusChanged(); }
   state.focused = cameraName;
+  mediaCapture.focusChanged(cameraName);
   for (const [name, player] of state.tiles) {
     player.tile.classList.toggle('is-focused', name === cameraName);
   }

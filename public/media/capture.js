@@ -85,11 +85,37 @@ function startRecording(camera, filename, mimeType, session) {
   const player = state.tiles.get(camera);
   if (!player || capture.recordings.has(camera)) return;
   if (player.stopped || state.allStopped || !player.canvas.width || !player.canvas.height) throw new Error(`Aguarde a chegada do vídeo de ${camera} antes de gravar.`);
-  if (typeof player.canvas.captureStream !== 'function') throw new Error('Este navegador não permite capturar os quadros exibidos.');
-  const stream = player.canvas.captureStream(30);
+  const canvas = session.all ? player.canvas : document.createElement('canvas');
+  let frameRequest = null;
+  if (!session.all) {
+    canvas.width = player.canvas.width;
+    canvas.height = player.canvas.height;
+    const context = canvas.getContext('2d');
+    if (!context) throw new Error('Não foi possível preparar a captura de vídeo.');
+    const draw = () => {
+      const source = state.tiles.get(session.cameras[0])?.canvas;
+      context.fillStyle = '#000';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      if (source?.width && source?.height) {
+        const scale = Math.min(canvas.width / source.width, canvas.height / source.height);
+        const width = source.width * scale, height = source.height * scale;
+        context.drawImage(source, (canvas.width - width) / 2, (canvas.height - height) / 2, width, height);
+      }
+      frameRequest = requestAnimationFrame(draw);
+    };
+    draw();
+  }
+  if (typeof canvas.captureStream !== 'function') {
+    if (frameRequest !== null) cancelAnimationFrame(frameRequest);
+    throw new Error('Este navegador não permite capturar os quadros exibidos.');
+  }
+  let stream;
+  try { stream = canvas.captureStream(30); }
+  catch (error) { if (frameRequest !== null) cancelAnimationFrame(frameRequest); throw error; }
   let destination, silence;
   let opened = false;
   const cleanup = () => {
+    if (frameRequest !== null) cancelAnimationFrame(frameRequest);
     for (const track of stream.getTracks()) track.stop();
     if (silence) { try { silence.stop(); } catch {} silence.disconnect(); }
     destination?.disconnect();
@@ -132,8 +158,8 @@ function startRecording(camera, filename, mimeType, session) {
         if (error.name !== 'AbortError') toast(error.message || 'Não foi possível finalizar o arquivo de gravação.', 'error');
       } finally {
         cleanup();
-        capture.recordings.delete(camera);
-        setRecordingOverlay(camera, 'stopped');
+        capture.recordings.delete(recording.camera);
+        setRecordingOverlay(recording.camera, 'stopped');
         if (capture.recordingSession === session && session.status !== 'starting' &&
             session.cameras.every(name => !capture.recordings.has(name))) {
           capture.recordingSession = null;
@@ -157,6 +183,22 @@ function startRecording(camera, filename, mimeType, session) {
     cleanup();
     throw error;
   }
+}
+
+function focusChanged(camera) {
+  const session = capture.recordingSession;
+  if (!session || session.all || session.cameras[0] === camera || !state.tiles.has(camera)) return;
+  const previous = session.cameras[0];
+  const recording = capture.recordings.get(previous);
+  if (!recording) return;
+  capture.recordings.delete(previous);
+  setRecordingOverlay(previous, 'stopped');
+  recording.camera = camera;
+  session.cameras[0] = camera;
+  session.key = recordingScopeKey({ camera, all: false });
+  capture.recordings.set(camera, recording);
+  setRecordingOverlay(camera, recording.status);
+  updateMediaControls();
 }
 
 async function changeRecordingState(scope, action) {
@@ -233,6 +275,6 @@ function requestStopRecordingSession() {
 }
 
 
-return { captureFrames, recordingMime, changeRecordingState, requestStopRecordingSession,
+return { captureFrames, recordingMime, changeRecordingState, requestStopRecordingSession, focusChanged,
   get recordings() { return capture.recordings; }, get session() { return capture.recordingSession; } };
 }

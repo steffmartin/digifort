@@ -13,7 +13,8 @@ function section(start, end) {
 }
 
 function recordingHarness({ supported = true, failStart = false, failFinish = null } = {}) {
-  const requests = [], messages = [], actions = [], sources = [], streams = [], recorders = [], extensions = [];
+  const requests = [], messages = [], actions = [], sources = [], streams = [], recorders = [], extensions = [], frames = [], callbacks = new Map();
+  let nextFrame = 0;
   class FakeAudioContext {
     createMediaStreamDestination() {
       const destination = { sources: new Set(), disconnected: false, disconnect() { this.disconnected = true; } };
@@ -61,13 +62,17 @@ function recordingHarness({ supported = true, failStart = false, failFinish = nu
     audioContext: null, tiles: new Map([[player.name, player]]), recordings: new Map(), recordingSession: null };
   const elements = { recordFormat: { value: 'mp4' } };
   const context = vm.createContext({ state, capture: state, elements, MediaRecorder: FakeRecorder, AudioContext: FakeAudioContext,
+    document: { createElement: () => ({ getContext: () => ({ fillRect() {}, drawImage: (...args) => frames.push(args) }), captureStream: () => player.canvas.captureStream() }) },
+    requestAnimationFrame: callback => { callbacks.set(++nextFrame, callback); return nextFrame; },
+    cancelAnimationFrame: id => callbacks.delete(id),
     scopedCameraNames: scope => scope.all ? [...state.tiles.keys()] : [scope.camera].filter(name => state.tiles.has(name)),
     recordingScopeKey: scope => scope.all ? 'all-cameras' : `camera:${scope.camera}`,
     mediaEpoch: () => 1, mediaFilenames: (names, extension) => { extensions.push(extension); return names.map((_, index) => `sintetico${index}${extension}`); },
     postMedia: async (_path, params) => { requests.push(params.action); if (params.action === 'finish' && params.filename === failFinish) throw new Error('Falha sintética ao salvar'); return {}; },
     toast: (message, kind, action) => { messages.push(message); actions.push({ kind, action }); }, updateMediaControls() {}, stopPresenceWorker() {} });
   vm.runInContext(captureSource.slice(captureSource.indexOf('function recordingMime('), captureSource.indexOf('return { captureFrames')), context);
-  return { context, state, elements, player, requests, messages, actions, sources, streams, recorders, extensions };
+  return { context, state, elements, player, requests, messages, actions, sources, streams, recorders, extensions, frames, callbacks,
+    drawFrame() { const [id, callback] = callbacks.entries().next().value; callbacks.delete(id); callback(); } };
 }
 
 test('inicia MP4 com áudio silencioso fluindo e conserva pausa e retomada', async () => {
@@ -129,6 +134,37 @@ test('falha parcial preserva o aviso de erro e conta apenas vídeos salvos', asy
   assert.equal(h.requests.filter(action => action === 'abort').length, 1);
 });
 
+for (const mode of ['live', 'playback']) {
+  test(`gravação individual acompanha o foco em ${mode} sem trocar o arquivo`, async () => {
+    const h = recordingHarness();
+    h.state.mode = mode;
+    const second = { ...h.player, name: 'Outra câmera', canvas: { width: 1920, height: 1440 } };
+    h.state.tiles.set(second.name, second);
+    await h.context.changeRecordingState({ camera: h.player.name }, 'start');
+    const recording = h.state.recordings.get(h.player.name);
+    assert.ok(recording);
+    assert.equal(h.frames[0][0], h.player.canvas);
+    h.context.focusChanged(second.name);
+    assert.equal(h.state.recordings.has(h.player.name), false);
+    assert.equal(h.state.recordings.get(second.name), recording);
+    assert.equal(recording.camera, second.name);
+    assert.equal(h.state.recordingSession.cameras[0], second.name);
+    h.drawFrame();
+    const frame = h.frames.at(-1);
+    assert.equal(frame[0], second.canvas);
+    assert.deepEqual(frame.slice(1), [80, 0, 480, 360]);
+    await h.context.changeRecordingState({ camera: second.name }, 'pause');
+    assert.equal(recording.status, 'paused');
+    await h.context.changeRecordingState({ camera: second.name }, 'resume');
+    await h.context.changeRecordingState({ camera: second.name }, 'stop');
+    await recording.finished;
+    assert.equal(h.recorders.length, 1);
+    assert.equal(h.requests.filter(action => action === 'start').length, 1);
+    assert.equal(h.requests.filter(action => action === 'finish').length, 1);
+    assert.equal(h.callbacks.size, 0);
+  });
+}
+
 test('informa indisponibilidade de MP4 sem criar uma gravação', async () => {
   const h = recordingHarness({ supported: false });
   await h.context.changeRecordingState({ camera: h.player.name }, 'start');
@@ -162,14 +198,14 @@ function mediaControlsHarness(supported = true) {
   return { state, elements, update: () => context.updateMediaControls() };
 }
 
-test('controles mantêm acesso à gravação original após trocar o foco', () => {
+test('controles acompanham a câmera gravada após trocar o foco', () => {
   const h = mediaControlsHarness();
-  h.state.recordingSession = { all: false, cameras: ['A'], status: 'recording' };
-  h.state.recordings.set('A', {});
+  h.state.recordingSession = { all: false, cameras: ['B'], status: 'recording' };
+  h.state.recordings.set('B', {});
   h.update();
   assert.equal(h.elements.recordToggle.disabled, false);
   assert.equal(h.elements.finishRecording.disabled, false);
-  assert.match(h.elements.recordToggle.title, /Pausar gravação de A/);
+  assert.match(h.elements.recordToggle.title, /Pausar gravação de B/);
   h.state.captureAll = true;
   h.update();
   assert.equal(h.elements.recordToggle.disabled, true);
@@ -179,7 +215,7 @@ test('controles mantêm acesso à gravação original após trocar o foco', () =
   h.state.recordingSession.status = 'paused';
   h.update();
   assert.equal(h.elements.finishRecording.disabled, false);
-  assert.match(h.elements.recordToggle.title, /Retomar gravação de A/);
+  assert.match(h.elements.recordToggle.title, /Retomar gravação de B/);
 });
 
 test('controles informam indisponibilidade de MP4 e respeitam o escopo de todas as câmeras', () => {
@@ -209,6 +245,15 @@ test('áudio ativado durante a gravação também chega ao destino do arquivo', 
   const player = Object.create(context.TestPlayer.prototype);
   player.name = 'Câmera sintética';
   player.schedulePcm(new Float32Array([0.25, -0.25]), 8000, 1, 0);
+  assert.deepEqual(connections, [speakers, destination]);
+  connections.length = 0;
+  state.recordings.delete('Câmera sintética');
+  state.recordings.set('Outra câmera', { camera: 'Outra câmera', destination });
+  state.focused = 'Outra câmera';
+  player.schedulePcm(new Float32Array([0.25]), 8000, 1, 0);
+  assert.deepEqual(connections, []);
+  player.name = 'Outra câmera';
+  player.schedulePcm(new Float32Array([0.25]), 8000, 1, 0);
   assert.deepEqual(connections, [speakers, destination]);
   connections.length = 0;
   state.audioEnabled = false;
