@@ -4,7 +4,7 @@ import { createMediaCapture } from '../public/media/capture.js';
 
 function harness(state, messages) {
   return createMediaCapture({ state, epochToInput: () => '2026-01-01T12:00:00', query: params => new URLSearchParams(params),
-    toast: message => messages.push(message), scopedCameraNames: scope => scope.all ? [...state.tiles.keys()] : [scope.camera],
+    toast: (message, kind, action) => messages.push({ message, kind, action }), scopedCameraNames: scope => scope.all ? [...state.tiles.keys()] : [scope.camera],
     recordingScopeKey: scope => scope.all ? 'all-cameras' : `camera:${scope.camera}`, stopPresenceWorker() {}, updateMediaControls() {} });
 }
 
@@ -21,7 +21,8 @@ test('interface de captura salva PNGs de todas as câmeras sem sobreposição', 
   await capture.captureFrames({ all: true });
   assert.equal(requests.length, 2);
   assert.ok(requests.every(item => item.url.startsWith('/api/media-file?') && item.options.body.type === 'image/png'));
-  assert.match(messages[0], /2 screenshots salvos/);
+  assert.match(messages[0].message, /2 screenshots salvos/);
+  assert.deepEqual(messages[0].action, { folder: 'screenshot', server: 'synthetic' });
 });
 
 test('interface de gravação informa quando a API do navegador está ausente', async t => {
@@ -34,5 +35,5 @@ test('interface de gravação informa quando a API do navegador está ausente', 
   await capture.changeRecordingState({ camera: 'A' }, 'start');
   assert.equal(capture.recordings.size, 0);
   assert.equal(capture.session, null);
-  assert.match(messages[0], /MP4/);
+  assert.match(messages[0].message, /MP4/);
 });

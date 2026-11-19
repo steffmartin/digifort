@@ -384,8 +384,18 @@ document.addEventListener('contextmenu', event => {
   if (!event.target.closest?.('.camera-tile, .camera-row')) event.preventDefault();
 });
 
-function toast(message, kind = 'info') {
-  const node = document.createElement('div');
+function toast(message, kind = 'info', action = null) {
+  const node = document.createElement(action ? 'button' : 'div');
+  if (action) {
+    node.type = 'button';
+    node.title = 'Abrir pasta onde a mídia foi salva';
+    node.addEventListener('click', async () => {
+      try {
+        const response = await fetch(`/api/media-folder?${query(action)}`, { method: 'POST' });
+        if (!response.ok) throw new Error();
+      } catch { toast('Não foi possível abrir a pasta da mídia.', 'error'); }
+    });
+  }
   node.className = `toast ${kind === 'error' ? 'error' : ''}`;
   node.textContent = message;
   elements.toastRegion.append(node);
@@ -1236,10 +1246,12 @@ function showMediaToolbar() {
   scheduleMediaToolbarHide();
 }
 
-elements.viewerGrid.addEventListener('pointermove', event => {
-  if (event.pointerType === 'mouse' || event.pointerType === 'pen') showMediaToolbar();
-});
-elements.viewerGrid.addEventListener('pointerleave', scheduleMediaToolbarHide);
+for (const surface of [elements.viewerGrid, elements.reviewPanel]) {
+  surface.addEventListener('pointermove', event => {
+    if (event.pointerType === 'mouse' || event.pointerType === 'pen') showMediaToolbar();
+  });
+  surface.addEventListener('pointerleave', scheduleMediaToolbarHide);
+}
 elements.mediaToolbar.addEventListener('pointermove', showMediaToolbar);
 document.addEventListener('keydown', () => { lastInputWasKeyboard = true; }, true);
 document.addEventListener('pointerdown', () => { lastInputWasKeyboard = false; toolbarKeyboardFocus = false; }, true);

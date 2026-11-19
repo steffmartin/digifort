@@ -99,6 +99,17 @@ test('inicia sem consultar um seletor de formato', async () => {
   await recording.finished;
 });
 
+test('agrupa as gravações concluídas em um único aviso', async () => {
+  const h = recordingHarness();
+  const second = { ...h.player, name: 'Outra câmera' };
+  h.state.tiles.set(second.name, second);
+  await h.context.changeRecordingState({ all: true }, 'start');
+  const finished = [...h.state.recordings.values()].map(recording => recording.finished);
+  await h.context.changeRecordingState({ all: true }, 'stop');
+  await Promise.all(finished);
+  assert.deepEqual(h.messages, ['2 gravações salvas.']);
+});
+
 test('informa indisponibilidade de MP4 sem criar uma gravação', async () => {
   const h = recordingHarness({ supported: false });
   await h.context.changeRecordingState({ camera: h.player.name }, 'start');

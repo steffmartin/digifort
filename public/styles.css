@@ -220,7 +220,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .tile-camera-meta { min-width: 0; max-width: 70%; display: grid; gap: 3px; text-shadow: 0 1px 5px #000; }
 .tile-camera-name { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 11px; }
 .tile-camera-description { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: #c1d0cc; font-size: 9px; }
-.tile-state { display: inline-flex; align-items: center; gap: 6px; padding: 4px 6px; background: #081012b8; color: var(--camera-status-color); font: 9px var(--mono); text-transform: uppercase; }
+.tile-state { display: inline-flex; flex-shrink: 0; align-items: center; gap: 6px; padding: 4px 6px; background: #081012b8; color: var(--camera-status-color); font: 9px var(--mono); text-transform: uppercase; white-space: nowrap; }
 .tile-state.is-recording { background: #260e0edb; font-weight: 700; }
 .tile-state.is-recording-paused { background: #29240edb; font-weight: 700; }
 .tile-state.is-recording .tile-state-text::before, .tile-state.is-recording-paused .tile-state-text::before { background: currentColor; }
@@ -300,6 +300,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .toast-region { position: fixed; right: 20px; bottom: 22px; z-index: 20; display: grid; gap: 8px; }
 .toast { max-width: 360px; padding: 11px 14px; border-left: 2px solid var(--live); background: #1b2a2d; color: var(--text); box-shadow: 0 8px 30px #0006; font-size: 11px; line-height: 1.45; }
 .toast.error { border-color: var(--danger); }
+button.toast { border: 0; border-left: 2px solid var(--live); text-align: left; cursor: pointer; }
+button.toast:focus-visible { outline: 2px solid var(--live); outline-offset: 2px; }
 
 @media (max-width: 1500px) {
   .command-bar { flex-wrap: wrap; row-gap: 8px; padding: 8px 0; }

@@ -2,6 +2,7 @@ import { createDigifortTransport } from './server/digifort.mjs';
 import { createHttpAdapter } from './server/http-adapter.mjs';
 import { createHash, randomBytes } from 'node:crypto';
 import { createServer } from 'node:http';
+import { spawn } from 'node:child_process';
 import { createReadStream, createWriteStream, promises as fs } from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
@@ -385,6 +386,19 @@ async function handleApi(req, res, url) {
         return sendJson(res, 200, { ok: true });
       }
       return sendJson(res, 405, { error: 'Método não disponível.' });
+    }
+    if (url.pathname === '/api/media-folder') {
+      if (req.method !== 'POST' || req.headers.host !== `${HOST}:${PORT}` || req.headers.origin !== `http://${HOST}:${PORT}`) return sendJson(res, 403, { error: 'Solicitação de outra origem.' });
+      const id = queryValue(url, 'server'), kind = queryValue(url, 'folder');
+      if (!safeId(id) || !['screenshot', 'video'].includes(kind)) throw new Error('Pasta de mídia inválida.');
+      const config = await getConfig(id);
+      const folder = kind === 'screenshot' ? config.screenshotFolder : config.videoFolder;
+      if (!folder) throw new Error('Pasta de mídia não configurada.');
+      const executable = process.platform === 'win32' ? 'explorer.exe' : process.platform === 'darwin' ? 'open' : 'xdg-open';
+      const child = spawn(executable, [path.resolve(folder)], { detached: true, stdio: 'ignore', windowsHide: true });
+      await new Promise((resolve, reject) => { child.once('spawn', resolve); child.once('error', reject); });
+      child.unref();
+      return sendJson(res, 200, { ok: true });
     }
     if (req.method === 'POST' && ['/api/media-file', '/api/media-recording'].includes(url.pathname)) {
       const pending = handleMediaPost(req, res, url);

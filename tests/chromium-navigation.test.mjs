@@ -116,10 +116,17 @@ test('Chromium navega entre monitor, revisão e controles de presença', { timeo
       document.querySelector('#reviewMode').click();
       document.querySelector('#playReview').click();
       await wait(() => document.querySelectorAll('#timelineNames > *').length === 1);
+      const toolbar = document.querySelector('#mediaToolbar');
+      toolbar.classList.remove('is-visible');
+      document.querySelector('#reviewPanel').dispatchEvent(new PointerEvent('pointermove', { bubbles: true, pointerType: 'mouse' }));
+      const timelineShowsToolbar = toolbar.classList.contains('is-visible');
+      const badge = document.querySelector('.tile-state');
+      badge.classList.add('is-recording');
+      const badgeNoWrap = getComputedStyle(badge).whiteSpace === 'nowrap';
       return { focusLabel, review: document.querySelector('#reviewMode').getAttribute('aria-pressed'),
-        cameras: document.querySelectorAll('.camera-tile').length, tracks: document.querySelectorAll('#timelineNames > *').length };
+        cameras: document.querySelectorAll('.camera-tile').length, tracks: document.querySelectorAll('#timelineNames > *').length, timelineShowsToolbar, badgeNoWrap };
     })()`);
-    assert.deepEqual(result, { focusLabel: 'Alarme de presença: câmera em foco', review: 'true', cameras: 1, tracks: 1 });
+    assert.deepEqual(result, { focusLabel: 'Alarme de presença: câmera em foco', review: 'true', cameras: 1, tracks: 1, timelineShowsToolbar: true, badgeNoWrap: true });
     const surveillance = await evaluate(`(async () => {
       document.querySelector('#liveMode').click();
       document.querySelector('#surveillanceToggle').click();

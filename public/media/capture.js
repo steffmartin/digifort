@@ -60,7 +60,7 @@ async function captureFrames(scope) {
     for (const [index, filename] of filenames.entries()) {
       await postMedia('/api/media-file', { filename }, blobs[index], 'image/png');
     }
-    toast(players.length === 1 ? 'Screenshot salvo sem sobreposições.' : `${players.length} screenshots salvos.`);
+    toast(players.length === 1 ? 'Screenshot salvo sem sobreposições.' : `${players.length} screenshots salvos.`, 'info', { folder: 'screenshot', server: state.serverId });
   } catch (error) {
     if (error.name !== 'AbortError') toast(error.message || 'Não foi possível salvar o screenshot.', 'error');
   }
@@ -126,7 +126,7 @@ function startRecording(camera, filename, mimeType, session) {
           throw new Error('A gravação não produziu mídia válida; o arquivo foi descartado.');
         }
         await postMedia('/api/media-recording', { filename, action: 'finish' });
-        toast(`Gravação salva: ${filename}`);
+        session.saved.push(filename);
       } catch (error) {
         if (opened) await postMedia('/api/media-recording', { filename, action: 'abort' }).catch(() => {});
         if (error.name !== 'AbortError') toast(error.message || 'Não foi possível finalizar o arquivo de gravação.', 'error');
@@ -135,7 +135,10 @@ function startRecording(camera, filename, mimeType, session) {
         capture.recordings.delete(camera);
         setRecordingOverlay(camera, 'stopped');
         if (capture.recordingSession === session && session.status !== 'starting' &&
-            session.cameras.every(name => !capture.recordings.has(name))) capture.recordingSession = null;
+            session.cameras.every(name => !capture.recordings.has(name))) {
+          capture.recordingSession = null;
+          if (session.saved.length) toast(session.saved.length === 1 ? `Gravação salva: ${session.saved[0]}` : `${session.saved.length} gravações salvas.`, 'info', { folder: 'video', server: session.serverId });
+        }
         updateMediaControls();
         recording.resolveFinished();
       }
@@ -166,7 +169,7 @@ async function changeRecordingState(scope, action) {
     if (!names.length) return toast('Abra uma câmera antes de iniciar a gravação.', 'error');
     const mimeType = recordingMime();
     if (!mimeType) return toast('A gravação em MP4 não é suportada por este navegador.', 'error');
-    const session = { key: recordingScopeKey(scope), all: Boolean(scope.all), cameras: names.slice(), status: 'starting' };
+    const session = { key: recordingScopeKey(scope), all: Boolean(scope.all), cameras: names.slice(), status: 'starting', saved: [], serverId: state.serverId };
     const started = [];
     capture.recordingSession = session;
     stopPresenceWorker();
