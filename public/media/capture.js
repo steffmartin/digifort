@@ -76,8 +76,10 @@ function setRecordingOverlay(camera, status) {
   const tile = state.tiles.get(camera)?.tile;
   if (!tile) return;
   const badge = tile.querySelector('.tile-state');
-  badge.classList.toggle('is-recording', status === 'recording');
-  badge.classList.toggle('is-recording-paused', status === 'paused');
+  for (const element of [tile, badge]) {
+    element.classList.toggle('is-recording', status === 'recording');
+    element.classList.toggle('is-recording-paused', status === 'paused');
+  }
   state.tiles.get(camera)?.setState(state.mode === 'live' ? 'Ao vivo' : 'Gravado');
 }
 

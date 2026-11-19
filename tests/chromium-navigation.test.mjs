@@ -127,6 +127,49 @@ test('Chromium navega entre monitor, revisão e controles de presença', { timeo
         cameras: document.querySelectorAll('.camera-tile').length, tracks: document.querySelectorAll('#timelineNames > *').length, timelineShowsToolbar, badgeNoWrap };
     })()`);
     assert.deepEqual(result, { focusLabel: 'Alarme de presença: câmera em foco', review: 'true', cameras: 1, tracks: 1, timelineShowsToolbar: true, badgeNoWrap: true });
+    const contextAlignment = await evaluate(`(() => {
+      const openCameraMenu = () => {
+        document.querySelector('.tile-video').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 300, clientY: 200 }));
+        document.querySelector('#contextMenu > .context-branch > button').click();
+      };
+      const alignment = item => ({ justify: getComputedStyle(item).justifyContent, gap: getComputedStyle(item).columnGap });
+      document.querySelector('#liveMode').click();
+      openCameraMenu();
+      const profile = alignment(document.querySelector('.context-scope-menu:not([hidden]) .thumbnail-size-item'));
+      document.body.click();
+      document.querySelector('#reviewMode').click();
+      openCameraMenu();
+      const thumbnailBranch = [...document.querySelectorAll('.context-scope-menu:not([hidden]) .context-branch-trigger')]
+        .find(item => item.textContent.includes('Miniaturas'));
+      thumbnailBranch.click();
+      const thumbnail = alignment([...document.querySelectorAll('.context-submenu:not([hidden]) .thumbnail-size-item')]
+        .find(item => item.textContent === 'Pequeno'));
+      document.body.click();
+      return { profile, thumbnail };
+    })()`);
+    assert.deepEqual(contextAlignment, { profile: { justify: 'flex-start', gap: '8px' }, thumbnail: { justify: 'flex-start', gap: '8px' } });
+    const dialogs = await evaluate(`(async () => {
+      const wait = async predicate => {
+        const deadline = Date.now() + 5000;
+        while (!predicate()) {
+          if (Date.now() > deadline) throw new Error('Diálogo não mudou de estado');
+          await new Promise(resolve => setTimeout(resolve, 25));
+        }
+      };
+      const shortcuts = document.querySelector('#shortcutDialog');
+      document.querySelector('#openShortcuts').click();
+      const shortcutsOpen = shortcuts.open && shortcuts.contains(document.activeElement);
+      shortcuts.querySelector('.app-dialog-actions button').click();
+      await wait(() => !shortcuts.open);
+      document.querySelector('#manageConfigs').click();
+      const config = document.querySelector('#configDialog');
+      await wait(() => config.open);
+      const configOpen = config.getAttribute('aria-labelledby') === 'configDialogTitle' && config.contains(document.activeElement);
+      document.querySelector('#closeConfigApp').click();
+      await wait(() => !config.open);
+      return { shortcutsOpen, configOpen, closed: !shortcuts.open && !config.open };
+    })()`);
+    assert.deepEqual(dialogs, { shortcutsOpen: true, configOpen: true, closed: true });
     const captureSwitch = await evaluate(`(async () => {
       const { createMediaCapture } = await import('/media/capture.js');
       const originalRecorder = window.MediaRecorder, originalFetch = window.fetch, originalCapture = HTMLCanvasElement.prototype.captureStream;
@@ -148,7 +191,7 @@ test('Chromium navega entre monitor, revisão e controles de presença', { timeo
           const canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height;
           const ctx = canvas.getContext('2d'); ctx.fillStyle = color; ctx.fillRect(0, 0, width, height);
           const badge = document.createElement('span');
-          return { name, canvas, tile: { querySelector: () => badge }, setState() {} };
+          return { name, canvas, tile: { classList: { toggle() {} }, querySelector: () => badge }, setState() {} };
         };
         const a = player('A', 160, 90, 'red'), b = player('B', 120, 90, 'blue');
         const audioContext = { createMediaStreamDestination: () => ({ stream: { getAudioTracks: () => [{ stop() {} }] }, disconnect() {} }),
@@ -188,6 +231,20 @@ test('Chromium navega entre monitor, revisão e controles de presença', { timeo
       return { entered, enlarged, restored, exited };
     })()`, true);
     assert.deepEqual(surveillance, { entered: true, enlarged: true, restored: true, exited: true });
+    const accessibility = await send('Accessibility.getFullAXTree', {}, sessionId);
+    const accessibleNames = accessibility.nodes.filter(node => !node.ignored).map(node => node.name?.value).filter(Boolean);
+    assert.ok(accessibleNames.includes('Câmeras'));
+    assert.ok(accessibleNames.includes('Grade de câmeras'));
+    assert.ok(accessibleNames.includes('Atalhos de teclado'));
+    await evaluate(`document.querySelector('#openShortcuts').focus(); document.querySelector('#openShortcuts').click()`);
+    await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 }, sessionId);
+    await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 }, sessionId);
+    await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 }, sessionId);
+    await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 }, sessionId);
+    assert.equal(await evaluate(`document.querySelector('#shortcutDialog').contains(document.activeElement)`), true);
+    await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 }, sessionId);
+    await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 }, sessionId);
+    assert.equal(await evaluate(`document.querySelector('#shortcutDialog').open`), false);
   } finally {
     try { await send('Browser.close'); } catch {}
     if (browser.exitCode === null) browser.kill();

@@ -62,6 +62,7 @@ npm test
 - [Distribuição](docs/DISTRIBUICAO.md) — build, verificação e manutenção do pacote Windows.
 - [Continuidade](docs/CONTINUIDADE.md) — arquitetura, validação e trabalho de manutenção.
 - [Guia de UI](docs/UI.md) — componentes, estados e interações a preservar.
+- [Contratos da apresentação](docs/ARQUITETURA-FRONTEND.md) — regiões, estados e vínculos entre DOM, CSS e módulos.
 - [Notas de versão](docs/NOTAS-DE-VERSAO.md) — conteúdo e validação da versão.
 - [Referência HTTP API](docs/api/README.md) — OpenAPI, manual de origem e uso no JetBrains.
 - [Orientações para agentes](AGENTS.md) — regras do repositório e índice de leitura.

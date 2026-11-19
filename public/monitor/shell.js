@@ -825,7 +825,7 @@ function createTile(cameraName, profile) {
   tile.querySelector('.tile-video').addEventListener('keydown', event => {
     if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); focusCamera(cameraName); }
   });
-  if (state.mode === 'playback') tile.querySelector('.tile-state').classList.add('review');
+  tile.classList.toggle('is-review', state.mode === 'playback');
   return tile;
 }
 
@@ -1113,13 +1113,13 @@ function setMode(mode) {
     playbackReview.reset();
     for (const player of state.tiles.values()) {
       player.profile = 'Recording';
-      player.tile.querySelector('.tile-state').classList.add('review');
+      player.tile.classList.add('is-review');
     }
   } else {
     elements.timelineStatus.textContent = 'Timeline disponível durante as gravações.';
     for (const player of state.tiles.values()) {
       player.profile = player.lastLiveProfile || 'Visualization';
-      player.tile.querySelector('.tile-state').classList.remove('review');
+      player.tile.classList.remove('is-review');
     }
   }
   clearTimeline();

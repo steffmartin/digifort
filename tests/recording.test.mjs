@@ -50,8 +50,10 @@ function recordingHarness({ supported = true, failStart = false, failFinish = nu
       this.handlers.stop?.();
     }
   }
-  const badge = { classList: { toggle() {} } };
-  const player = { stopped: false, name: 'Câmera sintética', tile: { querySelector: () => badge }, setState() {},
+  const classList = () => { const values = new Set(); return { values, toggle(name, enabled) { if (enabled) values.add(name); else values.delete(name); } }; };
+  const badge = { classList: classList() };
+  const tile = { classList: classList(), querySelector: () => badge };
+  const player = { stopped: false, name: 'Câmera sintética', tile, setState() {},
     canvas: { width: 640, height: 360, captureStream() {
       const video = { kind: 'video', stopped: false, stop() { this.stopped = true; } };
       const stream = { tracks: [video], addTrack(track) { this.tracks.push(track); },
@@ -71,7 +73,7 @@ function recordingHarness({ supported = true, failStart = false, failFinish = nu
     postMedia: async (_path, params) => { requests.push(params.action); if (params.action === 'finish' && params.filename === failFinish) throw new Error('Falha sintética ao salvar'); return {}; },
     toast: (message, kind, action) => { messages.push(message); actions.push({ kind, action }); }, updateMediaControls() {}, stopPresenceWorker() {} });
   vm.runInContext(captureSource.slice(captureSource.indexOf('function recordingMime('), captureSource.indexOf('return { captureFrames')), context);
-  return { context, state, elements, player, requests, messages, actions, sources, streams, recorders, extensions, frames, callbacks,
+  return { context, state, elements, player, badge, requests, messages, actions, sources, streams, recorders, extensions, frames, callbacks,
     drawFrame() { const [id, callback] = callbacks.entries().next().value; callbacks.delete(id); callback(); } };
 }
 
@@ -80,15 +82,24 @@ test('inicia MP4 com áudio silencioso fluindo e conserva pausa e retomada', asy
   await h.context.changeRecordingState(scope, 'start');
   const recording = h.state.recordings.get(h.player.name);
   assert.ok(recording);
+  assert.equal(h.player.tile.classList.values.has('is-recording'), true);
+  assert.equal(h.badge.classList.values.has('is-recording'), true);
   assert.deepEqual(h.extensions, ['.mp4']);
   assert.equal(h.recorders[0].audioFlowingAtStart, true, 'a trilha de áudio deve produzir silêncio desde o início');
   assert.equal(h.sources[0].offset.value, 0);
   await h.context.changeRecordingState(scope, 'pause');
   assert.equal(recording.status, 'paused');
+  assert.equal(h.player.tile.classList.values.has('is-recording'), false);
+  assert.equal(h.player.tile.classList.values.has('is-recording-paused'), true);
+  assert.equal(h.badge.classList.values.has('is-recording-paused'), true);
   await h.context.changeRecordingState(scope, 'resume');
   assert.equal(recording.status, 'recording');
+  assert.equal(h.player.tile.classList.values.has('is-recording'), true);
+  assert.equal(h.player.tile.classList.values.has('is-recording-paused'), false);
   await h.context.changeRecordingState(scope, 'stop');
   await recording.finished;
+  assert.equal(h.player.tile.classList.values.size, 0);
+  assert.equal(h.badge.classList.values.size, 0);
   assert.deepEqual(h.requests, ['start', 'chunk', 'finish']);
   assert.equal(h.sources[0].stopped, true);
   assert.ok(h.streams[0].getTracks().every(track => track.stopped));

@@ -33,17 +33,20 @@ test('seleção de mosaico respeita o limite do servidor e as câmeras abertas',
 test('alternar revisão atualiza controles, perfis e transmissões', () => {
   const attrs = () => ({ classList: { toggle() {}, add() {}, remove() {} }, setAttribute(name, value) { this[name] = value; } });
   let restarts = 0, cleared = 0;
-  const player = { profile: 'Visualization', lastLiveProfile: 'Visualization', tile: { querySelector: () => attrs() }, restart: () => restarts++ };
+  const tileStates = new Set();
+  const player = { profile: 'Visualization', lastLiveProfile: 'Visualization', tile: { classList: { add: name => tileStates.add(name), remove: name => tileStates.delete(name) } }, restart: () => restarts++ };
   const state = { mode: 'live', tiles: new Map([['A', player]]), recordings: new Map(), thumbnailActive: false };
   const elements = { liveMode: attrs(), reviewMode: attrs(), reviewFields: {}, timelineStatus: {} };
   const context = vm.createContext({ state, elements, updateOverlayState() {}, setDefaultReviewTimes() {}, clearTimeline: () => cleared++, updateViewHeader() {}, stopPresenceWorker() {}, playbackReview: { reset() {} } });
   vm.runInContext(section('function setMode(', 'function parseFrameEpoch('), context);
   context.setMode('playback');
   assert.equal(player.profile, 'Recording');
+  assert.equal(tileStates.has('is-review'), true);
   assert.equal(elements.reviewFields.hidden, false);
   assert.equal(elements.reviewMode['aria-pressed'], 'true');
   context.setMode('live');
   assert.equal(player.profile, 'Visualization');
+  assert.equal(tileStates.has('is-review'), false);
   assert.equal(elements.reviewFields.hidden, true);
   assert.equal(restarts, 2);
   assert.equal(cleared, 2);

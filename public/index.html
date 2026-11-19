@@ -94,15 +94,16 @@
           </section>
           <p class="visually-hidden" id="viewSubtitle" aria-live="polite">Escolha uma câmera para começar.</p>
 
+          <!-- A grade mantém os controles fixos e recebe tiles e miniaturas dos módulos do monitor. -->
           <section id="viewerGrid" class="viewer-grid" aria-label="Grade de câmeras">
             <div id="mediaToolbar" class="media-toolbar" role="group" aria-label="Controles de multimídia">
               <button id="mediaToolbarHandle" class="media-toolbar-handle" type="button" aria-label="Mover barra de multimídia" aria-keyshortcuts="B" title="Mover barra · B, setas (Shift para mover mais)">
                 <svg viewBox="0 0 14 22" aria-hidden="true"><circle cx="4" cy="5" r="1.2"></circle><circle cx="10" cy="5" r="1.2"></circle><circle cx="4" cy="11" r="1.2"></circle><circle cx="10" cy="11" r="1.2"></circle><circle cx="4" cy="17" r="1.2"></circle><circle cx="10" cy="17" r="1.2"></circle></svg>
               </button>
-              <div class="media-toolbar-group">
+              <div class="media-toolbar-group media-toolbar-surveillance">
                 <button class="icon-button surveillance-toggle" id="surveillanceToggle" type="button" aria-pressed="false" aria-label="Ativar modo vigilância" title="Ativar modo vigilância · V"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5"></path></svg></button>
               </div>
-              <div class="media-toolbar-group audio-control-wrap">
+              <div class="media-toolbar-group media-toolbar-playback">
                 <label class="field-label" for="audioSource">Em foco:</label><span class="media-control-hit" title="Alternar câmera em foco · F"><select id="audioSource" disabled aria-label="Câmera em foco" title="Alternar câmera em foco · F"><option value="">Nenhuma câmera aberta</option></select></span>
                 <span class="media-control-hit" id="seekBackWrap" hidden title="Retroceder 15 segundos · ←"><button id="seekBack" class="icon-button" type="button" aria-label="Retroceder 15 segundos" aria-keyshortcuts="ArrowLeft" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 3 12l8 7zM20 5l-8 7 8 7z"></path></svg></button></span>
                 <span class="media-control-hit" title="Parar todas as câmeras · Espaço"><button class="icon-button stop-all-button" id="stopAll" type="button" title="Parar todas as câmeras · Espaço" aria-label="Parar todas as câmeras" aria-pressed="false" data-state="active" disabled><svg viewBox="0 0 20 20" aria-hidden="true"><path class="pause-icon" d="M6 5v10M14 5v10"></path><path class="play-icon" d="M7 4.5v11l9-5.5-9-5.5Z"></path></svg></button></span>
@@ -110,7 +111,7 @@
                 <span class="media-control-hit" title="Ativar áudio · A"><button id="audioToggle" class="icon-button audio-toggle" type="button" aria-label="Ativar áudio" title="Ativar áudio · A" aria-pressed="false" disabled><svg class="speaker-icon" viewBox="0 0 20 20" aria-hidden="true"><path class="speaker-body" d="M3 8v4h3l4 3V5L6 8H3Z"></path><path class="speaker-waves" d="M13 7.2a4 4 0 0 1 0 5.6M15 5a7 7 0 0 1 0 10"></path><path class="speaker-muted" d="m13 8 4 4m0-4-4 4"></path></svg></button></span>
                 <span class="media-control-hit" title="Ativar alarme de presença · P"><button id="presenceToggle" class="icon-button audio-toggle presence-toggle" type="button" aria-label="Ativar alarme de presença" aria-pressed="false" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path class="presence-bell" d="M18 8a6 6 0 0 0-12 0c0 7-2 7-2 9h16c0-2-2-2-2-9ZM10 20h4"></path><path class="presence-off" d="M3 3l18 18"></path><path class="all-cameras-mark" d="M15 15h8v8h-8zM19 16v6M16 19h6"></path></svg></button></span>
               </div>
-              <div class="media-toolbar-group" role="group" aria-label="Captura">
+              <div class="media-toolbar-group media-toolbar-capture" role="group" aria-label="Captura">
                 <span class="media-control-hit" title="Capturar quadro da câmera em foco · Ctrl+PrintScreen"><button class="icon-button" id="captureFrame" type="button" aria-label="Capturar quadro da câmera em foco" title="Capturar quadro da câmera em foco · Ctrl+PrintScreen" aria-keyshortcuts="Control+PrintScreen" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8h4l2-3h6l2 3h4v11H3z"></path><circle cx="12" cy="13" r="3"></circle><path class="all-cameras-mark" d="M15 15h8v8h-8zM19 16v6M16 19h6"></path></svg></button></span>
                 <span class="media-control-hit" title="Iniciar gravação da câmera em foco · R"><button class="icon-button media-record" id="recordToggle" type="button" aria-label="Iniciar gravação da câmera em foco" title="Iniciar gravação da câmera em foco · R" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><circle class="record-start-icon" cx="12" cy="12" r="6"></circle><path class="record-pause-icon" d="M9 6v12M15 6v12"></path><path class="record-resume-icon" d="M8 5v14l11-7z"></path><path class="all-cameras-mark" d="M15 15h8v8h-8zM19 16v6M16 19h6"></path></svg></button></span>
                 <span class="media-control-hit" title="Finalizar gravação da câmera em foco · Shift+R"><button class="icon-button" id="finishRecording" type="button" aria-label="Finalizar gravação da câmera em foco" title="Finalizar gravação da câmera em foco · Shift+R" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1"></rect><path class="all-cameras-mark" d="M15 15h8v8h-8zM19 16v6M16 19h6"></path></svg></button></span>
@@ -131,21 +132,22 @@
           </section>
         </main>
       </div>
+      <!-- Overlays compartilhados pelo monitor. -->
       <div id="contextMenu" class="context-menu" role="menu" hidden></div>
-      <dialog class="record-dialog" id="updateDialog" aria-labelledby="updateTitle">
+      <dialog class="app-dialog" id="updateDialog" aria-labelledby="updateTitle">
         <form method="dialog">
           <h2 id="updateTitle">Nova versão disponível</h2>
-          <p class="record-dialog-note">A versão <strong id="updateVersion"></strong> está disponível para download.</p>
+          <p class="app-dialog-note">A versão <strong id="updateVersion"></strong> está disponível para download.</p>
           <a id="updateNotes" href="#" target="_blank" rel="noopener noreferrer">O que mudou?</a>
-          <div id="updateProgressArea" hidden><p id="updateStatus" class="record-dialog-note" role="status">Preparando download…</p><progress id="updateProgress" max="100"></progress></div>
-          <div class="record-dialog-actions" id="updateActions">
+          <div id="updateProgressArea" hidden><p id="updateStatus" class="app-dialog-note" role="status">Preparando download…</p><progress id="updateProgress" max="100"></progress></div>
+          <div class="app-dialog-actions" id="updateActions">
             <button value="cancel" autofocus>Cancelar</button>
             <button id="ignoreUpdate" value="ignore">Ignorar esta versão</button>
             <button class="record-confirm" id="downloadUpdate" type="button">Instalar</button>
           </div>
         </form>
       </dialog>
-      <dialog class="record-dialog shortcut-dialog" id="shortcutDialog" aria-labelledby="shortcutDialogTitle">
+      <dialog class="app-dialog shortcut-dialog" id="shortcutDialog" aria-labelledby="shortcutDialogTitle">
         <form method="dialog">
           <h2 id="shortcutDialogTitle">Atalhos de teclado</h2>
           <dl class="shortcut-list">
@@ -177,10 +179,10 @@
             <dt>1 / 5 / 10 / 30 minutos</dt><dd>4 / 5 / 6 / 7</dd>
             <dt>1 / 3 / 5 horas</dt><dd>8 / 9 / 0</dd>
           </dl>
-          <div class="record-dialog-actions"><button>Fechar</button></div>
+          <div class="app-dialog-actions"><button>Fechar</button></div>
         </form>
       </dialog>
-      <dialog class="record-dialog config-dialog" id="configDialog" aria-labelledby="configDialogTitle">
+      <dialog class="app-dialog config-dialog" id="configDialog" aria-labelledby="configDialogTitle">
         <form id="configForm" autocomplete="off">
           <h2 id="configDialogTitle">Configurações de servidor</h2>
           <p id="configDialogMessage" role="status"></p>
@@ -202,7 +204,7 @@
             <label class="config-check"><input name="useBasicAuth" type="checkbox" /> Usar autenticação básica</label>
             <label class="config-wide">Câmeras iniciais (uma por linha: nome | Visualization ou Recording)<textarea name="initialCameras" rows="3"></textarea></label>
           </div>
-          <div class="record-dialog-actions">
+          <div class="app-dialog-actions">
             <button id="deleteConfig" type="button">Excluir</button>
             <button id="closeConfigApp" type="button">Fechar</button>
             <button class="config-retry" id="saveConfig" type="button">Salvar</button>

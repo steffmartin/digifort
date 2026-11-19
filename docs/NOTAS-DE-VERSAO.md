@@ -1,5 +1,10 @@
 # Notas de versão do Digifort Monitor
 
+## Não publicado
+
+- A apresentação do monitor foi reorganizada em regiões e estados explícitos, preservando os controles, a aparência e os contratos de DOM. O alinhamento dos perfis e tamanhos no menu de contexto foi mantido. ([#69](https://github.com/steffmartin/digifort/issues/69))
+- A comparação visual com dados sintéticos cobriu oito resoluções e estados acionados, incluindo menus, calendário, miniaturas e diálogos. A suíte também verifica o alinhamento dos itens no Chromium. Testes com mídia real e leitor de tela não foram realizados para esta mudança.
+
 ## 1.6.0
 
 ### Novidades e correções

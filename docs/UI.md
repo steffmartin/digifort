@@ -10,7 +10,7 @@
 | Grade de vídeo | Mantém foco por câmera e estados de carregamento, disponibilidade e gravação por quadro. |
 | Timeline e miniaturas | A timeline reúne as câmeras abertas; miniaturas usam a câmera escolhida no menu de contexto. |
 
-A estrutura fica em [index.html](../public/index.html), os estilos em [styles.css](../public/styles.css) e a coordenação do monitor em [shell.js](../public/monitor/shell.js). O [app.js](../public/app.js) reúne os módulos na inicialização; presença, revisão, miniaturas, captura e player mantêm suas regras em módulos próprios. A interface usa fundo escuro, verde-água no modo ao vivo e âmbar na revisão. As variáveis em `:root` concentram a paleta. O instalador acompanha o tema do Windows e tem arte própria gerada por [Artwork.cs](../installer/Artwork.cs).
+A estrutura fica em [index.html](../public/index.html), os estilos em [styles.css](../public/styles.css) e a coordenação do monitor em [shell.js](../public/monitor/shell.js). O [app.js](../public/app.js) reúne os módulos na inicialização; presença, revisão, miniaturas, captura e player mantêm suas regras em módulos próprios. O [mapa dos contratos de apresentação](ARQUITETURA-FRONTEND.md) registra os vínculos entre DOM, estilos e módulos. A interface usa fundo escuro, verde-água no modo ao vivo e âmbar na revisão. As variáveis em `:root` concentram a paleta. O instalador acompanha o tema do Windows e tem arte própria gerada por [Artwork.cs](../installer/Artwork.cs).
 
 ## Fluxos e estados a preservar
 
