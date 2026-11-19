@@ -395,7 +395,7 @@ async function handleApi(req, res, url) {
       const folder = kind === 'screenshot' ? config.screenshotFolder : config.videoFolder;
       if (!folder) throw new Error('Pasta de mídia não configurada.');
       const executable = process.platform === 'win32' ? 'explorer.exe' : process.platform === 'darwin' ? 'open' : 'xdg-open';
-      const child = spawn(executable, [path.resolve(folder)], { detached: true, stdio: 'ignore', windowsHide: true });
+      const child = spawn(executable, [path.resolve(folder)], { detached: true, stdio: 'ignore', windowsHide: false });
       await new Promise((resolve, reject) => { child.once('spawn', resolve); child.once('error', reject); });
       child.unref();
       return sendJson(res, 200, { ok: true });

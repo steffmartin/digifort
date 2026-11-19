@@ -35,6 +35,7 @@ test('abre apenas a pasta configurada para cada tipo de mídia', async () => {
     const launch = h.launches.at(-1);
     assert.equal(launch.command, 'explorer.exe');
     assert.equal(launch.args[0], path.resolve(folder));
+    assert.equal(launch.options.windowsHide, false, 'a janela do Explorador deve ficar visível');
     assert.equal(launch.child.unreferenced, true);
   }
 });
