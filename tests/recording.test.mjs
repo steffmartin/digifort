@@ -5,7 +5,7 @@ import vm from 'node:vm';
 
 const playerSource = readFileSync(new URL('../public/media/player.js', import.meta.url), 'utf8');
 const captureSource = readFileSync(new URL('../public/media/capture.js', import.meta.url), 'utf8');
-const source = readFileSync(new URL('../public/app.js', import.meta.url), 'utf8');
+const source = readFileSync(new URL('../public/monitor/shell.js', import.meta.url), 'utf8');
 function section(start, end) {
   const from = source.indexOf(start), to = source.indexOf(end, from);
   assert.ok(from >= 0 && to > from, `Trecho ausente: ${start}`);

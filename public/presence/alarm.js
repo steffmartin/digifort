@@ -1,4 +1,5 @@
 export function createPresenceAlarm({ state, elements, setMediaControlTitle, toast }) {
+const alarm = { presenceEnabled: false, presenceAll: false };
 const presenceWorkers = [];
 const presenceInFlight = new Set();
 let presenceAudio = null;
@@ -9,15 +10,15 @@ let presenceNextDispatch = 0;
 const PRESENCE_INTERVAL_MS = 3000;
 
 function presenceAvailable() {
-  return state.presenceEnabled && state.mode === 'live' && !state.recordingSession &&
+  return alarm.presenceEnabled && state.mode === 'live' && !state.recordingSession &&
     !state.allStopped && !state.thumbnailActive && [...state.tiles.values()].some(player => !player.stopped);
 }
 function updatePresenceControl() {
   const button = elements.presenceToggle;
   button.disabled = !state.tiles.size;
-  button.setAttribute('aria-pressed', String(state.presenceEnabled));
-  button.dataset.presenceAll = String(state.presenceEnabled && state.presenceAll);
-  const label = state.presenceEnabled ? (state.presenceAll ? 'Alarme de presença: todas as câmeras' : 'Alarme de presença: câmera em foco') : 'Alarme de presença: desativado';
+  button.setAttribute('aria-pressed', String(alarm.presenceEnabled));
+  button.dataset.presenceAll = String(alarm.presenceEnabled && alarm.presenceAll);
+  const label = alarm.presenceEnabled ? (alarm.presenceAll ? 'Alarme de presença: todas as câmeras' : 'Alarme de presença: câmera em foco') : 'Alarme de presença: desativado';
   button.setAttribute('aria-label', label);
   setMediaControlTitle(button, `${label} · P`);
 }
@@ -31,7 +32,7 @@ function stopPresenceWorker() {
 }
 function failPresence() {
   stopPresenceWorker();
-  state.presenceEnabled = false;
+  alarm.presenceEnabled = false;
   updatePresenceControl();
   toast('Não foi possível executar o alarme de presença. Alarme desativado.', 'error');
 }
@@ -60,7 +61,7 @@ function flashPresence(camera, count) {
 }
 function presenceEligibleCameras() {
   return [...state.tiles].filter(([name, player]) => !player.stopped && player.presenceFrameAt &&
-    Date.now() - player.presenceFrameAt < 15000 && (state.presenceAll || name === state.focused) &&
+    Date.now() - player.presenceFrameAt < 15000 && (alarm.presenceAll || name === state.focused) &&
     player.canvas?.width && player.canvas.height).map(([name]) => name);
 }
 function presenceWorkerLimit() {
@@ -68,7 +69,7 @@ function presenceWorkerLimit() {
   return Math.min(4, Math.max(1, Math.floor(logical / 2)));
 }
 function reconcilePresenceWorkers() {
-  const wanted = Math.min(presenceWorkerLimit(), state.presenceAll ? Math.ceil(state.tiles.size / 10) : 1);
+  const wanted = Math.min(presenceWorkerLimit(), alarm.presenceAll ? Math.ceil(state.tiles.size / 10) : 1);
   while (presenceWorkers.length > wanted) {
     const index = presenceWorkers.findLastIndex(slot => !slot.busy);
     if (index < 0) break;
@@ -89,7 +90,7 @@ function reconcilePresenceWorkers() {
       presenceInFlight.delete(slot.camera);
       slot.busy = false;
       slot.camera = null;
-      if (!presenceAvailable() || !state.tiles.has(result.camera) || state.tiles.get(result.camera).stopped || !state.tiles.get(result.camera).presenceFrameAt || Date.now() - state.tiles.get(result.camera).presenceFrameAt >= 15000 || (!state.presenceAll && state.focused !== result.camera)) return;
+      if (!presenceAvailable() || !state.tiles.has(result.camera) || state.tiles.get(result.camera).stopped || !state.tiles.get(result.camera).presenceFrameAt || Date.now() - state.tiles.get(result.camera).presenceFrameAt >= 15000 || (!alarm.presenceAll && state.focused !== result.camera)) return;
       const now = Date.now();
       const cameraState = presenceCameras.get(result.camera) || { detected: false, pending: false, lastSeen: null };
       presenceCameras.set(result.camera, cameraState);
@@ -141,7 +142,7 @@ async function checkPresence() {
     const width = Math.max(1, Math.round(canvas.width * scale));
     const height = Math.max(1, Math.round(canvas.height * scale));
     const bitmap = await createImageBitmap(canvas, { resizeWidth: width, resizeHeight: height, resizeQuality: 'low' });
-    if (!presenceWorkers.includes(slot) || !presenceAvailable() || (!state.presenceAll && camera !== state.focused) || !state.tiles.has(camera) || state.tiles.get(camera).stopped || !state.tiles.get(camera).presenceFrameAt || Date.now() - state.tiles.get(camera).presenceFrameAt >= 15000) {
+    if (!presenceWorkers.includes(slot) || !presenceAvailable() || (!alarm.presenceAll && camera !== state.focused) || !state.tiles.has(camera) || state.tiles.get(camera).stopped || !state.tiles.get(camera).presenceFrameAt || Date.now() - state.tiles.get(camera).presenceFrameAt >= 15000) {
       bitmap.close();
       if (presenceWorkers.includes(slot)) { slot.busy = false; slot.camera = null; presenceInFlight.delete(camera); }
       return;
@@ -165,10 +166,10 @@ void schedulePresenceCheck();
 
 
 function toggle() {
-  if (!state.presenceEnabled) { state.presenceEnabled = true; state.presenceAll = false; }
-  else if (!state.presenceAll) { state.presenceAll = true; stopPresenceWorker(); }
-  else { state.presenceEnabled = false; state.presenceAll = false; }
-  if (state.presenceEnabled) {
+  if (!alarm.presenceEnabled) { alarm.presenceEnabled = true; alarm.presenceAll = false; }
+  else if (!alarm.presenceAll) { alarm.presenceAll = true; stopPresenceWorker(); }
+  else { alarm.presenceEnabled = false; alarm.presenceAll = false; }
+  if (alarm.presenceEnabled) {
     if (!presenceAudio) presenceAudio = new AudioContext();
     void presenceAudio.resume().catch(failPresence);
   } else stopPresenceWorker();
@@ -176,20 +177,21 @@ function toggle() {
 }
 
 function deactivate() {
-  state.presenceEnabled = false;
+  alarm.presenceEnabled = false;
   stopPresenceWorker();
   updatePresenceControl();
 }
 
 function focusChanged() {
-  if (!state.presenceAll) stopPresenceWorker();
+  if (!alarm.presenceAll) stopPresenceWorker();
 }
 
 function streamUnavailable(camera, wasReceiving) {
-  if (wasReceiving && state.presenceEnabled && (state.presenceAll || state.focused === camera)) {
+  if (wasReceiving && alarm.presenceEnabled && (alarm.presenceAll || state.focused === camera)) {
     toast(`${camera}: alarme de presença suspenso enquanto a transmissão está indisponível.`, 'error');
   }
 }
 
-return { stopPresenceWorker, updatePresenceControl, toggle, deactivate, focusChanged, streamUnavailable };
+return { stopPresenceWorker, updatePresenceControl, toggle, deactivate, focusChanged, streamUnavailable,
+  get enabled() { return alarm.presenceEnabled; }, get all() { return alarm.presenceAll; } };
 }

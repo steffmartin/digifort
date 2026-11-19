@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
-const source = readFileSync(new URL('../public/app.js', import.meta.url), 'utf8');
+const source = readFileSync(new URL('../public/monitor/shell.js', import.meta.url), 'utf8');
 const timelineSource = readFileSync(new URL('../public/review/timeline.js', import.meta.url), 'utf8');
 const start = source.indexOf('function reorderTiles()');
 const end = source.indexOf('function updateSurveillance()', start);

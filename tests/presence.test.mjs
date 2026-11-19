@@ -47,7 +47,7 @@ function harness() {
   const button = { setAttribute() {}, dataset: {}, disabled: false };
   const state = { presenceEnabled: true, mode: 'live', recordingSession: null, allStopped: false,
     thumbnailActive: false, focused: 'A', tiles: new Map([['A', { stopped: false, presenceFrameAt: Date.now(), canvas: { width: 320, height: 180 } }]]) };
-  const context = vm.createContext({ state, elements: { presenceToggle: button }, Worker, navigator: { hardwareConcurrency: 16 }, setTimeout() {},
+  const context = vm.createContext({ state, alarm: state, elements: { presenceToggle: button }, Worker, navigator: { hardwareConcurrency: 16 }, setTimeout() {},
     setMediaControlTitle() {}, toast: message => messages.push(message), Date,
     createImageBitmap: async () => ({ close() {} }), performance: { now: () => clock } });
   vm.runInContext(source.slice(start, end), context);

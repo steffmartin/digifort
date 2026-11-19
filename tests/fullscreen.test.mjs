@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
-const source = readFileSync(new URL('../public/app.js', import.meta.url), 'utf8');
+const source = readFileSync(new URL('../public/monitor/shell.js', import.meta.url), 'utf8');
 const code = source.slice(source.indexOf('function isTileEnlarged('), source.indexOf('async function openCamera('));
 
 function scenario() {

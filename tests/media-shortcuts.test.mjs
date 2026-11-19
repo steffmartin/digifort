@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
-const source = readFileSync(new URL('../public/app.js', import.meta.url), 'utf8');
+const source = readFileSync(new URL('../public/monitor/shell.js', import.meta.url), 'utf8');
 const from = source.indexOf("document.addEventListener('keydown', event => {", source.indexOf('const controlShortcuts ='));
 const to = source.indexOf('\nsetupMosaics();', from);
 assert.ok(from >= 0 && to > from);
