@@ -29,7 +29,7 @@ function getG726Config(headers, type) {
 const state = {
   servers: [], serverId: '', server: null, cameras: [], tiles: new Map(), desktopWindow: false,
   cameraStatuses: new Map(), statusTimer: null, statusRequestId: 0, statusRefreshing: false,
-  mode: 'live', focused: '', audioEnabled: false, presenceEnabled: false,
+  mode: 'live', focused: '', audioEnabled: false, presenceEnabled: false, presenceAll: false,
   allStopped: false, captureAll: false, mosaic: 'auto', overlaysVisible: false, timelineVisible: true, surveillance: false,
   audioContext: null, reviewEpoch: null, reviewStart: null, reviewEnd: null, reviewLimitEnd: null,
   timelineStart: null, timelineEnd: null,
@@ -1186,6 +1186,7 @@ async function closeCamera(cameraName) {
   }
   const wasFocused = state.focused === cameraName;
   player.stop();
+  stopPresenceWorker();
   state.tiles.delete(cameraName);
   player.tile.remove();
   if (wasFocused) {
@@ -1232,7 +1233,7 @@ async function closeAllTiles() {
 function focusCamera(cameraName) {
   if (!state.tiles.has(cameraName)) return;
   const previousFocus = state.focused;
-  if (previousFocus !== cameraName) { clearThumbnails(); stopPresenceWorker(); }
+  if (previousFocus !== cameraName) { clearThumbnails(); if (!state.presenceAll) stopPresenceWorker(); }
   state.focused = cameraName;
   for (const [name, player] of state.tiles) {
     player.tile.classList.toggle('is-focused', name === cameraName);
@@ -1243,36 +1244,35 @@ function focusCamera(cameraName) {
 
 }
 
-let presenceWorker = null;
-let presenceReady = false;
-let presenceBusy = false;
+const presenceWorkers = [];
+const presenceInFlight = new Set();
 let presenceAudio = null;
 let lastPresenceSound = null;
-let presenceDetected = false;
-let presenceNewPending = false;
-let lastPresenceSeen = null;
+const presenceCameras = new Map();
+const presenceLastSample = new Map();
+let presenceNextDispatch = 0;
+const PRESENCE_INTERVAL_MS = 3000;
 
 function presenceAvailable() {
-  const player = state.tiles.get(state.focused);
   return state.presenceEnabled && state.mode === 'live' && !state.recordingSession &&
-    !state.allStopped && !state.thumbnailActive && player && !player.stopped;
+    !state.allStopped && !state.thumbnailActive && [...state.tiles.values()].some(player => !player.stopped);
 }
 function updatePresenceControl() {
   const button = elements.presenceToggle;
   button.disabled = !state.tiles.size;
   button.setAttribute('aria-pressed', String(state.presenceEnabled));
-  const label = `${state.presenceEnabled ? 'Desativar' : 'Ativar'} alarme de presença`;
+  button.dataset.presenceAll = String(state.presenceEnabled && state.presenceAll);
+  const label = state.presenceEnabled ? (state.presenceAll ? 'Alarme de presença: todas as câmeras' : 'Alarme de presença: câmera em foco') : 'Alarme de presença: desativado';
   button.setAttribute('aria-label', label);
   setMediaControlTitle(button, `${label} · P`);
 }
 function stopPresenceWorker() {
-  if (presenceWorker) presenceWorker.terminate();
-  presenceWorker = null;
-  presenceReady = false;
-  presenceBusy = false;
-  presenceDetected = false;
-  presenceNewPending = false;
-  lastPresenceSeen = null;
+  for (const slot of presenceWorkers) slot.worker.terminate();
+  presenceWorkers.length = 0;
+  presenceInFlight.clear();
+  presenceCameras.clear();
+  presenceLastSample.clear();
+  presenceNextDispatch = 0;
 }
 function failPresence() {
   stopPresenceWorker();
@@ -1294,59 +1294,119 @@ function soundPresence(count = 1) {
     oscillator.start(now); oscillator.stop(now + 0.31);
   }
 }
+function flashPresence(camera, count) {
+  const tile = state.tiles.get(camera)?.tile;
+  if (!tile) return;
+  const className = count === 3 ? 'presence-alert-three' : 'presence-alert-once';
+  tile.classList.remove('presence-alert-once', 'presence-alert-three');
+  void tile.offsetWidth;
+  tile.classList.add(className);
+  setTimeout(() => tile.classList.remove(className), count * 450 + 100);
+}
+function presenceEligibleCameras() {
+  return [...state.tiles].filter(([name, player]) => !player.stopped && player.presenceFrameAt &&
+    Date.now() - player.presenceFrameAt < 15000 && (state.presenceAll || name === state.focused) &&
+    player.canvas?.width && player.canvas.height).map(([name]) => name);
+}
+function presenceWorkerLimit() {
+  const logical = Number(navigator.hardwareConcurrency) || 2;
+  return Math.min(4, Math.max(1, Math.floor(logical / 2)));
+}
+function reconcilePresenceWorkers() {
+  const wanted = Math.min(presenceWorkerLimit(), state.presenceAll ? Math.ceil(state.tiles.size / 10) : 1);
+  while (presenceWorkers.length > wanted) {
+    const index = presenceWorkers.findLastIndex(slot => !slot.busy);
+    if (index < 0) break;
+    presenceWorkers[index].worker.terminate();
+    presenceWorkers.splice(index, 1);
+  }
+  while (presenceWorkers.length < wanted) {
+    const worker = new Worker('/presence/worker.js', { type: 'module' });
+    const slot = { worker, ready: false, busy: false, camera: null };
+    presenceWorkers.push(slot);
+    worker.onerror = () => { if (presenceWorkers.includes(slot)) failPresence(); };
+    worker.onmessage = event => {
+      if (!presenceWorkers.includes(slot)) return;
+      const result = event.data;
+      if (result.type === 'error') return failPresence();
+      if (result.type === 'ready') { slot.ready = true; return; }
+      if (result.type !== 'result' || !slot.busy || slot.camera !== result.camera) return;
+      presenceInFlight.delete(slot.camera);
+      slot.busy = false;
+      slot.camera = null;
+      if (!presenceAvailable() || !state.tiles.has(result.camera) || state.tiles.get(result.camera).stopped || !state.tiles.get(result.camera).presenceFrameAt || Date.now() - state.tiles.get(result.camera).presenceFrameAt >= 15000 || (!state.presenceAll && state.focused !== result.camera)) return;
+      const now = Date.now();
+      const cameraState = presenceCameras.get(result.camera) || { detected: false, pending: false, lastSeen: null };
+      presenceCameras.set(result.camera, cameraState);
+      if (!result.found) {
+        if (cameraState.lastSeen !== null && now - cameraState.lastSeen >= 15000) {
+          cameraState.detected = false;
+          cameraState.pending = false;
+          cameraState.lastSeen = null;
+        }
+        return;
+      }
+      if (!cameraState.detected) cameraState.pending = true;
+      cameraState.detected = true;
+      cameraState.lastSeen = now;
+      if (lastPresenceSound === null || now - lastPresenceSound >= 15000) {
+        const count = cameraState.pending ? 3 : 1;
+        soundPresence(count);
+        flashPresence(result.camera, count);
+        lastPresenceSound = now;
+        cameraState.pending = false;
+      }
+    };
+    worker.postMessage({ type: 'init' });
+  }
+}
 async function checkPresence() {
   if (!presenceAvailable()) { stopPresenceWorker(); return; }
-  if (!presenceWorker) {
-    try {
-      const worker = new Worker('/presence/worker.js', { type: 'module' });
-      presenceWorker = worker;
-      worker.onerror = () => { if (presenceWorker === worker) failPresence(); };
-      worker.onmessage = event => {
-        if (presenceWorker !== worker) return;
-        const result = event.data;
-        if (result.type === 'error') return failPresence();
-        if (result.type === 'ready') { presenceReady = true; return; }
-        if (result.type !== 'result') return;
-        presenceBusy = false;
-        if (!presenceAvailable() || state.focused !== result.camera) return;
-        const now = Date.now();
-        if (!result.found) {
-          if (lastPresenceSeen !== null && now - lastPresenceSeen >= 15000) {
-            presenceDetected = false;
-            presenceNewPending = false;
-            lastPresenceSeen = null;
-          }
-          return;
-        }
-        if (!presenceDetected) presenceNewPending = true;
-        presenceDetected = true;
-        lastPresenceSeen = now;
-        if (lastPresenceSound === null || now - lastPresenceSound >= 15000) {
-          soundPresence(presenceNewPending ? 3 : 1);
-          lastPresenceSound = now;
-          presenceNewPending = false;
-        }
-      };
-      worker.postMessage({ type: 'init' });
-    } catch { failPresence(); }
-    return;
-  }
-  if (!presenceReady || presenceBusy) return;
-  const camera = state.focused;
-  const canvas = state.tiles.get(camera)?.canvas;
-  if (!canvas?.width || !canvas.height) return;
-  presenceBusy = true;
-  const worker = presenceWorker;
+  try { reconcilePresenceWorkers(); } catch { failPresence(); return; }
+  const slot = presenceWorkers.find(item => item.ready && !item.busy);
+  if (!slot) return;
+  const cameras = presenceEligibleCameras();
+  const candidates = cameras.filter(camera => !presenceInFlight.has(camera));
+  if (!candidates.length) return;
+  const now = performance.now();
+  if (now < presenceNextDispatch) return;
+  // Cada worker recebe apenas o quadro atual da câmera há mais tempo sem análise.
+  const camera = candidates.reduce((oldest, name) =>
+    (presenceLastSample.get(name) ?? -Infinity) < (presenceLastSample.get(oldest) ?? -Infinity) ? name : oldest);
+  const last = presenceLastSample.get(camera);
+  if (last !== undefined && now - last < PRESENCE_INTERVAL_MS) return;
+  const canvas = state.tiles.get(camera).canvas;
+  slot.busy = true;
+  slot.camera = camera;
+  presenceInFlight.add(camera);
+  presenceLastSample.set(camera, now);
+  presenceNextDispatch = now + PRESENCE_INTERVAL_MS / cameras.length;
   try {
     const scale = Math.min(1, 320 / Math.max(canvas.width, canvas.height));
     const width = Math.max(1, Math.round(canvas.width * scale));
     const height = Math.max(1, Math.round(canvas.height * scale));
     const bitmap = await createImageBitmap(canvas, { resizeWidth: width, resizeHeight: height, resizeQuality: 'low' });
-    if (worker !== presenceWorker || !presenceAvailable() || camera !== state.focused) { bitmap.close(); presenceBusy = false; return; }
-    worker.postMessage({ type: 'detect', camera, bitmap, width, height }, [bitmap]);
-  } catch { if (worker === presenceWorker) failPresence(); }
+    if (!presenceWorkers.includes(slot) || !presenceAvailable() || (!state.presenceAll && camera !== state.focused) || !state.tiles.has(camera) || state.tiles.get(camera).stopped || !state.tiles.get(camera).presenceFrameAt || Date.now() - state.tiles.get(camera).presenceFrameAt >= 15000) {
+      bitmap.close();
+      if (presenceWorkers.includes(slot)) { slot.busy = false; slot.camera = null; presenceInFlight.delete(camera); }
+      return;
+    }
+    slot.worker.postMessage({ type: 'detect', camera, bitmap, width, height }, [bitmap]);
+  } catch { if (presenceWorkers.includes(slot)) failPresence(); }
 }
-setInterval(() => { void checkPresence(); }, 3000);
+async function schedulePresenceCheck() {
+  await checkPresence();
+  let wait = 250;
+  if (presenceAvailable() && presenceWorkers.some(slot => slot.ready && !slot.busy)) {
+    const cameras = presenceEligibleCameras();
+    if (cameras.length) {
+      const earliest = Math.min(...cameras.filter(camera => !presenceInFlight.has(camera)).map(camera => (presenceLastSample.get(camera) ?? -Infinity) + PRESENCE_INTERVAL_MS));
+      wait = Math.max(10, Math.min(1000, Math.max(presenceNextDispatch, earliest) - performance.now()));
+    }
+  } else if (presenceWorkers.some(slot => slot.busy)) wait = 25;
+  setTimeout(() => { void schedulePresenceCheck(); }, wait);
+}
+void schedulePresenceCheck();
 
 function updateAudioSources() {
   updatePresenceControl();
@@ -1618,6 +1678,9 @@ class CameraPlayer {
     this.frameCount = 0;
     this.audioCount = 0;
     this.stopped = false;
+    this.retryTimer = null;
+    this.retryDelay = 0;
+    this.presenceFrameAt = 0;
   }
 
   async start() {
@@ -1652,20 +1715,45 @@ class CameraPlayer {
       void consumeMultipart(response, part => {
         if (!this.stopped && token === this.requestToken) this.consumePart(part);
       }).then(() => {
-        if (!this.stopped && token === this.requestToken) this.setMessage('O servidor encerrou o stream.');
+        if (!this.stopped && token === this.requestToken) this.retryStream(token);
       }).catch(error => {
         if (error.name === 'AbortError' || this.stopped || token !== this.requestToken) return;
-        this.setMessage(error.message || 'Erro ao receber stream.');
-        this.setState('Erro');
-        toast(`${this.name}: ${error.message || 'erro de stream.'}`, 'error');
+        this.retryStream(token);
       });
       if (state.audioEnabled && state.focused === this.name) void this.startAudioStream();
     } catch (error) {
       if (error.name === 'AbortError' || this.stopped || token !== this.requestToken) return;
-      this.setMessage(error.message || 'Erro ao receber stream.');
-      this.setState('Erro');
-      toast(`${this.name}: ${error.message || 'erro de stream.'}`, 'error');
+      this.retryStream(token);
     }
+  }
+
+  retryStream(token) {
+    if (this.stopped || token !== this.requestToken) return;
+    const wasReceiving = this.presenceFrameAt;
+    this.presenceFrameAt = 0;
+    if (wasReceiving && state.presenceEnabled && (state.presenceAll || state.focused === this.name)) toast(`${this.name}: alarme de presença suspenso enquanto a transmissão está indisponível.`, 'error');
+    if (state.mode !== 'live') {
+      this.setMessage('O servidor encerrou o stream.');
+      this.setState('Erro');
+      return;
+    }
+    if (this.retryDelay > 300000) {
+      this.setMessage('Não foi possível reconectar. Reinicie a câmera para tentar novamente.');
+      this.setState('Erro');
+      return;
+    }
+    const delay = this.retryDelay;
+    this.retryDelay = delay === 0 ? 1000 : delay === 300000 ? 300001 : Math.min(delay * 2, 300000);
+    this.setMessage(delay ? `Reconectando em ${Math.ceil(delay / 1000)} s…` : 'Reconectando ao stream…');
+    this.setState('Reconectando');
+    this.retryTimer = setTimeout(() => {
+      this.retryTimer = null;
+      if (this.stopped || token !== this.requestToken) return;
+      const nextDelay = this.retryDelay;
+      this.stop(false);
+      this.retryDelay = nextDelay;
+      void this.start();
+    }, delay);
   }
 
   async restart() {
@@ -1722,6 +1810,10 @@ class CameraPlayer {
 
   stop(clear = true) {
     this.stopped = true;
+    this.presenceFrameAt = 0;
+    clearTimeout(this.retryTimer);
+    this.retryTimer = null;
+    this.retryDelay = 0;
     this.requestToken += 1;
     this.stopAudioStream();
     this.abortController?.abort();
@@ -1757,6 +1849,7 @@ class CameraPlayer {
   consumePart(part, audioOnly = false) {
     const type = `${part.headers['dgf-frametype'] || ''} ${part.headers['content-type'] || ''}`.toLowerCase();
     if (audioOnly && !/audio|g\.?726|alaw|mulaw|ulaw/i.test(type)) return;
+    if (!audioOnly && /jpeg|h\.?264|h\.?265|hevc/i.test(type)) { this.retryDelay = 0; this.presenceFrameAt = Date.now(); }
     const epoch = parseFrameEpoch(part.headers);
     if (state.mode === 'playback' && this.name === state.focused && epoch !== null) updateTimelinePlayhead(epoch);
     if (epoch) this.tile.querySelector('.tile-timecode').textContent = new Intl.DateTimeFormat('pt-BR', { timeZone: state.server.timeZone, hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(epoch);
@@ -2946,7 +3039,9 @@ elements.audioSource.addEventListener('change', event => {
   focusCamera(event.target.value);
 });
 elements.presenceToggle.addEventListener('click', () => {
-  state.presenceEnabled = !state.presenceEnabled;
+  if (!state.presenceEnabled) { state.presenceEnabled = true; state.presenceAll = false; }
+  else if (!state.presenceAll) { state.presenceAll = true; stopPresenceWorker(); }
+  else { state.presenceEnabled = false; state.presenceAll = false; }
   if (state.presenceEnabled) {
     if (!presenceAudio) presenceAudio = new AudioContext();
     void presenceAudio.resume().catch(failPresence);
