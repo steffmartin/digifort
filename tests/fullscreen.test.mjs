@@ -130,7 +130,7 @@ test('rótulo e ícone refletem a câmera ampliada e o modo vigilância', () => 
 });
 
 test('menu de contexto acompanha a câmera ampliada e retorna ao local original', () => {
-  const open = source.slice(source.indexOf('function openContextMenu('), source.indexOf('function safeMediaFilename('));
+  const open = source.slice(source.indexOf('function openContextMenu('), source.indexOf('const mediaCapture ='));
   const close = source.slice(source.indexOf('function closeContextMenu('), source.indexOf('async function beginContextPlayback('));
   const root = { style: {}, scrollHeight: 20, replaceChildren() {}, removeAttribute() {}, append() {}, querySelector() { return null; } };
   const home = { append(node) { node.parent = home; } };

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
-const source = readFileSync(new URL('../public/app.js', import.meta.url), 'utf8');
+const source = readFileSync(new URL('../public/media/player.js', import.meta.url), 'utf8');
 const method = source.slice(source.indexOf('  retryStream(token) {'), source.indexOf('  async restart()', source.indexOf('  retryStream(token) {')));
 
 test('reconexão progride até cinco minutos e para após essa tentativa', () => {

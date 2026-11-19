@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
+const playerSource = readFileSync(new URL('../public/media/player.js', import.meta.url), 'utf8');
+const captureSource = readFileSync(new URL('../public/media/capture.js', import.meta.url), 'utf8');
 const source = readFileSync(new URL('../public/app.js', import.meta.url), 'utf8');
 function section(start, end) {
   const from = source.indexOf(start), to = source.indexOf(end, from);
@@ -58,12 +60,12 @@ function recordingHarness({ supported = true, failStart = false } = {}) {
   const state = { server: { videoFolderConfigured: true }, serverId: 'sintetico', mode: 'live', allStopped: false,
     audioContext: null, tiles: new Map([[player.name, player]]), recordings: new Map(), recordingSession: null };
   const elements = { recordFormat: { value: 'mp4' } };
-  const context = vm.createContext({ state, elements, MediaRecorder: FakeRecorder, AudioContext: FakeAudioContext,
+  const context = vm.createContext({ state, capture: state, elements, MediaRecorder: FakeRecorder, AudioContext: FakeAudioContext,
     scopedCameraNames: scope => scope.all ? [...state.tiles.keys()] : [scope.camera].filter(name => state.tiles.has(name)),
     recordingScopeKey: scope => scope.all ? 'all-cameras' : `camera:${scope.camera}`,
     mediaEpoch: () => 1, mediaFilenames: (names, extension) => { extensions.push(extension); return names.map(() => `sintetico${extension}`); },
     postMedia: async (_path, params) => { requests.push(params.action); return {}; }, toast: message => messages.push(message), updateMediaControls() {}, stopPresenceWorker() {} });
-  vm.runInContext(section('function recordingMime(', 'function closeContextMenu('), context);
+  vm.runInContext(captureSource.slice(captureSource.indexOf('function recordingMime('), captureSource.indexOf('return { captureFrames')), context);
   return { context, state, elements, player, requests, messages, sources, streams, recorders, extensions };
 }
 
@@ -173,7 +175,7 @@ test('áudio ativado durante a gravação também chega ao destino do arquivo', 
   const state = { audioContext, audioContextStart: 10, audioEnabled: true, focused: 'Câmera sintética',
     recordings: new Map([['Câmera sintética', { camera: 'Câmera sintética', destination }]]) };
   const context = vm.createContext({ state, Float32Array });
-  vm.runInContext(section('class CameraPlayer {', 'function findNal(') + '\nglobalThis.TestPlayer = CameraPlayer;', context);
+  vm.runInContext(playerSource.slice(playerSource.indexOf('class CameraPlayer {'), playerSource.indexOf('return CameraPlayer;')) + '\nglobalThis.TestPlayer = CameraPlayer;', context);
   const player = Object.create(context.TestPlayer.prototype);
   player.name = 'Câmera sintética';
   player.schedulePcm(new Float32Array([0.25, -0.25]), 8000, 1, 0);
