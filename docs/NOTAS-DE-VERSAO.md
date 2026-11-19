@@ -1,5 +1,11 @@
 # Notas de versão do Digifort Monitor
 
+## Em desenvolvimento
+
+- O alarme de presença pode analisar a câmera em foco ou todas as câmeras abertas, com alertas visuais por câmera. ([#60](https://github.com/steffmartin/digifort/issues/60))
+- Transmissões ao vivo interrompidas tentam se reconectar em intervalos crescentes, até a última tentativa após cinco minutos. ([#62](https://github.com/steffmartin/digifort/issues/62))
+- A arquitetura do cliente e o transporte Digifort foram reorganizados em módulos, preservando os fluxos existentes. ([#61](https://github.com/steffmartin/digifort/issues/61))
+
 ## 1.5.0
 
 ### Novidades
@@ -53,7 +59,7 @@ A suíte automatizada cobre os saltos, limites de revisão, gravação e transi�
 
 ### Validação e distribuição
 
-O início, a pausa, a retomada, a finalização, a gravação simultânea de quatro câmeras e o início com áudio ativado foram exercitados no Windows 11 com uma transmissão real. As medições e os limites estão nas [evidências da issue 51](EVIDENCIAS-ISSUE-51.md). Os testes automatizados cobrem os estados e as falhas da gravação. A qualidade do áudio, a instalação em máquina limpa e o Windows 10 permanecem pendentes. Confira o SHA-256 do instalador conforme [Distribuição](DISTRIBUICAO.md).
+O início, a pausa, a retomada, a finalização, a gravação simultânea de quatro câmeras e o início com áudio ativado foram exercitados no Windows 11 com uma transmissão real. Os testes automatizados cobrem os estados e as falhas da gravação. A qualidade do áudio, a instalação em máquina limpa e o Windows 10 permanecem pendentes. Confira o SHA-256 do instalador conforme [Distribuição](DISTRIBUICAO.md).
 
 ## 1.2.1
 

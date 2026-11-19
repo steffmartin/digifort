@@ -3,14 +3,14 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
-const source = readFileSync(new URL('../public/app.js', import.meta.url), 'utf8');
+const source = readFileSync(new URL('../public/media/player.js', import.meta.url), 'utf8');
 function section(start, end) {
   const from = source.indexOf(start), to = source.indexOf(end, from);
   assert.ok(from >= 0 && to > from, `Trecho ausente: ${start}`);
   return source.slice(from, to);
 }
 const context = vm.createContext({ Uint8Array, TextEncoder, TextDecoder });
-vm.runInContext(section('function getG726Config(', 'const state =') + section('function findNal(', 'async function audioSourceChanged('), context);
+vm.runInContext(section('function getG726Config(', 'export function createCameraPlayerClass(') + section('function findNal(', 'export { consumeMultipart }'), context);
 
 test('G.726 reconhece taxa e ordem explícitas e assume LSB quando omitida', () => {
   const explicit = context.getG726Config({ 'dgf-bitrate': '24000', 'bit-order': 'big-endian' }, 'audio/g726');

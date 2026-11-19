@@ -3,16 +3,16 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
-const source = readFileSync(new URL('../public/app.js', import.meta.url), 'utf8');
+const source = readFileSync(new URL('../public/review/timeline.js', import.meta.url), 'utf8');
 const start = source.indexOf('let timelineDrag = null;');
-const end = source.indexOf('let thumbnailResizeTimer;', start);
+const end = source.indexOf('function openTimeline(', start);
 assert.ok(start >= 0 && end > start);
 
 test('captura o ponteiro só depois de distinguir arraste de clique', () => {
   const scrollHandlers = {}, windowHandlers = {}, captures = [], classes = new Set();
   const scroll = { scrollLeft: 100, classList: { add: value => classes.add(value), remove: (...values) => values.forEach(value => classes.delete(value)) }, addEventListener: (name, fn) => { scrollHandlers[name] = fn; }, setPointerCapture: id => captures.push(id) };
   const state = { timelineZoom: 2 };
-  const context = vm.createContext({ state, elements: { timelineScroll: scroll }, window: { addEventListener: (name, fn) => { windowHandlers[name] = fn; } }, Math, setTimeout: (fn, delay) => { if (!delay) fn(); return 1; }, clearTimeout: () => {} });
+  const context = vm.createContext({ state, timeline: state, elements: { timelineScroll: scroll }, window: { addEventListener: (name, fn) => { windowHandlers[name] = fn; } }, Math, setTimeout: (fn, delay) => { if (!delay) fn(); return 1; }, clearTimeout: () => {} });
   vm.runInContext(source.slice(start, end), context);
   const pointer = (x, y = 10) => ({ pointerId: 1, isPrimary: true, button: 0, clientX: x, clientY: y });
   scrollHandlers.pointerdown(pointer(100));

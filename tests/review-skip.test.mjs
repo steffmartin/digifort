@@ -3,14 +3,14 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
-const source = readFileSync(new URL('../public/app.js', import.meta.url), 'utf8');
-const code = source.slice(source.indexOf('function seekReview('), source.indexOf('function epochToApi('));
+const source = readFileSync(new URL('../public/review/playback.js', import.meta.url), 'utf8');
+const code = source.slice(source.indexOf('function seekReview('), source.indexOf('return { setDefaultReviewTimes'));
 
 test('salta pelo intervalo configurado, sincroniza câmeras e respeita limites', () => {
   let restarts = 0, playhead;
   const state = { mode: 'playback', reviewStart: 100000, reviewLimitEnd: 200000, reviewEpoch: 150000,
     server: { seekSeconds: 30 }, tiles: new Map([['A', { restart() { restarts++; } }], ['B', { restart() { restarts++; } }]]) };
-  const context = vm.createContext({ state, clearThumbnails() {}, updateTimelinePlayhead: value => { playhead = value; } });
+  const context = vm.createContext({ state, period: state, clearThumbnails() {}, updateTimelinePlayhead: value => { playhead = value; } });
   vm.runInContext(code, context);
   context.skipReview(1);
   assert.equal(state.reviewEpoch, 180000);
@@ -28,7 +28,7 @@ test('salta pelo intervalo configurado, sincroniza câmeras e respeita limites',
 
 test('usa quinze segundos por padrão', () => {
   const state = { mode: 'playback', reviewStart: 100000, reviewLimitEnd: 200000, reviewEpoch: 150000, server: {}, tiles: new Map([['A', { restart() {} }]]) };
-  const context = vm.createContext({ state, clearThumbnails() {}, updateTimelinePlayhead() {} });
+  const context = vm.createContext({ state, period: state, clearThumbnails() {}, updateTimelinePlayhead() {} });
   vm.runInContext(code, context);
   context.skipReview(-1);
   assert.equal(state.reviewEpoch, 135000);

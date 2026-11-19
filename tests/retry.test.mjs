@@ -3,12 +3,12 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
-const source = readFileSync(new URL('../public/app.js', import.meta.url), 'utf8');
+const source = readFileSync(new URL('../public/media/player.js', import.meta.url), 'utf8');
 const method = source.slice(source.indexOf('  retryStream(token) {'), source.indexOf('  async restart()', source.indexOf('  retryStream(token) {')));
 
 test('reconexão progride até cinco minutos e para após essa tentativa', () => {
   const timers = [];
-  const context = vm.createContext({ state: { mode: 'live', presenceEnabled: false }, toast() {}, setTimeout: (fn, delay) => { timers.push({ fn, delay }); return timers.length; } });
+  const context = vm.createContext({ state: { mode: 'live' }, presenceAlarm: { streamUnavailable() {} }, toast() {}, setTimeout: (fn, delay) => { timers.push({ fn, delay }); return timers.length; } });
   const Player = vm.runInContext(`(class { ${method} })`, context);
   const player = new Player();
   Object.assign(player, { stopped: false, requestToken: 1, retryDelay: 0, setMessage(value) { this.message = value; }, setState() {}, stop() { this.requestToken++; this.retryDelay = 0; }, start() {} });

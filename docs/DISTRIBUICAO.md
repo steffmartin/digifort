@@ -8,7 +8,7 @@ Use Windows 11 x64 com o compilador do .NET Framework 4.x e o Inno Setup 7. Na r
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/build-installer.ps1
 ```
 
-Use `-IsccPath` se o `ISCC.exe` estiver em um caminho personalizado. O script baixa e confere o SHA-256 do Node.js 24.22.2 x64 oficial. Ele inclui `node.exe`, a licença do runtime, o servidor, `package.json` com a versão instalada, a interface e o WASM versionado. O servidor usa os módulos nativos do Node. O build compila o inicializador gráfico e gera os ícones e as duas imagens do assistente. A arte em `installer/Artwork.cs` também gera `public/favicon.svg`, usado no cabeçalho e na aba da interface; ao atualizar a arte, execute `scripts/build-launcher.ps1` para regenerar os dois formatos.
+Use `-IsccPath` se o `ISCC.exe` estiver em um caminho personalizado. O script baixa e confere o SHA-256 do Node.js 24.22.2 x64 oficial. Ele inclui `node.exe`, a licença do runtime, o servidor e seus módulos em `server/`, `package.json` com a versão instalada, a interface e o WASM versionado. O servidor usa os módulos nativos do Node. O build compila o inicializador gráfico e gera os ícones e as duas imagens do assistente. A arte em `installer/Artwork.cs` também gera `public/favicon.svg`, usado no cabeçalho e na aba da interface; ao atualizar a arte, execute `scripts/build-launcher.ps1` para regenerar os dois formatos.
 
 O pacote usa compressão sólida LZMA2 no nível `ultra64`, com dicionário de 64 MiB; isso aumenta o tempo e a memória necessários para o build.
 

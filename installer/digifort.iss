@@ -59,6 +59,7 @@ Source: "{#StageDir}\DigifortMonitor.exe"; DestName: "BrowserCheck.exe"; Flags: 
 Source: "{#StageDir}\server.mjs"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#StageDir}\package.json"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#StageDir}\public\*"; DestDir: "{app}\public"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#StageDir}\server\*"; DestDir: "{app}\server"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "{#StageDir}\runtime\*"; DestDir: "{app}\runtime"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "{#StageDir}\example.config"; DestDir: "{#UserDataDir}\config"; Flags: onlyifdoesntexist uninsneveruninstall
 

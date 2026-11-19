@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
-const source = readFileSync(new URL('../public/app.js', import.meta.url), 'utf8');
+const source = readFileSync(new URL('../public/monitor/shell.js', import.meta.url), 'utf8');
 const code = source.slice(source.indexOf('function isTileEnlarged('), source.indexOf('async function openCamera('));
 
 function scenario() {
@@ -130,7 +130,7 @@ test('rótulo e ícone refletem a câmera ampliada e o modo vigilância', () => 
 });
 
 test('menu de contexto acompanha a câmera ampliada e retorna ao local original', () => {
-  const open = source.slice(source.indexOf('function openContextMenu('), source.indexOf('function safeMediaFilename('));
+  const open = source.slice(source.indexOf('function openContextMenu('), source.indexOf('const mediaCapture ='));
   const close = source.slice(source.indexOf('function closeContextMenu('), source.indexOf('async function beginContextPlayback('));
   const root = { style: {}, scrollHeight: 20, replaceChildren() {}, removeAttribute() {}, append() {}, querySelector() { return null; } };
   const home = { append(node) { node.parent = home; } };

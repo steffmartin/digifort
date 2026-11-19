@@ -33,6 +33,7 @@ node_modules/
 /.parcel-cache/
 /.vite/
 coverage/
+/.validation/
 target/
 tmp/
 temp/
