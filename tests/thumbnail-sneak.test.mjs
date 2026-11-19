@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
-const source = readFileSync(new URL('../public/app.js', import.meta.url), 'utf8');
-const code = source.slice(source.indexOf('function cancelThumbnailPage()'), source.indexOf('const THUMBNAIL_INTERVALS')) + source.slice(source.indexOf('async function renderThumbnailPage('), source.indexOf('function clockTick()'));
+const source = readFileSync(new URL('../public/review/thumbnails.js', import.meta.url), 'utf8');
+const code = source.slice(source.indexOf('function cancelThumbnailPage()'), source.indexOf('const THUMBNAIL_INTERVALS')) + source.slice(source.indexOf('async function renderThumbnailPage('), source.indexOf('function resize()'));
 
 class Element {
   constructor(tag = '') { this.tag = tag; this.style = { setProperty(name, value) { this[name] = value; } }; this.dataset = {}; this.children = []; this.events = {}; }
@@ -23,7 +23,7 @@ test('prévia intermediária é sob demanda, usa cache e navega ao ponto médio 
   const state = { thumbnailActive: true, server: { timeZone: 'UTC' }, serverId: 'test', reviewStart: 1000, reviewEnd: 100000, tiles: new Map([['A', {}]]), thumbnailCamera: 'A', thumbnailSize: 'large', thumbnailInterval: 5, thumbnailAnchor: 1000, thumbnailRequestId: 0, thumbnailControllers: new Set(), thumbnailCache: new Map() };
   const elements = Object.fromEntries(['viewerGrid', 'thumbnailGrid', 'thumbnailPrev', 'thumbnailNext', 'thumbnailStatus'].map(name => [name, new Element()]));
   const urlApi = { createObjectURL: () => 'blob:preview', revokeObjectURL: value => revoked.push(value) };
-  const context = vm.createContext({ state, elements, THUMBNAIL_SIZES: { large: [300, 205] }, document: { createElement: tag => new Element(tag) }, AbortController, URL: urlApi, Promise, Math, Number, Set, Array,
+  const context = vm.createContext({ state, thumb: state, elements, THUMBNAIL_SIZES: { large: [300, 205] }, document: { createElement: tag => new Element(tag) }, AbortController, URL: urlApi, Promise, Math, Number, Set, Array,
     epochToApi: epoch => ({ date: String(epoch), time: '00' }), query: params => new URLSearchParams(params), formatClock: String,
     closeThumbnailView() {}, seekReview: epoch => seeks.push(epoch), updateViewHeader() {},
     fetch: (url, options) => { requests.push(String(url)); if (String(url).includes('width=150')) return Promise.resolve(fail ? { ok: false } : { ok: true, blob: async () => ({ size: 1, type: 'image/jpeg' }) }); return new Promise((_resolve, reject) => options.signal.addEventListener('abort', () => reject(Object.assign(new Error(), { name: 'AbortError' })))); }

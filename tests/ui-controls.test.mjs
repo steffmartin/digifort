@@ -2,7 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
+import { inputToEpoch } from '../public/review/time.js';
 
+const playbackSource = readFileSync(new URL('../public/review/playback.js', import.meta.url), 'utf8');
 const source = readFileSync(new URL('../public/app.js', import.meta.url), 'utf8');
 function section(start, end) {
   const from = source.indexOf(start), to = source.indexOf(end, from);
@@ -34,8 +36,8 @@ test('alternar revisão atualiza controles, perfis e transmissões', () => {
   const player = { profile: 'Visualization', lastLiveProfile: 'Visualization', tile: { querySelector: () => attrs() }, restart: () => restarts++ };
   const state = { mode: 'live', tiles: new Map([['A', player]]), recordings: new Map(), thumbnailActive: false };
   const elements = { liveMode: attrs(), reviewMode: attrs(), reviewFields: {}, timelineStatus: {} };
-  const context = vm.createContext({ state, elements, updateOverlayState() {}, setDefaultReviewTimes() {}, clearTimeline: () => cleared++, updateViewHeader() {}, stopPresenceWorker() {} });
-  vm.runInContext(section('function setMode(', 'function setDefaultReviewTimes('), context);
+  const context = vm.createContext({ state, elements, updateOverlayState() {}, setDefaultReviewTimes() {}, clearTimeline: () => cleared++, updateViewHeader() {}, stopPresenceWorker() {}, playbackReview: { reset() {} } });
+  vm.runInContext(section('function setMode(', 'function parseFrameEpoch('), context);
   context.setMode('playback');
   assert.equal(player.profile, 'Recording');
   assert.equal(elements.reviewFields.hidden, false);
@@ -52,8 +54,8 @@ test('revisão rejeita período invertido e não reinicia câmeras', () => {
   let restarts = 0;
   const state = { tiles: new Map([['A', { restart: () => restarts++ }]]), server: { timeZone: 'UTC' } };
   const elements = { startDateTime: { value: '2024-01-02T10:00' }, endDateTime: { value: '2024-01-02T09:00' } };
-  const context = vm.createContext({ state, elements, Intl, Date, toast: message => messages.push(message), clearThumbnails() {}, loadFocusedTimeline() {}, updateViewHeader() {}, stopPresenceWorker() {} });
-  vm.runInContext(section('function startReview(', 'function loadFocusedTimeline(') + section('function inputToEpoch(', 'function parseFrameEpoch('), context);
+  const context = vm.createContext({ state, period: state, elements, Intl, Date, inputToEpoch, toast: message => messages.push(message), clearThumbnails() {}, loadFocusedTimeline() {}, updateViewHeader() {}, stopPresenceWorker() {} });
+  vm.runInContext(playbackSource.slice(playbackSource.indexOf('function startReview('), playbackSource.indexOf('function loadFocusedTimeline(')), context);
   context.startReview();
   assert.match(messages[0], /fim precisa ser posterior/);
   assert.equal(restarts, 0);
@@ -81,7 +83,7 @@ test('troca de fonte de áudio interrompe a anterior e respeita pausa', async ()
   const calls = [];
   const state = { tiles: new Map([['A', { stopAudioStream: () => calls.push('parar A') }], ['B', { startAudioStream: async () => calls.push('iniciar B') }]]), allStopped: false, audioEnabled: true };
   const context = vm.createContext({ state });
-  vm.runInContext(section('async function audioSourceChanged(', 'function clearTimeline('), context);
+  vm.runInContext(section('async function audioSourceChanged(', 'const playbackReview ='), context);
   await context.audioSourceChanged('A', 'B');
   assert.deepEqual(calls, ['parar A', 'iniciar B']);
   calls.length = 0;

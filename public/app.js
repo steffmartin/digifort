@@ -1,3 +1,7 @@
+import { createPlaybackReview } from './review/playback.js';
+import { createTimelineReview } from './review/timeline.js';
+import { createThumbnailReview } from './review/thumbnails.js';
+import { epochToApi, epochToInput, inputToEpoch } from './review/time.js';
 import { createPresenceAlarm } from './presence/alarm.js';
 
 const $ = selector => document.querySelector(selector);
@@ -33,10 +37,8 @@ const state = {
   cameraStatuses: new Map(), statusTimer: null, statusRequestId: 0, statusRefreshing: false,
   mode: 'live', focused: '', audioEnabled: false, presenceEnabled: false, presenceAll: false,
   allStopped: false, captureAll: false, mosaic: 'auto', overlaysVisible: false, timelineVisible: true, surveillance: false,
-  audioContext: null, reviewEpoch: null, reviewStart: null, reviewEnd: null, reviewLimitEnd: null,
-  timelineStart: null, timelineEnd: null,
-  timelineRequestId: 0, timelineData: new Map(), timelineZoom: 1, timelineControllers: [], recordings: new Map(), recordingSession: null,
-  thumbnailPage: 0, thumbnailSize: 'large', thumbnailInterval: 300, thumbnailCamera: '', thumbnailAnchor: null, thumbnailActive: false, thumbnailWasStopped: false, thumbnails: [], thumbnailCache: new Map(), thumbnailRequestId: 0, thumbnailControllers: new Set()
+  audioContext: null,
+  recordings: new Map(), recordingSession: null
 };
 
 const elements = {
@@ -65,7 +67,6 @@ const elements = {
 const contextMenuHome = elements.contextMenu.parentElement;
 
 // The current thumbnail grid starts at 150px wide; request half, current, and double size.
-const THUMBNAIL_SIZES = { small: [75, 51], medium: [150, 102], large: [300, 205] };
 const MOSAICS = [
   { id: 'auto', name: 'Grade automática', columns: 0, capacity: Infinity, previewCapacity: 8 },
   { id: '3x3-six', name: '3 × 3 · 6 câmeras', columns: 3, capacity: 6, slots: [[1,1,2,2],[1,3,1,1],[2,3,1,1],[3,1,1,1],[3,2,1,1],[3,3,1,1]] },
@@ -175,8 +176,7 @@ function openDisplayMenu() {
 function reorderTiles() {
   const ordered = [...elements.viewerGrid.querySelectorAll('.camera-tile')].map(tile => [tile.dataset.camera, state.tiles.get(tile.dataset.camera)]).filter(([, player]) => player);
   state.tiles = new Map(ordered);
-  state.timelineData = new Map(ordered.filter(([camera]) => state.timelineData.has(camera)).map(([camera]) => [camera, state.timelineData.get(camera)]));
-  if (state.mode === 'playback' && state.timelineVisible && state.timelineStart) drawTimeline();
+  timelineReview.reorder(ordered.map(([camera]) => camera));
   applyMosaic();
   updateAudioSources();
 }
@@ -593,7 +593,7 @@ async function beginContextPlayback(scope, seconds) {
   setMode('playback');
   if (seconds === null) {
     elements.startDateTime.value = ''; elements.endDateTime.value = '';
-    state.reviewStart = null; state.reviewEnd = null; state.reviewLimitEnd = null; state.reviewEpoch = null;
+    playbackReview.reset();
     clearTimeline(); clearThumbnails();
     elements.timelineStatus.textContent = 'Informe um período para carregar a timeline.';
     elements.thumbnailStatus.textContent = 'Informe um período para carregar miniaturas.';
@@ -856,11 +856,8 @@ async function selectServer(id) {
   state.focused = '';
   state.audioEnabled = false;
   state.allStopped = false;
-  state.reviewEpoch = null;
+  playbackReview.reset();
   state.surveillance = false; updateSurveillance();
-  state.reviewStart = null;
-  state.reviewEnd = null;
-  state.reviewLimitEnd = null;
   elements.liveMode.classList.add('is-active');
   elements.liveMode.setAttribute('aria-pressed', 'true');
   elements.reviewMode.classList.remove('is-active');
@@ -1345,10 +1342,7 @@ function setMode(mode) {
   updateOverlayState();
   if (wasPlayback) {
     setDefaultReviewTimes();
-    state.reviewStart = null;
-    state.reviewEnd = null;
-    state.reviewLimitEnd = null;
-    state.reviewEpoch = null;
+    playbackReview.reset();
     for (const player of state.tiles.values()) {
       player.profile = 'Recording';
       player.tile.querySelector('.tile-state').classList.add('review');
@@ -1363,91 +1357,6 @@ function setMode(mode) {
   clearTimeline();
   for (const player of state.tiles.values()) player.restart();
   updateViewHeader();
-}
-
-function setDefaultReviewTimes() {
-  if (!state.server) return;
-  const now = Date.now() - 5 * 60 * 1000;
-  elements.startDateTime.value = epochToInput(now, state.server.timeZone);
-  elements.endDateTime.value = '';
-}
-
-function startReview() {
-  if (state.thumbnailActive) closeThumbnailView(false);
-  if (!state.tiles.size) return toast('Abra pelo menos uma câmera antes de carregar gravações.', 'error');
-  if (!elements.startDateTime.value) return toast('Informe data e hora de início.', 'error');
-  try {
-    state.reviewStart = inputToEpoch(elements.startDateTime.value, state.server.timeZone);
-    state.reviewEnd = elements.endDateTime.value ? inputToEpoch(elements.endDateTime.value, state.server.timeZone) : null;
-    if (state.reviewEnd && state.reviewEnd <= state.reviewStart) throw new Error('O fim precisa ser posterior ao início.');
-    state.reviewLimitEnd = state.reviewEnd ?? Date.now();
-    state.reviewEpoch = state.reviewStart;
-    clearThumbnails();
-    state.allStopped = false;
-  } catch (error) {
-    return toast(error.message || 'Confira o período selecionado.', 'error');
-  }
-  for (const player of state.tiles.values()) player.restart();
-  loadFocusedTimeline();
-  updateViewHeader();
-}
-
-function loadFocusedTimeline() {
-  if (state.mode !== 'playback' || !state.reviewStart || !state.timelineVisible) return;
-  clearTimeline();
-  state.timelineStart = state.reviewStart;
-  state.timelineEnd = state.reviewLimitEnd;
-  for (const camera of state.tiles.keys()) { state.timelineData.set(camera, []); void loadTimeline(camera); }
-  drawTimeline();
-}
-
-function seekReview(epoch) {
-  if (state.thumbnailActive) closeThumbnailView(false);
-  if (state.mode !== 'playback' || !Number.isFinite(epoch) || !Number.isFinite(state.reviewStart)) return;
-  const end = state.reviewLimitEnd ?? state.reviewEnd ?? state.timelineEnd ?? Date.now();
-  clearThumbnails();
-  state.reviewEpoch = Math.max(state.reviewStart, Math.min(end, epoch));
-  updateTimelinePlayhead(state.reviewEpoch);
-  for (const player of state.tiles.values()) player.restart();
-}
-
-function skipReview(direction) {
-  if (state.mode !== 'playback' || !Number.isFinite(state.reviewStart) || !state.tiles.size) return;
-  const seconds = state.server?.seekSeconds ?? 15;
-  seekReview((state.reviewEpoch ?? state.reviewStart) + direction * seconds * 1000);
-}
-
-function epochToApi(epoch, timeZone) {
-  const parts = new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' }).formatToParts(new Date(epoch));
-  const values = Object.fromEntries(parts.map(part => [part.type, part.value]));
-  return { date: `${values.year}.${values.month}.${values.day}`, time: `${values.hour}.${values.minute}.${values.second}` };
-}
-
-function epochToInput(epoch, timeZone) {
-  const parts = new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' }).formatToParts(new Date(epoch));
-  const v = Object.fromEntries(parts.map(part => [part.type, part.value]));
-  return `${v.year}-${v.month}-${v.day}T${v.hour}:${v.minute}:${v.second}`;
-}
-
-function inputToEpoch(input, timeZone) {
-  const match = input.match(/^(\d{4})-(\d\d)-(\d\d)T(\d\d):(\d\d)(?::(\d\d)(?:\.(\d{1,3}))?)?$/);
-  if (!match) throw new Error('Informe uma data e hora válidas.');
-  const [, year, month, day, hour, minute, second = '00', millis = '0'] = match;
-  const millisecond = Number(millis.padEnd(3, '0'));
-  const wanted = Date.UTC(+year, +month - 1, +day, +hour, +minute, +second, millisecond);
-  let epoch = wanted;
-  for (let i = 0; i < 3; i += 1) {
-    const localParts = new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' }).formatToParts(new Date(epoch));
-    const v = Object.fromEntries(localParts.map(part => [part.type, part.value]));
-    const seen = Date.UTC(+v.year, +v.month - 1, +v.day, +v.hour, +v.minute, +v.second);
-    epoch += wanted - (seen + (epoch % 1000 + 1000) % 1000);
-  }
-  const checked = new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' }).formatToParts(new Date(epoch));
-  const result = Object.fromEntries(checked.map(part => [part.type, part.value]));
-  if (`${result.year}-${result.month}-${result.day}T${result.hour}:${result.minute}:${result.second}` !== `${year}-${month}-${day}T${hour}:${minute}:${second}`) {
-    throw new Error('Esse horário não existe no fuso configurado.');
-  }
-  return epoch;
 }
 
 function parseFrameEpoch(headers) {
@@ -2253,189 +2162,19 @@ async function audioSourceChanged(oldSource, newSource) {
   await state.tiles.get(newSource)?.startAudioStream();
 }
 
-function clearTimeline() {
-  state.timelineRequestId++;
-  for (const controller of state.timelineControllers) controller.abort();
-  state.timelineControllers = [];
-  state.timelineData.clear();
-  state.timelineStart = state.timelineEnd = null;
-  elements.timelineNames.replaceChildren();
-  elements.timelineTracks.replaceChildren();
-  elements.timelineRuler.replaceChildren();
-  elements.timelineDays.replaceChildren();
-  elements.timelinePlayhead.hidden = true;
-}
-
-function parseTimelinePart(part) {
-  const text = new TextDecoder().decode(part.data);
-  const values = {};
-  for (const line of text.split(/\r?\n/)) {
-    const split = line.indexOf('=');
-    if (split > 0) values[line.slice(0, split).trim().toUpperCase()] = line.slice(split + 1).trim();
-  }
-  if (!values.TIMELINEDATA_MEDIAKIND) return null;
-  return {
-    kind: values.TIMELINEDATA_MEDIAKIND.toLowerCase(),
-    type: (values.TIMELINEDATA_FRAMETYPE || values.TIMELINEDATA_FRAMEKIND || '').toLowerCase(),
-    start: parseApiTimestamp(values.TIMELINEDATA_STARTTIME),
-    end: parseApiTimestamp(values.TIMELINEDATA_ENDTIME)
-  };
-}
-
-async function loadTimeline(camera) {
-  const requestId = state.timelineRequestId;
-  const controller = new AbortController();
-  state.timelineControllers.push(controller);
-  const start = epochToApi(state.timelineStart, state.server.timeZone);
-  const end = epochToApi(state.timelineEnd, state.server.timeZone);
-  const data = state.timelineData.get(camera);
-  try {
-    const response = await fetch(`/api/timeline?${query({ server: state.serverId, camera, startDate: start.date, startTime: start.time, endDate: end.date, endTime: end.time })}`, { cache: 'no-store', signal: controller.signal });
-    if (!response.ok) throw new Error('Não foi possível carregar a timeline.');
-    let scheduled = false;
-    await consumeMultipart(response, part => {
-      if (requestId !== state.timelineRequestId) return;
-      const parsed = parseTimelinePart(part);
-      if (!parsed || !Number.isFinite(parsed.start) || !Number.isFinite(parsed.end) || parsed.end < parsed.start) return;
-      data.push(parsed);
-      if (!scheduled) { scheduled = true; requestAnimationFrame(() => { scheduled = false; if (requestId === state.timelineRequestId) drawTimeline(); }); }
-    });
-    if (requestId === state.timelineRequestId) { drawTimeline(); elements.timelineStatus.textContent = `Disponibilidade carregada para ${camera}.`; }
-  } catch (error) {
-    if (requestId === state.timelineRequestId && error.name !== 'AbortError') { elements.timelineStatus.textContent = `Não foi possível carregar a timeline de ${camera}.`; toast(elements.timelineStatus.textContent, 'error'); }
-  } finally { state.timelineControllers = state.timelineControllers.filter(item => item !== controller); }
-}
-
-let timelineDayCache = { key: '', days: [] };
-function timelineDayBoundaries(start, end, timeZone) {
-  const key = `${start}|${end}|${timeZone}`;
-  if (timelineDayCache.key === key) return timelineDayCache.days;
-  const formatter = new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' });
-  const dayNumber = epoch => {
-    const parts = Object.fromEntries(formatter.formatToParts(epoch).map(part => [part.type, part.value]));
-    return Date.UTC(+parts.year, +parts.month - 1, +parts.day) / 86400000;
-  };
-  const days = [];
-  for (let day = dayNumber(start) + 1, last = dayNumber(end); day <= last; day++) {
-    let low = start, high = end;
-    while (high - low > 1) {
-      const middle = Math.floor((low + high) / 2);
-      if (dayNumber(middle) >= day) high = middle; else low = middle;
-    }
-    if (high > start && high <= end) days.push(high);
-  }
-  timelineDayCache = { key, days };
-  return days;
-}
-
-function drawTimeline() {
-  const start = state.timelineStart, end = state.timelineEnd;
-  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return;
-  const span = end - start;
-  elements.timelineNames.replaceChildren();
-  for (const camera of state.timelineData.keys()) {
-    const name = document.createElement('div'); name.className = 'timeline-camera-name'; name.textContent = camera; name.title = camera; elements.timelineNames.append(name);
-  }
-  elements.timelineContent.style.width = `${state.timelineZoom * 100}%`;
-  elements.timelineRuler.replaceChildren();
-  const ticks = Math.max(1, Math.floor(elements.timelineContent.clientWidth / 90));
-  for (let tick = 0; tick <= ticks; tick++) {
-    const mark = document.createElement('span'); mark.className = 'ruler-tick';
-    if (!tick) mark.dataset.edge = 'start'; if (tick === ticks) mark.dataset.edge = 'end';
-    mark.style.left = `${tick / ticks * 100}%`;
-    mark.textContent = formatClock(start + span * tick / ticks);
-    elements.timelineRuler.append(mark);
-  }
-  elements.timelineDays.replaceChildren();
-  for (const epoch of timelineDayBoundaries(start, end, state.server.timeZone)) {
-    const marker = document.createElement('span'); marker.className = 'timeline-day';
-    marker.style.left = `${(epoch - start) / span * 100}%`;
-    const label = document.createElement('span'); label.textContent = new Intl.DateTimeFormat('pt-BR', { timeZone: state.server.timeZone, day: '2-digit', month: '2-digit', year: 'numeric' }).format(epoch);
-    marker.title = `Início de ${label.textContent}`; marker.append(label); elements.timelineDays.append(marker);
-  }
-  const dayRects = [...elements.timelineDays.querySelectorAll('.timeline-day > span')].map(label => label.getBoundingClientRect());
-  for (const tick of elements.timelineRuler.children) {
-    const rect = tick.getBoundingClientRect();
-    if (dayRects.some(day => rect.left < day.right + 4 && rect.right > day.left - 4)) tick.style.visibility = 'hidden';
-  }
-  elements.timelineTracks.replaceChildren();
-  for (const [camera, data] of state.timelineData) {
-    const row = document.createElement('div'); row.className = 'timeline-camera-tracks';
-    const video = document.createElement('div'), audio = document.createElement('div');
-    video.className = 'track-lane'; audio.className = 'track-lane audio-lane';
-    video.title = `Vídeo: ${camera}`; audio.title = `Áudio: ${camera}`;
-    for (const item of data) {
-      const lane = item.kind === 'video' ? video : item.kind === 'audio' ? audio : null;
-      if (!lane || item.end < start || item.start > end) continue;
-      const segment = document.createElement('span'); segment.className = `track-segment${item.kind === 'audio' ? ' audio' : ''}`;
-      const left = Math.max(0, (item.start - start) / span * 100), right = Math.min(100, (item.end - start) / span * 100);
-      segment.style.left = `${left}%`; segment.style.width = `${Math.max(0, right - left)}%`;
-      segment.title = `${item.kind === 'audio' ? 'Áudio' : 'Vídeo'}: ${formatClock(item.start)}–${formatClock(item.end)}`;
-      lane.append(segment);
-    }
-    for (const lane of [video, audio]) lane.addEventListener('click', event => { if (!state.timelineDragged) seekFromTimeline(event, lane); });
-    row.append(video, audio); elements.timelineTracks.append(row);
-  }
-  updateTimelinePlayhead();
-}
-function seekFromTimeline(event, lane) {
-  const rect = lane.getBoundingClientRect();
-  seekReview(state.timelineStart + (state.timelineEnd - state.timelineStart) * Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width)));
-}
-function updateTimelinePlayhead(epoch = state.reviewEpoch) {
-  if (Number.isFinite(epoch) && Number.isFinite(state.reviewStart)) state.reviewEpoch = Math.max(state.reviewStart, Math.min(state.reviewLimitEnd ?? state.reviewEnd ?? state.timelineEnd ?? Date.now(), epoch));
-  if (!Number.isFinite(epoch) || !Number.isFinite(state.timelineStart) || !Number.isFinite(state.timelineEnd) || state.timelineEnd <= state.timelineStart) { elements.timelinePlayhead.hidden = true; return; }
-  state.reviewEpoch = Math.max(state.timelineStart, Math.min(state.timelineEnd, epoch));
-  const fraction = (state.reviewEpoch - state.timelineStart) / (state.timelineEnd - state.timelineStart);
-  elements.timelinePlayhead.style.left = `${fraction * 100}%`;
-  elements.timelinePlayhead.title = `Gravação em ${formatClock(epoch)}`; elements.timelinePlayhead.hidden = false;
-}
-function setTimelineZoom(zoom, clientX) {
-  const scroll = elements.timelineScroll;
-  const pointerX = Math.max(0, Math.min(scroll.clientWidth, clientX - scroll.getBoundingClientRect().left));
-  const fraction = (scroll.scrollLeft + pointerX) / scroll.scrollWidth;
-  state.timelineZoom = Math.max(1, Math.min(32, zoom));
-  scroll.classList.toggle('is-zoomed', state.timelineZoom > 1);
-  drawTimeline();
-  scroll.scrollLeft = state.timelineZoom === 1 ? 0 : fraction * scroll.scrollWidth - pointerX;
-}
-elements.timelineScroll.addEventListener('wheel', event => {
-  if (!Number.isFinite(state.timelineStart) || !event.deltaY) return;
-  event.preventDefault();
-  setTimelineZoom(state.timelineZoom * (event.deltaY < 0 ? 1.25 : 1 / 1.25), event.clientX);
-}, { passive: false });
-let timelineDrag = null;
-elements.timelineScroll.addEventListener('pointerdown', event => {
-  if (event.button !== 0 || !event.isPrimary) return;
-  timelineDrag = { x: event.clientX, y: event.clientY, left: elements.timelineScroll.scrollLeft, pointerId: event.pointerId };
-  state.timelineDragged = false;
-  elements.timelineScroll.classList.add('is-pressed');
-  timelineDrag.holdTimer = setTimeout(() => elements.timelineScroll.classList.add('is-holding'), 350);
+const playbackReview = createPlaybackReview({ state, elements, epochToInput, inputToEpoch, toast, closeThumbnailView: (...args) => closeThumbnailView(...args), clearThumbnails: (...args) => clearThumbnails(...args), timelineReview: { openTimeline: (...args) => timelineReview.openTimeline(...args) }, updateTimelinePlayhead: (...args) => updateTimelinePlayhead(...args), updateViewHeader });
+const { setDefaultReviewTimes, startReview, loadFocusedTimeline, seekReview, skipReview } = playbackReview;
+Object.defineProperties(state, {
+  reviewStart: { get: () => playbackReview.start }, reviewEnd: { get: () => playbackReview.end },
+  reviewLimitEnd: { get: () => playbackReview.limitEnd }, reviewEpoch: { get: () => playbackReview.epoch }
 });
-window.addEventListener('pointermove', event => {
-  if (!timelineDrag || event.pointerId !== timelineDrag.pointerId) return;
-  const delta = event.clientX - timelineDrag.x;
-  if (state.timelineZoom > 1 && !state.timelineDragged && Math.hypot(delta, event.clientY - timelineDrag.y) > 3) {
-    state.timelineDragged = true;
-    clearTimeout(timelineDrag.holdTimer);
-    elements.timelineScroll.classList.add('is-dragging');
-    elements.timelineScroll.setPointerCapture(event.pointerId);
-  }
-  if (state.timelineDragged) elements.timelineScroll.scrollLeft = timelineDrag.left - delta;
-});
-function endTimelineDrag(event) {
-  if (!timelineDrag || event.pointerId !== timelineDrag.pointerId) return;
-  clearTimeout(timelineDrag.holdTimer);
-  timelineDrag = null;
-  elements.timelineScroll.classList.remove('is-pressed', 'is-holding', 'is-dragging');
-  setTimeout(() => { state.timelineDragged = false; }, 0);
-}
-window.addEventListener('pointerup', endTimelineDrag);
-window.addEventListener('pointercancel', endTimelineDrag);
+const timelineReview = createTimelineReview({ state, elements, query, consumeMultipart, parseApiTimestamp, toast, seekReview, formatClock, setReviewEpoch: epoch => playbackReview.setEpoch(epoch) });
+const { clearTimeline, drawTimeline, updateTimelinePlayhead } = timelineReview;
+Object.defineProperty(state, 'timelineEnd', { get: () => timelineReview.end });
 let thumbnailResizeTimer;
 window.addEventListener('resize', () => {
   if (state.timelineVisible && state.mode === 'playback') drawTimeline();
-  if (state.thumbnailActive) { clearTimeout(thumbnailResizeTimer); thumbnailResizeTimer = setTimeout(() => { if (!state.thumbnailActive) return; state.thumbnailAnchor = state.thumbnails[0] ?? state.thumbnailAnchor; void renderThumbnailPage(0); }, 150); }
+  if (state.thumbnailActive) { clearTimeout(thumbnailResizeTimer); thumbnailResizeTimer = setTimeout(() => { if (!state.thumbnailActive) return; thumbnailReview.resize(); }, 150); }
 });
 
 function formatClock(epoch) {
@@ -2459,242 +2198,9 @@ async function toggleAllStreams() {
   updateViewHeader();
 }
 
-function cancelThumbnailPage() {
-  state.thumbnailRequestId += 1;
-  for (const controller of state.thumbnailControllers) controller.abort();
-  state.thumbnailControllers.clear();
-  state.thumbnails = [];
-  elements.thumbnailGrid.replaceChildren();
-}
-
-function clearThumbnails() {
-  cancelThumbnailPage();
-  for (const url of state.thumbnailCache.values()) URL.revokeObjectURL(url);
-  state.thumbnailCache.clear();
-  state.thumbnailAnchor = null;
-  state.thumbnailPage = 0;
-}
-
-const THUMBNAIL_INTERVALS = [
-  [5, '5 segundos'], [10, '10 segundos'], [30, '30 segundos'], [60, '1 minuto'], [300, '5 minutos'],
-  [600, '10 minutos'], [1800, '30 minutos'], [3600, '1 hora'], [10800, '3 horas'], [18000, '5 horas']
-];
-
-function createThumbnailMenu(camera) {
-  const menu = document.createElement('div'); menu.className = 'context-submenu'; menu.setAttribute('role', 'menu');
-  for (const [size, label] of [['small', 'Pequeno'], ['medium', 'Médio'], ['large', 'Grande']]) {
-    const item = document.createElement('button'); item.type = 'button'; item.className = 'context-item thumbnail-size-item'; item.setAttribute('role', 'menuitemradio'); item.setAttribute('aria-checked', String(state.thumbnailSize === size)); item.textContent = label;
-    item.addEventListener('click', () => { if (state.thumbnailSize !== size) clearThumbnails(); state.thumbnailSize = size; for (const other of menu.querySelectorAll('[role="menuitemradio"]')) other.setAttribute('aria-checked', String(other === item)); }); menu.append(item);
-  }
-  const separator = document.createElement('div'); separator.className = 'context-separator'; separator.setAttribute('role', 'separator'); menu.append(separator);
-  for (const [index, [seconds, label]] of THUMBNAIL_INTERVALS.entries()) {
-    const item = document.createElement('button'); item.type = 'button'; item.className = 'context-item'; item.setAttribute('role', 'menuitem'); item.textContent = label;
-    if (camera === state.focused) {
-      const hint = document.createElement('span'); hint.className = 'context-shortcut'; hint.textContent = `Ctrl+Shift+Alt+${(index + 1) % 10}`; item.append(hint);
-    }
-    item.disabled = !state.reviewStart;
-    item.addEventListener('click', () => { closeContextMenu(); void openThumbnailView(camera, seconds); }); menu.append(item);
-  }
-  return menu;
-}
-async function openThumbnailView(camera, interval) {
-  if (!state.reviewStart || !state.tiles.has(camera)) return;
-  await leaveFullscreen();
-  if (state.thumbnailCamera !== camera || state.thumbnailInterval !== interval) clearThumbnails();
-  state.thumbnailCamera = camera; state.thumbnailInterval = interval;
-  if (state.thumbnailAnchor === null) state.thumbnailAnchor = Math.max(state.reviewStart, Math.min(state.reviewLimitEnd ?? state.reviewEnd ?? state.timelineEnd ?? Date.now(), state.reviewEpoch ?? state.reviewStart));
-  if (!state.thumbnailActive) { state.thumbnailWasStopped = state.allStopped; state.thumbnailTimelineVisible = state.timelineVisible; }
-  state.thumbnailActive = true; elements.stopAll.disabled = true;
-  updateOverlayState();
-  await Promise.all(requestStopRecordingSession());
-  if (!state.thumbnailActive) return;
-  for (const player of state.tiles.values()) player.stop(false);
-  elements.viewerGrid.classList.add('showing-thumbnails'); elements.thumbnailPanel.hidden = false;
-  void renderThumbnailPage(state.thumbnailPage);
-}
-function closeThumbnailView(resume = true) {
-  if (!state.thumbnailActive) return;
-  state.thumbnailActive = false; clearThumbnails(); elements.thumbnailPanel.hidden = true; elements.viewerGrid.classList.remove('showing-thumbnails');
-  setDisplayVisibility({ timeline: state.thumbnailTimelineVisible }); updateViewHeader();
-  if (resume && !state.thumbnailWasStopped && state.mode === 'playback') for (const player of state.tiles.values()) void player.start();
-}
-async function renderThumbnailPage(page) {
-  if (!state.thumbnailActive || !state.server || !state.reviewStart || !state.tiles.has(state.thumbnailCamera)) return;
-  const camera = state.thumbnailCamera;
-  const [width, height] = THUMBNAIL_SIZES[state.thumbnailSize] || THUMBNAIL_SIZES.large;
-  const rect = elements.viewerGrid.getBoundingClientRect();
-  const columns = Math.max(1, Math.floor((rect.width + 4) / (width + 4)));
-  const rows = Math.max(1, Math.floor((rect.height + 4) / (height + 28)));
-  const count = Math.max(1, columns * rows);
-  elements.thumbnailGrid.style.gridTemplateColumns = `repeat(${columns}, minmax(0, 1fr))`;
-  elements.thumbnailGrid.style.gridTemplateRows = `repeat(${rows}, minmax(0, 1fr))`;
-  const interval = state.thumbnailInterval * 1000, end = state.reviewLimitEnd ?? state.reviewEnd ?? state.timelineEnd ?? Date.now();
-  const first = state.thumbnailAnchor + page * count * interval;
-  state.thumbnailPage = page;
-  const pageItems = Array.from({length: count}, (_, i) => first + i * interval).filter(epoch => epoch >= state.reviewStart && epoch <= end);
-  cancelThumbnailPage(); const requestId = state.thumbnailRequestId; state.thumbnails = pageItems;
-  elements.thumbnailPrev.disabled = !pageItems.length || pageItems[0] - interval < state.reviewStart;
-  elements.thumbnailNext.disabled = !pageItems.length || pageItems[pageItems.length - 1] + interval > end;
-  elements.thumbnailStatus.textContent = `Carregando ${pageItems.length} miniaturas de ${camera}.`;
-  const cards = pageItems.map((epoch, index) => {
-    const card = document.createElement('button');
-    card.type = 'button';
-    card.className = 'thumbnail-card';
-    card.style.gridColumn = String(index % columns + 1);
-    card.style.gridRow = String(Math.floor(index / columns) + 1);
-    card.dataset.loadState = 'loading';
-    card.setAttribute('aria-busy', 'true');
-    card.setAttribute('aria-label', `Revisar ${camera} a partir de ${formatClock(epoch)}`);
-    const media = document.createElement('span');
-    media.className = 'thumbnail-media';
-    media.setAttribute('aria-hidden', 'true');
-    const spinner = document.createElement('span');
-    spinner.className = 'thumbnail-spinner';
-    spinner.setAttribute('aria-hidden', 'true');
-    const image = document.createElement('img');
-    image.alt = '';
-    image.hidden = true;
-    const placeholder = document.createElement('span');
-    placeholder.className = 'thumbnail-placeholder';
-    placeholder.textContent = 'Miniatura indisponível';
-    placeholder.hidden = true;
-    media.append(spinner, image, placeholder);
-    const label = document.createElement('span');
-    label.textContent = formatClock(epoch);
-    card.append(media, label);
-    card.addEventListener('click', () => { closeThumbnailView(false); state.allStopped = false; seekReview(epoch); updateViewHeader(); });
-    elements.thumbnailGrid.append(card);
-    return { epoch, card, image, spinner, placeholder };
-  });
-  // The transparent hit area overlays only the space between consecutive cards.
-  pageItems.slice(0, -1).forEach((epoch, index) => {
-    const vertical = columns === 1;
-    if (!vertical && index % columns === columns - 1) return;
-    const midpoint = epoch + (pageItems[index + 1] - epoch) / 2;
-    const sneakWidth = Math.round(width / 2), sneakHeight = Math.round(height / 2);
-    const trigger = document.createElement('button');
-    trigger.type = 'button';
-    trigger.className = `thumbnail-sneak${vertical ? ' is-vertical' : ''}`;
-    trigger.style.gridColumn = String(index % columns + 1);
-    trigger.style.gridRow = String(Math.floor(index / columns) + 1);
-    trigger.style.setProperty('--sneak-width', `${Math.max(1, (rect.width - (columns - 1) * 4) / columns / 2)}px`);
-    trigger.dataset.loadState = 'idle';
-    trigger.setAttribute('aria-label', `Revisar ${camera} a partir de ${formatClock(midpoint)}`);
-    const preview = document.createElement('span'); preview.className = 'thumbnail-sneak-preview';
-    const media = document.createElement('span'); media.className = 'thumbnail-sneak-media';
-    const spinner = document.createElement('span'); spinner.className = 'thumbnail-spinner';
-    const image = document.createElement('img'); image.alt = ''; image.hidden = true;
-    const placeholder = document.createElement('span'); placeholder.className = 'thumbnail-placeholder'; placeholder.textContent = 'Miniatura indisponível'; placeholder.hidden = true;
-    const label = document.createElement('span'); label.className = 'thumbnail-sneak-time'; label.textContent = formatClock(midpoint);
-    media.append(spinner, image, placeholder); preview.append(media, label); trigger.append(preview);
-    const load = async () => {
-      if (trigger.dataset.loadState !== 'idle' || requestId !== state.thumbnailRequestId) return;
-      trigger.dataset.loadState = 'loading'; trigger.setAttribute('aria-busy', 'true');
-      const finish = success => {
-        if (requestId !== state.thumbnailRequestId) return;
-        trigger.dataset.loadState = success ? 'loaded' : 'error';
-        trigger.setAttribute('aria-busy', 'false'); spinner.hidden = true; image.hidden = !success; placeholder.hidden = success;
-      };
-      const key = `sneak:${midpoint}:${sneakWidth}x${sneakHeight}`;
-      const cached = state.thumbnailCache.get(key);
-      if (cached) { image.src = cached; finish(true); return; }
-      const controller = new AbortController(); state.thumbnailControllers.add(controller);
-      try {
-        const api = epochToApi(midpoint, state.server.timeZone);
-        const response = await fetch(`/api/snapshot?${query({ server: state.serverId, camera, date: api.date, time: api.time, width: sneakWidth, height: sneakHeight })}`, { cache: 'no-store', signal: controller.signal });
-        if (requestId !== state.thumbnailRequestId) return;
-        if (!response.ok) { finish(false); return; }
-        const blob = await response.blob();
-        if (requestId !== state.thumbnailRequestId) return;
-        if (!blob.size || (blob.type && !blob.type.startsWith('image/'))) { finish(false); return; }
-        const objectUrl = URL.createObjectURL(blob);
-        await new Promise(resolve => {
-          let settled = false;
-          const done = success => {
-            if (settled) return; settled = true;
-            controller.signal.removeEventListener('abort', cancelled);
-            if (success && requestId === state.thumbnailRequestId) state.thumbnailCache.set(key, objectUrl);
-            else URL.revokeObjectURL(objectUrl);
-            finish(success); resolve();
-          };
-          const cancelled = () => done(false);
-          controller.signal.addEventListener('abort', cancelled, { once: true });
-          image.addEventListener('load', () => done(true), { once: true });
-          image.addEventListener('error', () => done(false), { once: true });
-          if (controller.signal.aborted) cancelled(); else image.src = objectUrl;
-        });
-      } catch (error) {
-        if (error.name !== 'AbortError') finish(false);
-      } finally { state.thumbnailControllers.delete(controller); }
-    };
-    trigger.addEventListener('pointerenter', load);
-    trigger.addEventListener('focus', load);
-    trigger.addEventListener('click', () => { closeThumbnailView(false); state.allStopped = false; seekReview(midpoint); updateViewHeader(); });
-    elements.thumbnailGrid.append(trigger);
-  });
-  let cursor = 0;
-  const finishCard = (item, success) => {
-    if (requestId !== state.thumbnailRequestId) return;
-    item.card.dataset.loadState = success ? 'loaded' : 'error';
-    item.card.setAttribute('aria-busy', 'false');
-    item.spinner.hidden = true;
-    item.image.hidden = !success;
-    item.placeholder.hidden = success;
-    if (!success) {
-      item.card.disabled = true;
-      item.card.setAttribute('aria-label', `Miniatura indisponível para ${camera} às ${formatClock(item.epoch)}`);
-    }
-  };
-  const workers = Array.from({ length: Math.min(4, cards.length) }, async () => {
-    while (requestId === state.thumbnailRequestId && cursor < cards.length) {
-      const item = cards[cursor++];
-      const cached = state.thumbnailCache.get(item.epoch);
-      if (cached) {
-        item.image.src = cached;
-        finishCard(item, true);
-        continue;
-      }
-      const controller = new AbortController();
-      state.thumbnailControllers.add(controller);
-      const api = epochToApi(item.epoch, state.server.timeZone);
-      try {
-        const [width, height] = THUMBNAIL_SIZES[state.thumbnailSize] || THUMBNAIL_SIZES.large;
-        const response = await fetch(`/api/snapshot?${query({ server: state.serverId, camera, date: api.date, time: api.time, width, height })}`, { cache: 'no-store', signal: controller.signal });
-        if (requestId !== state.thumbnailRequestId) continue;
-        if (!response.ok) { finishCard(item, false); continue; }
-        const blob = await response.blob();
-        if (requestId !== state.thumbnailRequestId) continue;
-        if (!blob.size || (blob.type && !blob.type.startsWith('image/'))) { finishCard(item, false); continue; }
-        const objectUrl = URL.createObjectURL(blob);
-        if (requestId !== state.thumbnailRequestId) { URL.revokeObjectURL(objectUrl); continue; }
-        await new Promise(resolve => {
-          const finish = success => {
-            controller.signal.removeEventListener('abort', cancelled);
-            if (success && requestId === state.thumbnailRequestId) state.thumbnailCache.set(item.epoch, objectUrl);
-            else URL.revokeObjectURL(objectUrl);
-            finishCard(item, success); resolve();
-          };
-          const cancelled = () => { URL.revokeObjectURL(objectUrl); resolve(); };
-          controller.signal.addEventListener('abort', cancelled, { once: true });
-          item.image.addEventListener('load', () => finish(true), { once: true });
-          item.image.addEventListener('error', () => finish(false), { once: true });
-          if (controller.signal.aborted) cancelled(); else item.image.src = objectUrl;
-        });
-      } catch (error) {
-        if (requestId === state.thumbnailRequestId && error.name !== 'AbortError') finishCard(item, false);
-      } finally {
-        state.thumbnailControllers.delete(controller);
-      }
-    }
-  });
-  await Promise.all(workers);
-  if (requestId !== state.thumbnailRequestId) return;
-  const loaded = cards.filter(card => card.card.dataset.loadState === 'loaded').length;
-  const failed = cards.length - loaded;
-  elements.thumbnailStatus.textContent = loaded
-    ? `${loaded} miniaturas carregadas${failed ? ` · ${failed} indisponíveis` : ''} · clique em uma miniatura para revisar daquele instante.`
-    : 'Nenhuma miniatura encontrada nesta página.';
-}
+const thumbnailReview = createThumbnailReview({ state, elements, leaveFullscreen, updateOverlayState, requestStopRecordingSession, setDisplayVisibility, updateViewHeader, seekReview, closeContextMenu, epochToApi, query, formatClock });
+const { clearThumbnails, createThumbnailMenu, openThumbnailView, closeThumbnailView, THUMBNAIL_INTERVALS } = thumbnailReview;
+Object.defineProperty(state, 'thumbnailActive', { get: () => thumbnailReview.active });
 
 function clockTick() {
   const now = new Date();
@@ -2891,8 +2397,8 @@ elements.audioToggle.addEventListener('click', async () => {
     else player.stopAudioStream();
   }
 });
-elements.thumbnailPrev.addEventListener('click', () => renderThumbnailPage(state.thumbnailPage - 1));
-elements.thumbnailNext.addEventListener('click', () => renderThumbnailPage(state.thumbnailPage + 1));
+elements.thumbnailPrev.addEventListener('click', () => thumbnailReview.previous());
+elements.thumbnailNext.addEventListener('click', () => thumbnailReview.next());
 const shortcutDialog = $('#shortcutDialog');
 $('#openShortcuts').addEventListener('click', () => shortcutDialog.showModal());
 for (const dialog of document.querySelectorAll('dialog')) {
