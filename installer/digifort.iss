@@ -14,7 +14,7 @@
   #define ProductName "Digifort Monitor"
 #endif
 #ifndef ProductVersion
-  #define ProductVersion "1.5.0"
+  #define ProductVersion "1.6.0"
 #endif
 
 [Setup]

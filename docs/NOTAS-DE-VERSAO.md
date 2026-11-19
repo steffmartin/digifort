@@ -1,10 +1,21 @@
 # Notas de versão do Digifort Monitor
 
-## Em desenvolvimento
+## 1.6.0
+
+### Novidades e correções
 
 - O alarme de presença pode analisar a câmera em foco ou todas as câmeras abertas, com alertas visuais por câmera. ([#60](https://github.com/steffmartin/digifort/issues/60))
 - Transmissões ao vivo interrompidas tentam se reconectar em intervalos crescentes, até a última tentativa após cinco minutos. ([#62](https://github.com/steffmartin/digifort/issues/62))
 - A arquitetura do cliente e o transporte Digifort foram reorganizados em módulos, preservando os fluxos existentes. ([#61](https://github.com/steffmartin/digifort/issues/61))
+- A gravação individual acompanha a câmera em foco no mesmo arquivo; imagens com proporções diferentes são ajustadas à resolução inicial. ([#70](https://github.com/steffmartin/digifort/issues/70))
+- A barra de controles volta a aparecer ao mover o cursor sobre a timeline. ([#71](https://github.com/steffmartin/digifort/issues/71))
+- O indicador de captura permanece em uma linha na grade. ([#67](https://github.com/steffmartin/digifort/issues/67))
+- Gravações simultâneas mostram um único aviso com a quantidade salva. ([#63](https://github.com/steffmartin/digifort/issues/63))
+- Os avisos de screenshot e gravação permitem abrir a pasta de mídia. ([#64](https://github.com/steffmartin/digifort/issues/64))
+
+### Validação e distribuição
+
+A suíte automatizada cobre os controles, a troca de foco, a captura e os avisos; a interface e os quadros da troca de câmera foram exercitados no Chromium com dados sintéticos. Os cinco itens foram aprovados em teste pelo usuário. A gravação individual em segundo plano e a alteração da pasta configurada após o salvamento permanecem acompanhadas pelas [issues #72](https://github.com/steffmartin/digifort/issues/72) e [#73](https://github.com/steffmartin/digifort/issues/73). A integração da troca de foco com mídia real, a qualidade do áudio, a instalação em máquina limpa e o Windows 10 permanecem pendentes. Confira o SHA-256 conforme [Distribuição](DISTRIBUICAO.md).
 
 ## 1.5.0
 
