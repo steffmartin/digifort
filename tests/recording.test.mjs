@@ -12,8 +12,8 @@ function section(start, end) {
   return source.slice(from, to);
 }
 
-function recordingHarness({ supported = true, failStart = false } = {}) {
-  const requests = [], messages = [], sources = [], streams = [], recorders = [], extensions = [];
+function recordingHarness({ supported = true, failStart = false, failFinish = null } = {}) {
+  const requests = [], messages = [], actions = [], sources = [], streams = [], recorders = [], extensions = [];
   class FakeAudioContext {
     createMediaStreamDestination() {
       const destination = { sources: new Set(), disconnected: false, disconnect() { this.disconnected = true; } };
@@ -63,10 +63,11 @@ function recordingHarness({ supported = true, failStart = false } = {}) {
   const context = vm.createContext({ state, capture: state, elements, MediaRecorder: FakeRecorder, AudioContext: FakeAudioContext,
     scopedCameraNames: scope => scope.all ? [...state.tiles.keys()] : [scope.camera].filter(name => state.tiles.has(name)),
     recordingScopeKey: scope => scope.all ? 'all-cameras' : `camera:${scope.camera}`,
-    mediaEpoch: () => 1, mediaFilenames: (names, extension) => { extensions.push(extension); return names.map(() => `sintetico${extension}`); },
-    postMedia: async (_path, params) => { requests.push(params.action); return {}; }, toast: message => messages.push(message), updateMediaControls() {}, stopPresenceWorker() {} });
+    mediaEpoch: () => 1, mediaFilenames: (names, extension) => { extensions.push(extension); return names.map((_, index) => `sintetico${index}${extension}`); },
+    postMedia: async (_path, params) => { requests.push(params.action); if (params.action === 'finish' && params.filename === failFinish) throw new Error('Falha sintética ao salvar'); return {}; },
+    toast: (message, kind, action) => { messages.push(message); actions.push({ kind, action }); }, updateMediaControls() {}, stopPresenceWorker() {} });
   vm.runInContext(captureSource.slice(captureSource.indexOf('function recordingMime('), captureSource.indexOf('return { captureFrames')), context);
-  return { context, state, elements, player, requests, messages, sources, streams, recorders, extensions };
+  return { context, state, elements, player, requests, messages, actions, sources, streams, recorders, extensions };
 }
 
 test('inicia MP4 com áudio silencioso fluindo e conserva pausa e retomada', async () => {
@@ -87,6 +88,9 @@ test('inicia MP4 com áudio silencioso fluindo e conserva pausa e retomada', asy
   assert.equal(h.sources[0].stopped, true);
   assert.ok(h.streams[0].getTracks().every(track => track.stopped));
   assert.equal(h.state.recordingSession, null);
+  assert.deepEqual(h.messages, ['Gravação salva: sintetico0.mp4']);
+  assert.equal(h.actions[0].action.folder, 'video');
+  assert.equal(h.actions[0].action.server, 'sintetico');
 });
 
 test('inicia sem consultar um seletor de formato', async () => {
@@ -108,6 +112,21 @@ test('agrupa as gravações concluídas em um único aviso', async () => {
   await h.context.changeRecordingState({ all: true }, 'stop');
   await Promise.all(finished);
   assert.deepEqual(h.messages, ['2 gravações salvas.']);
+  assert.equal(h.actions[0].action.folder, 'video');
+  assert.equal(h.actions[0].action.server, 'sintetico');
+});
+
+test('falha parcial preserva o aviso de erro e conta apenas vídeos salvos', async () => {
+  const h = recordingHarness({ failFinish: 'sintetico1.mp4' });
+  h.state.tiles.set('Outra câmera', { ...h.player, name: 'Outra câmera' });
+  await h.context.changeRecordingState({ all: true }, 'start');
+  const finished = [...h.state.recordings.values()].map(recording => recording.finished);
+  await h.context.changeRecordingState({ all: true }, 'stop');
+  await Promise.all(finished);
+  assert.equal(h.messages.length, 2);
+  assert.ok(h.messages.includes('Falha sintética ao salvar'));
+  assert.ok(h.messages.includes('Gravação salva: sintetico0.mp4'));
+  assert.equal(h.requests.filter(action => action === 'abort').length, 1);
 });
 
 test('informa indisponibilidade de MP4 sem criar uma gravação', async () => {
